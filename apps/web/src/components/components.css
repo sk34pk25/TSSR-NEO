@@ -686,3 +686,198 @@
     padding-bottom: var(--neo-space-6);
   }
 }
+
+
+/* --------------------------------------------------------------- accueil */
+.accueil {
+  display: flex;
+  flex-direction: column;
+  gap: var(--neo-space-5);
+  max-width: 1080px;
+}
+
+/*
+ * La proposition du moment. Un seul bloc, une seule action mise en avant, et la
+ * raison juste au-dessus du bouton : c est la raison qui rend l action evidente.
+ */
+.accueil__suite {
+  padding: var(--neo-space-6);
+  border: 1px solid var(--neo-border-strong);
+  border-radius: var(--neo-radius-lg);
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--neo-accent-dim), transparent 62%),
+    var(--neo-surface-raised);
+}
+.accueil__salutation {
+  margin: 0;
+  font-size: var(--neo-fs-sm);
+  color: var(--neo-text-muted);
+}
+.accueil__titre {
+  margin: 6px 0 0;
+  font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.1rem);
+  line-height: 1.15;
+}
+.accueil__raison {
+  margin: 8px 0 0;
+  max-width: 62ch;
+  color: var(--neo-text-muted);
+}
+
+/* Trois portes secondaires, de meme poids entre elles et moindre que la premiere. */
+.accueil__reperes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--neo-space-3);
+}
+.repere {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--neo-space-4);
+  border: 1px solid var(--neo-border);
+  border-radius: var(--neo-radius);
+  background: var(--neo-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--neo-transition),
+    background var(--neo-transition);
+}
+.repere:hover,
+.repere:focus-visible {
+  border-color: var(--neo-border-accent);
+  background: var(--neo-bg-3);
+}
+.repere .neo-muted {
+  font-size: var(--neo-fs-sm);
+  line-height: 1.4;
+}
+
+.accueil__etat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--neo-space-3);
+  padding: var(--neo-space-5);
+  border: 1px solid var(--neo-border);
+  border-radius: var(--neo-radius-lg);
+  background: var(--neo-surface);
+}
+.accueil__etat h2 {
+  margin: 0;
+}
+.accueil__etat-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--neo-space-4);
+}
+.accueil__etat-grille div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.accueil__etat-grille span {
+  font-size: var(--neo-fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.accueil__etat-grille strong {
+  font-size: var(--neo-fs-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* --------------------------------------------------------- prise en main */
+.onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--neo-space-5);
+  background: rgba(6, 9, 13, 0.78);
+  backdrop-filter: blur(6px);
+}
+:root[data-reduce-complexity='true'] .onboarding {
+  backdrop-filter: none;
+  background: rgba(6, 9, 13, 0.94);
+}
+.onboarding__dialogue {
+  width: min(620px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--neo-space-6);
+  border: 1px solid var(--neo-border-strong);
+  border-radius: var(--neo-radius-lg);
+  background:
+    radial-gradient(110% 130% at 0% 0%, var(--neo-accent-dim), transparent 60%),
+    var(--neo-surface-raised);
+}
+.onboarding__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--neo-space-4);
+  font-size: var(--neo-fs-xs);
+}
+.onboarding__titre {
+  margin: var(--neo-space-4) 0 0;
+  font-size: var(--neo-fs-xl);
+  line-height: 1.2;
+}
+.onboarding__corps {
+  margin: var(--neo-space-3) 0 0;
+  color: var(--neo-text-muted);
+  line-height: 1.6;
+}
+.onboarding__detail {
+  display: grid;
+  gap: 6px;
+  margin: var(--neo-space-4) 0 0;
+}
+.onboarding__detail > div {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: var(--neo-space-3);
+  align-items: baseline;
+}
+.onboarding__detail dt {
+  font-weight: 650;
+  color: var(--neo-accent);
+}
+.onboarding__detail dd {
+  margin: 0;
+  font-size: var(--neo-fs-sm);
+}
+.onboarding__jalons {
+  display: flex;
+  gap: 6px;
+  margin-top: var(--neo-space-5);
+}
+.onboarding__jalons span {
+  height: 3px;
+  flex: 1;
+  border-radius: 999px;
+  background: var(--neo-border);
+}
+.onboarding__jalons span[data-atteint='true'] {
+  background: var(--neo-accent);
+}
+.onboarding__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--neo-space-4);
+  margin-top: var(--neo-space-4);
+}
+@media (max-width: 560px) {
+  .onboarding__dialogue {
+    padding: var(--neo-space-5);
+  }
+  .onboarding__detail > div {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

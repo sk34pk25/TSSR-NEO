@@ -1,5 +1,7 @@
 import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
+import { Onboarding } from './components/Onboarding.tsx';
 import { AppShell } from './components/Shell.tsx';
+import { AboutView } from './views/AboutView.tsx';
 import { CampusView } from './views/CampusView.tsx';
 import { DiagnosticsView } from './views/DiagnosticsView.tsx';
 import { HomeView } from './views/HomeView.tsx';
@@ -63,6 +65,8 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 function CurrentView(): JSX.Element {
   const route = useRoute();
   switch (route.name) {
+    case 'a-propos':
+      return <AboutView />;
     case 'apprendre':
       return <LearnView />;
     case 'campus':
@@ -121,10 +125,16 @@ export function App(): JSX.Element {
   }
 
   return (
-    <AppShell variant={variant}>
-      <ErrorBoundary>
-        <CurrentView />
-      </ErrorBoundary>
-    </AppShell>
+    <>
+      <AppShell variant={variant}>
+        <ErrorBoundary>
+          <CurrentView />
+        </ErrorBoundary>
+      </AppShell>
+      {/* La prise en main precede tout le reste, une seule fois. */}
+      {session.progress.preferences.onboardingSeen ? null : (
+        <Onboarding onTerminer={() => void session.updatePreferences({ onboardingSeen: true })} />
+      )}
+    </>
   );
 }

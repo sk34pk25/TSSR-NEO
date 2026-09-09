@@ -320,6 +320,7 @@ export function AppShell({ children, variant = 'page' }: AppShellProps): JSX.Ele
       ) : null}
       <main
         id="contenu"
+        tabIndex={-1}
         className={
           variant === 'lieu' ? 'shell__main shell__main--place' : 'shell__main neo-scroll'
         }

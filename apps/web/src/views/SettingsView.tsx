@@ -265,6 +265,22 @@ export function SettingsView(): JSX.Element {
       </section>
 
       <section className="neo-card">
+        <h2 style={{ fontSize: 'var(--neo-fs-lg)' }}>Prise en main</h2>
+        <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
+          Les quatre ecrans de bienvenue presentes au premier passage : qui vous etes chez NEO
+          Systems, ce que fait reellement la simulation, ou se trouvent les choses, et comment
+          demander de l aide a NOVA.
+        </p>
+        <button
+          type="button"
+          className="neo-btn neo-btn--sm"
+          onClick={() => update({ onboardingSeen: false })}
+        >
+          Revoir la prise en main
+        </button>
+      </section>
+
+      <section className="neo-card">
         <h2 style={{ fontSize: 'var(--neo-fs-lg)' }}>Confidentialite et donnees</h2>
         <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
           Aucune publicite, aucun traqueur, aucune donnee personnelle collectee. La telemetrie

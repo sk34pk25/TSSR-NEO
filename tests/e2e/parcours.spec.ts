@@ -40,8 +40,21 @@ async function ouvrir(page: Page, route: string): Promise<void> {
   // L application est prete quand sa navigation est rendue : analyser un DOM
   // en cours d hydratation produirait des resultats differents a chaque passage.
   await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+  await passerLaPriseEnMain(page);
   if (route === 'campus') await attendreCampus(page);
   await stabiliser(page);
+}
+
+/**
+ * La prise en main s affiche au tout premier passage et recouvre la page.
+ * On la ferme comme le ferait un utilisateur, plutot que de truquer l etat.
+ */
+async function passerLaPriseEnMain(page: Page): Promise<void> {
+  const dialogue = page.getByRole('dialog', { name: 'Prise en main de TSSR NEO' });
+  if (await dialogue.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Passer' }).click();
+    await dialogue.waitFor({ state: 'hidden' });
+  }
 }
 
 /**
@@ -112,9 +125,7 @@ test.describe('parcours de mission', () => {
     test.slow();
     await ouvrir(page, 'accueil');
 
-    await page
-      .getByRole('button', { name: /Entrer dans NEO Systems|Reprendre la session/ })
-      .click();
+    await page.getByRole('button', { name: /^(Commencer|Reprendre)$/ }).click();
     await page.waitForURL(/#\/mission/);
     await stabiliser(page);
 
@@ -176,6 +187,10 @@ test.describe('accessibilite', () => {
 
   test('la navigation au clavier atteint le contenu puis les onglets', async ({ page }) => {
     await ouvrir(page, 'accueil');
+    // Repartir d une page fraiche : fermer la prise en main deplace le focus,
+    // et ce test verifie precisement le tout premier arret d un chargement.
+    await page.reload();
+    await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
     await page.keyboard.press('Tab');
     // Le tout premier arret est le lien d evitement.
     await expect(page.locator('a.neo-skip-link')).toBeFocused();
@@ -243,5 +258,41 @@ test.describe('architecture de l information', () => {
   test('les mesures de rendu restent cachees hors mode developpeur', async ({ page }) => {
     await ouvrir(page, 'campus');
     await expect(page.getByText(/img\/s/)).toHaveCount(0);
+  });
+});
+
+
+test.describe('prise en main', () => {
+  test('elle accueille au premier passage, puis ne revient pas', async ({ page }) => {
+    await page.goto('./#/accueil');
+    await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+
+    const dialogue = page.getByRole('dialog', { name: 'Prise en main de TSSR NEO' });
+    await expect(dialogue).toBeVisible();
+
+    // Les quatre etapes s enchainent et se terminent sur une action.
+    for (const attendu of [
+      /Vous entrez chez NEO Systems/,
+      /Rien ici n est une mise en scene/,
+      /Quatre endroits/,
+      /Demander de l aide/,
+    ]) {
+      await expect(dialogue.getByRole('heading')).toHaveText(attendu);
+      await dialogue.getByRole('button', { name: /Suivant|Commencer/ }).click();
+    }
+    await expect(dialogue).toBeHidden();
+
+    // Elle ne reapparait pas au rechargement : la preference est persistee.
+    await page.reload();
+    await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
+  test('elle se saute au clavier et rend le focus a la page', async ({ page }) => {
+    await page.goto('./#/accueil');
+    await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });

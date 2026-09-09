@@ -42,6 +42,12 @@ export const zPreferences = z.object({
    * indispensables au reglage, donc elles sont deplacees, pas supprimees.
    */
   developerMode: z.boolean().default(false),
+  /**
+   * La prise en main a ete vue. Elle vit dans les preferences parce qu elle
+   * doit suivre le profil : reimporter sa progression sur une autre machine ne
+   * doit pas rejouer un accueil deja lu.
+   */
+  onboardingSeen: z.boolean().default(false),
   keybindings: z.record(z.string(), z.string()).default({}),
 });
 

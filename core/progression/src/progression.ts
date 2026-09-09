@@ -274,6 +274,7 @@ export function createProfile(
       novaVerbosity: 'normal',
       telemetryConsent: false,
       developerMode: false,
+      onboardingSeen: false,
       keybindings: {},
     },
     offlineModules: [],
