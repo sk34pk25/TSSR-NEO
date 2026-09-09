@@ -38,5 +38,10 @@ export const trainingLabCourse: CourseManifest = {
   level: 'decouverte',
 };
 
-export { trainingLabScenario, missionPosteSansReseau, trainingLabCompetencies, trainingLabKnowledge };
+export {
+  trainingLabScenario,
+  missionPosteSansReseau,
+  trainingLabCompetencies,
+  trainingLabKnowledge,
+};
 export const trainingLabMissions = [missionPosteSansReseau];

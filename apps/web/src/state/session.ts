@@ -7,13 +7,24 @@ import type {
   Snapshot,
 } from '@tssr/contracts';
 import { EventBus, Rng, hashObject } from '@tssr/events';
-import { MemoryStorageAdapter, SaveManager, createStorage, sealSave, type StorageAdapter } from '@tssr/storage';
+import {
+  MemoryStorageAdapter,
+  SaveManager,
+  createStorage,
+  sealSave,
+  type StorageAdapter,
+} from '@tssr/storage';
 import { applyMissionResult, createProfile, suggestDifficulty } from '@tssr/progression';
 import { KnowledgeLibrary } from '@tssr/knowledge';
 import { MissionRunner, ScenarioRegistry, applyVariant, pickVariant } from '@tssr/mission-engine';
 import { SimulationWorld } from '@tssr/sim-world';
 import { Nova } from '@tssr/nova';
-import { detectCapabilities, resolveProfile, type QualityProfile, type RenderCapabilities } from '@tssr/rendering';
+import {
+  detectCapabilities,
+  resolveProfile,
+  type QualityProfile,
+  type RenderCapabilities,
+} from '@tssr/rendering';
 import {
   missionPosteSansReseau,
   trainingLabCompetencies,
@@ -73,7 +84,10 @@ export class AppSession {
 
   constructor() {
     this.registry.register(trainingLabScenario);
-    this.library.addEntries(trainingLabKnowledge).addCompetencies(trainingLabCompetencies).addMissions(this.missions);
+    this.library
+      .addEntries(trainingLabKnowledge)
+      .addCompetencies(trainingLabCompetencies)
+      .addMissions(this.missions);
   }
 
   subscribe(listener: SessionListener): () => void {
@@ -99,7 +113,8 @@ export class AppSession {
     // Un marqueur de session encore present signale un arret anormal.
     if (await this.saveManager.detectUncleanShutdown()) {
       const point = await this.saveManager.findRecoveryPoint();
-      if (point.save) this.recovery = { source: point.source as 'autosave' | 'checkpoint', save: point.save };
+      if (point.save)
+        this.recovery = { source: point.source as 'autosave' | 'checkpoint', save: point.save };
     }
     await this.saveManager.markSessionOpen();
     this.snapshots = await this.saveManager.listSnapshots();
@@ -118,7 +133,9 @@ export class AppSession {
     root.style.setProperty('zoom', String(prefs.accessibility.uiScale));
     root.dataset.contrast = prefs.accessibility.contrast;
     root.dataset.colorblind = prefs.accessibility.colorBlindMode;
-    root.dataset.reduceMotion = String(prefs.accessibility.reduceMotion || this.capabilities.prefersReducedMotion);
+    root.dataset.reduceMotion = String(
+      prefs.accessibility.reduceMotion || this.capabilities.prefersReducedMotion,
+    );
     root.dataset.reduceComplexity = String(prefs.accessibility.reduceVisualComplexity);
     root.lang = prefs.locale;
   }
@@ -140,19 +157,27 @@ export class AppSession {
   }
 
   /** Demarre une mission : scenario neuf, variante reproductible, monde deterministe. */
-  startMission(missionId: string, options: { difficulty?: DifficultyMode; seed?: number } = {}): boolean {
+  startMission(
+    missionId: string,
+    options: { difficulty?: DifficultyMode; seed?: number } = {},
+  ): boolean {
     const base = this.mission(missionId);
     if (!base) return false;
     const seed = options.seed ?? Math.floor(Math.random() * 2 ** 31);
     const rng = new Rng(seed);
     const variant = pickVariant(base, rng);
     const definition = applyVariant(base, variant);
-    const state = this.registry.build(definition.scenarioId, { seed, params: variant?.parameters ?? {} });
+    const state = this.registry.build(definition.scenarioId, {
+      seed,
+      params: variant?.parameters ?? {},
+    });
     const bus = new EventBus();
     const world = new SimulationWorld(state, { bus, seed });
     const requested = options.difficulty ?? this.progress.preferences.difficulty;
     const difficulty: DifficultyMode =
-      requested === 'adaptive' ? suggestDifficulty(this.progress, definition.competencies) : requested;
+      requested === 'adaptive'
+        ? suggestDifficulty(this.progress, definition.competencies)
+        : requested;
     const runner = new MissionRunner(definition, world, {
       seed,
       difficulty,
@@ -229,7 +254,10 @@ export class AppSession {
     this.notify();
   }
 
-  async takeSnapshot(name: string, kind: Snapshot['kind'] = 'manual'): Promise<Snapshot | undefined> {
+  async takeSnapshot(
+    name: string,
+    kind: Snapshot['kind'] = 'manual',
+  ): Promise<Snapshot | undefined> {
     const save = this.buildSave(`snap-${Date.now()}`);
     if (!save) return undefined;
     const snapshot: Snapshot = {

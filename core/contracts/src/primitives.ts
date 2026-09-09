@@ -20,10 +20,7 @@ export const zSimTime = z.number().int().nonnegative();
 
 export const zIsoDate = z.string().datetime({ offset: true });
 
-export const zLocalizedText = z.union([
-  z.string(),
-  z.record(z.string().min(2).max(8), z.string()),
-]);
+export const zLocalizedText = z.union([z.string(), z.record(z.string().min(2).max(8), z.string())]);
 
 export const zIPv4 = z
   .string()
@@ -34,10 +31,12 @@ export const zIPv4 = z
 
 export const zPrefixV4 = z.number().int().min(0).max(32);
 
-export const zCidrV4 = z.string().regex(
-  /^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\/(?:3[0-2]|[12]?\d)$/,
-  'notation CIDR IPv4 invalide',
-);
+export const zCidrV4 = z
+  .string()
+  .regex(
+    /^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\/(?:3[0-2]|[12]?\d)$/,
+    'notation CIDR IPv4 invalide',
+  );
 
 export const zMac = z
   .string()

@@ -1,5 +1,11 @@
 import type { PlayerProgress, SaveState, Snapshot, UserExport, WorldState } from '@tssr/contracts';
-import { safeParseContract, zPlayerProgress, zSaveState, zSnapshot, zUserExport } from '@tssr/contracts';
+import {
+  safeParseContract,
+  zPlayerProgress,
+  zSaveState,
+  zSnapshot,
+  zUserExport,
+} from '@tssr/contracts';
 import { hashObject, stableStringify } from '@tssr/events';
 import type { StorageAdapter } from './adapter.ts';
 import { EVICTION_ORDER } from './adapter.ts';
@@ -63,7 +69,10 @@ export class SaveManager {
     return this.storage.keys('saves');
   }
 
-  async autosave(world: WorldState, base: Omit<SaveState, 'id' | 'integrity' | 'world'>): Promise<SaveState> {
+  async autosave(
+    world: WorldState,
+    base: Omit<SaveState, 'id' | 'integrity' | 'world'>,
+  ): Promise<SaveState> {
     const save = sealSave({ ...base, id: AUTOSAVE_ID, world });
     await this.write(save);
     return save;
@@ -136,7 +145,10 @@ export class SaveManager {
    * Cherche l etat coherent le plus recent : sauvegarde automatique si elle est
    * intacte, sinon le dernier point de controle sain.
    */
-  async findRecoveryPoint(): Promise<{ source: 'autosave' | 'checkpoint' | 'none'; save?: SaveState }> {
+  async findRecoveryPoint(): Promise<{
+    source: 'autosave' | 'checkpoint' | 'none';
+    save?: SaveState;
+  }> {
     const autosave = await this.read(AUTOSAVE_ID);
     if (autosave?.intact === true) return { source: 'autosave', save: autosave.save };
     const snapshots = await this.listSnapshots();
@@ -193,7 +205,10 @@ export class SaveManager {
   importExport(raw: unknown): { ok: true; value: UserExport } | { ok: false; reason: string } {
     const parsed = safeParseContract(zUserExport, raw);
     if (!parsed.ok) {
-      return { ok: false, reason: `format invalide : ${parsed.issues.map((i) => i.path).join(', ')}` };
+      return {
+        ok: false,
+        reason: `format invalide : ${parsed.issues.map((i) => i.path).join(', ')}`,
+      };
     }
     const { integrity, ...rest } = parsed.value;
     if (hashObject(rest) !== integrity) {
@@ -225,16 +240,22 @@ export function diffWorlds(a: WorldState, b: WorldState): string[] {
         );
       }
       if (prev.accessVlan !== iface.accessVlan) {
-        changes.push(`${node.hostname}/${iface.name} : VLAN ${prev.accessVlan ?? '-'} -> ${iface.accessVlan ?? '-'}`);
+        changes.push(
+          `${node.hostname}/${iface.name} : VLAN ${prev.accessVlan ?? '-'} -> ${iface.accessVlan ?? '-'}`,
+        );
       }
       if (prev.enabled !== iface.enabled) {
-        changes.push(`${node.hostname}/${iface.name} : ${iface.enabled ? 'activee' : 'desactivee'}`);
+        changes.push(
+          `${node.hostname}/${iface.name} : ${iface.enabled ? 'activee' : 'desactivee'}`,
+        );
       }
     }
     for (const service of node.services) {
       const prev = before.services.find((s) => s.id === service.id);
       if (prev && prev.status !== service.status) {
-        changes.push(`${node.hostname} : service ${service.name} ${prev.status} -> ${service.status}`);
+        changes.push(
+          `${node.hostname} : service ${service.name} ${prev.status} -> ${service.status}`,
+        );
       }
     }
   }

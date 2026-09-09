@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Terminal } from '@tssr/sim-systems';
 import type { SwitchConsole } from '@tssr/sim-network';
+import { useSimValue } from '../state/hooks.ts';
 
 interface Line {
   kind: 'prompt' | 'out' | 'error';
@@ -31,7 +32,9 @@ export function switchConsoleAdapter(console_: SwitchConsole): ConsoleLike {
     prompt: () => console_.prompt(),
     run: (command) => {
       const result = console_.execute(command);
-      return result.error ? { stdout: '', stderr: result.output } : { stdout: result.output, stderr: '' };
+      return result.error
+        ? { stdout: '', stderr: result.output }
+        : { stdout: result.output, stderr: '' };
     },
     help: () => console_.helpText(),
   };
@@ -49,7 +52,12 @@ interface TerminalPanelProps {
  * Chaque commande est reellement interpretee par le moteur de simulation :
  * aucune reponse n est pre-enregistree.
  */
-export function TerminalPanel({ console: shell, title, intro, onCommand }: TerminalPanelProps): JSX.Element {
+export function TerminalPanel({
+  console: shell,
+  title,
+  intro,
+  onCommand,
+}: TerminalPanelProps): JSX.Element {
   const [lines, setLines] = useState<Line[]>(() =>
     intro === undefined ? [] : [{ kind: 'out', text: intro }],
   );
@@ -86,7 +94,8 @@ export function TerminalPanel({ console: shell, title, intro, onCommand }: Termi
     [shell, onCommand],
   );
 
-  const promptText = useMemo(() => shell.prompt(), [shell, lines.length]);
+  // L invite depend de l etat du shell (repertoire, utilisateur, mode) : elle suit les commandes.
+  const promptText = useSimValue(lines.length, () => shell.prompt());
 
   return (
     <div className="neo-panel" style={{ height: '100%' }}>
@@ -145,7 +154,8 @@ export function TerminalPanel({ console: shell, title, intro, onCommand }: Termi
               }
               if (event.key === 'ArrowUp') {
                 event.preventDefault();
-                const index = historyIndex === -1 ? history.length - 1 : Math.max(0, historyIndex - 1);
+                const index =
+                  historyIndex === -1 ? history.length - 1 : Math.max(0, historyIndex - 1);
                 const entry = history[index];
                 if (entry !== undefined) {
                   setHistoryIndex(index);

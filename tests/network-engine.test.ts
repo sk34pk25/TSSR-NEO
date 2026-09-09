@@ -181,7 +181,14 @@ describe('DHCP', () => {
     b.server('srv', {
       ip: '192.168.50.1/24',
       services: [{ id: 'svc-dhcp', kind: 'dhcp' }],
-      dhcpPools: [makePool('pool', '192.168.50.0/24', { from: 100, to: 102, gateway: '192.168.50.1', dns: ['192.168.50.1'] })],
+      dhcpPools: [
+        makePool('pool', '192.168.50.0/24', {
+          from: 100,
+          to: 102,
+          gateway: '192.168.50.1',
+          dns: ['192.168.50.1'],
+        }),
+      ],
     });
     b.host('pc1');
     b.host('pc2');

@@ -129,7 +129,8 @@ export class TopologyRenderer {
   /** Cadence mesuree, utilisee par les diagnostics et l ajustement automatique. */
   averageFps(): number {
     if (this.lastFrameTimes.length === 0) return 0;
-    const average = this.lastFrameTimes.reduce((sum, value) => sum + value, 0) / this.lastFrameTimes.length;
+    const average =
+      this.lastFrameTimes.reduce((sum, value) => sum + value, 0) / this.lastFrameTimes.length;
     return average === 0 ? 0 : Math.round(1000 / average);
   }
 
@@ -209,7 +210,8 @@ export class TopologyRenderer {
       ctx.strokeStyle = this.theme.warning;
       ctx.setLineDash([10, 4]);
     } else {
-      ctx.strokeStyle = link.vlans.length > 1 ? this.theme.accent : `hsl(${vlanHue(link.vlans[0])} 60% 55%)`;
+      ctx.strokeStyle =
+        link.vlans.length > 1 ? this.theme.accent : `hsl(${vlanHue(link.vlans[0])} 60% 55%)`;
       ctx.setLineDash([]);
     }
     ctx.lineWidth = isHovered ? 3.5 : link.vlans.length > 1 ? 2.5 : 1.8;
@@ -335,7 +337,14 @@ export class TopologyRenderer {
   }
 }
 
-function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+function roundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): void {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -345,7 +354,14 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
   ctx.closePath();
 }
 
-function distanceToSegment(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+function distanceToSegment(
+  px: number,
+  py: number,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+): number {
   const dx = bx - ax;
   const dy = by - ay;
   const lengthSquared = dx * dx + dy * dy;

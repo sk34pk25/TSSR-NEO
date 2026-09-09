@@ -75,7 +75,9 @@ export class KnowledgeLibrary {
     return [...this.entries.values()]
       .filter((e) => filters.domain === undefined || e.domain === filters.domain)
       .filter((e) => filters.moduleId === undefined || e.moduleIds.includes(filters.moduleId))
-      .filter((e) => filters.competencyId === undefined || e.competencies.includes(filters.competencyId))
+      .filter(
+        (e) => filters.competencyId === undefined || e.competencies.includes(filters.competencyId),
+      )
       .filter((e) => filters.kind === undefined || e.kind === filters.kind)
       .sort((a, b) => localized(a.title).localeCompare(localized(b.title)));
   }
@@ -84,7 +86,10 @@ export class KnowledgeLibrary {
     this.index = new SearchIndex();
     for (const entry of this.entries.values()) {
       const commandText = entry.command
-        ? [entry.command.syntax, ...entry.command.examples.map((e) => `${e.cmd} ${localized(e.explanation, locale)}`)].join(' ')
+        ? [
+            entry.command.syntax,
+            ...entry.command.examples.map((e) => `${e.cmd} ${localized(e.explanation, locale)}`),
+          ].join(' ')
         : '';
       this.index.add({
         id: entry.id,
@@ -103,7 +108,10 @@ export class KnowledgeLibrary {
     this.dirty = false;
   }
 
-  search(query: string, options: LibraryFilters & { limit?: number; locale?: string } = {}): KnowledgeSearchResult[] {
+  search(
+    query: string,
+    options: LibraryFilters & { limit?: number; locale?: string } = {},
+  ): KnowledgeSearchResult[] {
     const locale = options.locale ?? 'fr';
     if (this.dirty) this.rebuild(locale);
     const allowed = new Set(this.all(options).map((e) => e.id));
@@ -128,13 +136,23 @@ export class KnowledgeLibrary {
     const edges: KnowledgeGraphEdge[] = [];
 
     for (const competency of this.competencies.values()) {
-      nodes.push({ id: competency.id, kind: 'competency', label: localized(competency.label, locale), domain: competency.domain });
+      nodes.push({
+        id: competency.id,
+        kind: 'competency',
+        label: localized(competency.label, locale),
+        domain: competency.domain,
+      });
       for (const prerequisite of competency.prerequisites) {
         edges.push({ from: prerequisite, to: competency.id, relation: 'prerequisite', weight: 1 });
       }
     }
     for (const entry of this.entries.values()) {
-      nodes.push({ id: entry.id, kind: 'concept', label: localized(entry.title, locale), domain: entry.domain });
+      nodes.push({
+        id: entry.id,
+        kind: 'concept',
+        label: localized(entry.title, locale),
+        domain: entry.domain,
+      });
       for (const prerequisite of entry.prerequisites) {
         edges.push({ from: prerequisite, to: entry.id, relation: 'prerequisite', weight: 1 });
       }

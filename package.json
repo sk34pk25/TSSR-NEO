@@ -5,7 +5,9 @@
   "type": "module",
   "description": "TSSR NEO - plateforme pedagogique de simulation systemes & reseaux, 100% navigateur",
   "license": "MIT",
-  "engines": { "node": ">=20.11" },
+  "engines": {
+    "node": ">=20.11"
+  },
   "workspaces": [
     "apps/*",
     "core/*",

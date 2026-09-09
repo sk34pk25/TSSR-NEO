@@ -48,11 +48,14 @@ export function effectiveRoutes(node: NetworkNode): EffectiveRoute[] {
 }
 
 /** Recherche du meilleur chemin (longest prefix match). */
-export function lookupRoute(routes: readonly EffectiveRoute[], destination: string): EffectiveRoute | undefined {
+export function lookupRoute(
+  routes: readonly EffectiveRoute[],
+  destination: string,
+): EffectiveRoute | undefined {
   const dest = ipToInt(destination);
   for (const route of routes) {
     const mask = prefixToMaskInt(route.prefix);
-    if (((dest & mask) >>> 0) === ((route.networkInt & mask) >>> 0)) return route;
+    if ((dest & mask) >>> 0 === (route.networkInt & mask) >>> 0) return route;
   }
   return undefined;
 }
@@ -68,7 +71,7 @@ export function selectSourceAddress(
   const nextHopInt = ipToInt(nextHop);
   for (const addr of iface.addresses) {
     const mask = prefixToMaskInt(addr.prefix);
-    if (((ipToInt(addr.address) & mask) >>> 0) === ((nextHopInt & mask) >>> 0)) return addr.address;
+    if ((ipToInt(addr.address) & mask) >>> 0 === (nextHopInt & mask) >>> 0) return addr.address;
   }
   return iface.addresses[0]?.address;
 }

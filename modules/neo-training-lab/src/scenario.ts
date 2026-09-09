@@ -7,7 +7,10 @@ const VLAN_BUREAUX = 10;
 const VLAN_SERVEURS = 20;
 const VLAN_QUARANTAINE = 99;
 
-function switchAsset(networkNodeId: string, ports: { label: string; interfaceId: string }[]): HardwareAsset {
+function switchAsset(
+  networkNodeId: string,
+  ports: { label: string; interfaceId: string }[],
+): HardwareAsset {
   return {
     schemaVersion: 1,
     id: 'asset-sw-lab',
@@ -112,7 +115,12 @@ export const trainingLabScenario: ScenarioFactory = {
       ],
     });
 
-    b.host('pc-tech', { hostname: 'pc-tech', ip: '10.20.10.10/24', gateway: gatewayBureaux, dns: [serverAddress] });
+    b.host('pc-tech', {
+      hostname: 'pc-tech',
+      ip: '10.20.10.10/24',
+      gateway: gatewayBureaux,
+      dns: [serverAddress],
+    });
     // Le poste en panne n a aucune adresse : il doit obtenir un bail DHCP.
     b.host('pc-camille', { hostname: 'pc-camille', dns: [serverAddress] });
 
@@ -126,8 +134,20 @@ export const trainingLabScenario: ScenarioFactory = {
     const ports = (swNode?.interfaces ?? []).map((i) => ({ label: i.name, interfaceId: i.id }));
 
     const systems = [
-      createSystem({ id: 'sys-srv-neo', hostname: 'srv-neo', os: 'linux', networkNodeId: 'srv-neo', osVersion: 'NEO Server Linux' }),
-      createSystem({ id: 'sys-pc-tech', hostname: 'pc-tech', os: 'linux', networkNodeId: 'pc-tech', osVersion: 'NEO Desktop Linux' }),
+      createSystem({
+        id: 'sys-srv-neo',
+        hostname: 'srv-neo',
+        os: 'linux',
+        networkNodeId: 'srv-neo',
+        osVersion: 'NEO Server Linux',
+      }),
+      createSystem({
+        id: 'sys-pc-tech',
+        hostname: 'pc-tech',
+        os: 'linux',
+        networkNodeId: 'pc-tech',
+        osVersion: 'NEO Desktop Linux',
+      }),
       createSystem({
         id: 'sys-pc-camille',
         hostname: 'pc-camille',
@@ -135,7 +155,15 @@ export const trainingLabScenario: ScenarioFactory = {
         networkNodeId: 'pc-camille',
         osVersion: 'NEO Desktop Windows',
         users: [
-          { name: 'camille', displayName: 'Camille Renard', groups: ['Users'], enabled: true, passwordSet: true, mustChangePassword: false, lockedOut: false },
+          {
+            name: 'camille',
+            displayName: 'Camille Renard',
+            groups: ['Users'],
+            enabled: true,
+            passwordSet: true,
+            mustChangePassword: false,
+            lockedOut: false,
+          },
         ],
       }),
     ];
@@ -162,9 +190,9 @@ export const trainingLabScenario: ScenarioFactory = {
           kind: 'incident',
           title: 'Poste sans acces reseau au retour de conges',
           description:
-            "Camille Renard signale que son poste n a plus d acces au reseau depuis ce matin. "
-            + "Elle indique que le voyant de la prise murale est eteint et qu aucun partage n est accessible. "
-            + 'Le poste a ete deplace la semaine derniere pendant les travaux.',
+            'Camille Renard signale que son poste n a plus d acces au reseau depuis ce matin. ' +
+            'Elle indique que le voyant de la prise murale est eteint et qu aucun partage n est accessible. ' +
+            'Le poste a ete deplace la semaine derniere pendant les travaux.',
           status: 'new',
           impact: 'medium',
           urgency: 'high',
@@ -191,9 +219,23 @@ export const trainingLabScenario: ScenarioFactory = {
           temperament: 'stressed',
           nodeId: 'pc-camille',
           knownFacts: [
-            { id: 'fact-move', prompt: ['deplacement', 'travaux', 'bureau'], answer: "Mon poste a ete debranche puis rebranche la semaine derniere pendant les travaux, sur une autre prise." },
-            { id: 'fact-symptom', prompt: ['symptome', 'erreur', 'message'], answer: "Windows affiche que je n ai pas d acces reseau, et je ne vois plus le lecteur des partages." },
-            { id: 'fact-others', prompt: ['collegues', 'autres'], answer: "Mes collegues du meme bureau n ont aucun probleme, eux." },
+            {
+              id: 'fact-move',
+              prompt: ['deplacement', 'travaux', 'bureau'],
+              answer:
+                'Mon poste a ete debranche puis rebranche la semaine derniere pendant les travaux, sur une autre prise.',
+            },
+            {
+              id: 'fact-symptom',
+              prompt: ['symptome', 'erreur', 'message'],
+              answer:
+                'Windows affiche que je n ai pas d acces reseau, et je ne vois plus le lecteur des partages.',
+            },
+            {
+              id: 'fact-others',
+              prompt: ['collegues', 'autres'],
+              answer: 'Mes collegues du meme bureau n ont aucun probleme, eux.',
+            },
           ],
         },
         {
@@ -203,8 +245,18 @@ export const trainingLabScenario: ScenarioFactory = {
           department: 'Infrastructure',
           temperament: 'precise',
           knownFacts: [
-            { id: 'fact-vlan', prompt: ['vlan', 'commutateur', 'switch'], answer: "Les postes bureautiques sont dans le VLAN 10. Le VLAN 99 sert de quarantaine, il n a ni passerelle ni DHCP." },
-            { id: 'fact-console', prompt: ['console', 'acces'], answer: "La console du commutateur sw-lab est accessible depuis l atelier, tu peux verifier la configuration des ports." },
+            {
+              id: 'fact-vlan',
+              prompt: ['vlan', 'commutateur', 'switch'],
+              answer:
+                'Les postes bureautiques sont dans le VLAN 10. Le VLAN 99 sert de quarantaine, il n a ni passerelle ni DHCP.',
+            },
+            {
+              id: 'fact-console',
+              prompt: ['console', 'acces'],
+              answer:
+                'La console du commutateur sw-lab est accessible depuis l atelier, tu peux verifier la configuration des ports.',
+            },
           ],
         },
       ],
@@ -224,9 +276,31 @@ export const trainingLabScenario: ScenarioFactory = {
         },
       ],
       monitoringChecks: [
-        { id: 'chk-srv-icmp', name: 'srv-neo joignable', targetNodeId: 'srv-neo', metric: 'icmp', intervalMs: 30000, enabled: true },
-        { id: 'chk-srv-dns', name: 'Service DNS', targetNodeId: 'srv-neo', metric: 'service', serviceId: 'svc-dns', intervalMs: 30000, enabled: true },
-        { id: 'chk-camille-icmp', name: 'pc-camille joignable', targetNodeId: 'pc-camille', metric: 'icmp', intervalMs: 60000, enabled: true },
+        {
+          id: 'chk-srv-icmp',
+          name: 'srv-neo joignable',
+          targetNodeId: 'srv-neo',
+          metric: 'icmp',
+          intervalMs: 30000,
+          enabled: true,
+        },
+        {
+          id: 'chk-srv-dns',
+          name: 'Service DNS',
+          targetNodeId: 'srv-neo',
+          metric: 'service',
+          serviceId: 'svc-dns',
+          intervalMs: 30000,
+          enabled: true,
+        },
+        {
+          id: 'chk-camille-icmp',
+          name: 'pc-camille joignable',
+          targetNodeId: 'pc-camille',
+          metric: 'icmp',
+          intervalMs: 60000,
+          enabled: true,
+        },
       ],
       monitoringAlerts: [],
       deploymentTemplates: [],

@@ -25,7 +25,8 @@ export function LabView(): JSX.Element {
           <div>
             <h1 style={{ marginBottom: 4 }}>Laboratoire libre</h1>
             <p className="neo-muted" style={{ margin: 0, fontSize: 'var(--neo-fs-sm)' }}>
-              Manipulez sans contrainte. La meme graine reproduit toujours exactement le meme laboratoire.
+              Manipulez sans contrainte. La meme graine reproduit toujours exactement le meme
+              laboratoire.
             </p>
           </div>
           <div className="neo-row">
@@ -54,7 +55,9 @@ export function LabView(): JSX.Element {
             <button
               type="button"
               className="neo-btn neo-btn--ghost neo-btn--sm"
-              onClick={() => void session.takeSnapshot(`Lab ${new Date().toLocaleTimeString('fr-FR')}`)}
+              onClick={() =>
+                void session.takeSnapshot(`Lab ${new Date().toLocaleTimeString('fr-FR')}`)
+              }
             >
               Enregistrer un instantane
             </button>
@@ -85,7 +88,11 @@ export function LabView(): JSX.Element {
                 const node = world.state.network.nodes.find((n) => n.services.length > 0);
                 const service = node?.services[0];
                 if (!node || !service) return;
-                world.network.setServiceStatus(node.id, service.id, service.status === 'running' ? 'stopped' : 'running');
+                world.network.setServiceStatus(
+                  node.id,
+                  service.id,
+                  service.status === 'running' ? 'stopped' : 'running',
+                );
                 setMessage(`Service ${service.name} de ${node.hostname} bascule.`);
                 session.tick();
               }}
@@ -119,14 +126,20 @@ export function LabView(): JSX.Element {
                 <tr key={snapshot.id}>
                   <td>{snapshot.name}</td>
                   <td className="neo-muted">{snapshot.kind}</td>
-                  <td className="neo-muted">{new Date(snapshot.createdAt).toLocaleString('fr-FR')}</td>
+                  <td className="neo-muted">
+                    {new Date(snapshot.createdAt).toLocaleString('fr-FR')}
+                  </td>
                   <td>
                     <button
                       type="button"
                       className="neo-btn neo-btn--sm"
                       onClick={() => {
                         void session.restoreSnapshot(snapshot.id).then((ok) => {
-                          setMessage(ok ? `Etat restaure depuis "${snapshot.name}".` : 'Instantane illisible.');
+                          setMessage(
+                            ok
+                              ? `Etat restaure depuis "${snapshot.name}".`
+                              : 'Instantane illisible.',
+                          );
                         });
                       }}
                     >

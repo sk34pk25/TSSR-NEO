@@ -86,11 +86,19 @@ export function forwardPacket(
 
   const origin = index.node(fromNodeId);
   if (!origin) {
-    result.failure = { reason: 'source-not-found', nodeId: fromNodeId, detail: 'noeud source inconnu' };
+    result.failure = {
+      reason: 'source-not-found',
+      nodeId: fromNodeId,
+      detail: 'noeud source inconnu',
+    };
     return result;
   }
   if (!origin.powered) {
-    result.failure = { reason: 'source-powered-off', nodeId: fromNodeId, detail: `${origin.hostname} est hors tension` };
+    result.failure = {
+      reason: 'source-powered-off',
+      nodeId: fromNodeId,
+      detail: `${origin.hostname} est hors tension`,
+    };
     return result;
   }
 
@@ -110,7 +118,11 @@ export function forwardPacket(
   for (;;) {
     ttl -= 1;
     if (ttl <= 0) {
-      result.failure = { reason: 'ttl-exceeded', nodeId: current.id, detail: 'boucle de routage suspectee' };
+      result.failure = {
+        reason: 'ttl-exceeded',
+        nodeId: current.id,
+        detail: 'boucle de routage suspectee',
+      };
       return result;
     }
 
@@ -122,7 +134,9 @@ export function forwardPacket(
           source: sourceAddress ?? '0.0.0.0',
           destination: destinationAddress,
           protocol,
-          ...(options.destinationPort === undefined ? {} : { destinationPort: options.destinationPort }),
+          ...(options.destinationPort === undefined
+            ? {}
+            : { destinationPort: options.destinationPort }),
         };
         const decision = evaluateFirewall(current, packet, 'in');
         if (!decision.allowed) {
@@ -201,7 +215,9 @@ export function forwardPacket(
       source: sourceAddress,
       destination: destinationAddress,
       protocol,
-      ...(options.destinationPort === undefined ? {} : { destinationPort: options.destinationPort }),
+      ...(options.destinationPort === undefined
+        ? {}
+        : { destinationPort: options.destinationPort }),
     };
     const decision = evaluateFirewall(current, packet, isOrigin ? 'out' : 'forward');
     if (!decision.allowed) {
@@ -283,7 +299,11 @@ export function forwardPacket(
 
     const nextRef = index.interfaceRef(arp.endpoint.interfaceId);
     if (!nextRef) {
-      result.failure = { reason: 'link-down', nodeId: current.id, detail: 'extremite de lien introuvable' };
+      result.failure = {
+        reason: 'link-down',
+        nodeId: current.id,
+        detail: 'extremite de lien introuvable',
+      };
       return result;
     }
     if (!nextRef.node.powered) {

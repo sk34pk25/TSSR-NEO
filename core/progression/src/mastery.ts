@@ -40,7 +40,10 @@ export function updateMastery(
  */
 export function nextReviewAt(mastery: number, observations: number, now: number): number {
   const steps = [1, 3, 7, 16, 35];
-  const index = Math.min(steps.length - 1, Math.max(0, Math.floor(mastery * steps.length) - (mastery < 0.5 ? 1 : 0)));
+  const index = Math.min(
+    steps.length - 1,
+    Math.max(0, Math.floor(mastery * steps.length) - (mastery < 0.5 ? 1 : 0)),
+  );
   const base = steps[index] ?? 1;
   const bonus = observations >= 5 && mastery >= 0.8 ? 1.5 : 1;
   return now + Math.round(base * bonus * 24 * 3600 * 1000);
@@ -51,7 +54,10 @@ export function isDue(mastery: CompetencyMastery, now: number): boolean {
 }
 
 /** Competences a retravailler en priorite : faible maitrise et echeance depassee d abord. */
-export function weakestFirst(masteries: readonly CompetencyMastery[], now: number): CompetencyMastery[] {
+export function weakestFirst(
+  masteries: readonly CompetencyMastery[],
+  now: number,
+): CompetencyMastery[] {
   return [...masteries].sort((a, b) => {
     const dueA = isDue(a, now) ? 0 : 1;
     const dueB = isDue(b, now) ? 0 : 1;

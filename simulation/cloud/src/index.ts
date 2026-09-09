@@ -30,18 +30,32 @@ export class CloudEngine {
     return this.world.cloud.filter((r) => r.parentId === parentId);
   }
 
-  provision(resource: Omit<CloudResource, 'state'> & { state?: CloudResource['state'] }): { ok: boolean; error?: CloudError; detail?: string; resource?: CloudResource } {
+  provision(resource: Omit<CloudResource, 'state'> & { state?: CloudResource['state'] }): {
+    ok: boolean;
+    error?: CloudError;
+    detail?: string;
+    resource?: CloudResource;
+  } {
     // Une ressource reseau doit vivre dans un conteneur valide : la hierarchie est verifiee.
     const needsParent: CloudResource['kind'][] = ['subnet', 'vm', 'load-balancer'];
     if (needsParent.includes(resource.kind)) {
       if (resource.parentId === undefined) {
-        return { ok: false, error: 'parent-required', detail: `une ressource ${resource.kind} doit etre rattachee` };
+        return {
+          ok: false,
+          error: 'parent-required',
+          detail: `une ressource ${resource.kind} doit etre rattachee`,
+        };
       }
       const parent = this.resource(resource.parentId);
-      if (!parent) return { ok: false, error: 'invalid-parent', detail: 'conteneur parent introuvable' };
+      if (!parent)
+        return { ok: false, error: 'invalid-parent', detail: 'conteneur parent introuvable' };
       const expected = resource.kind === 'subnet' ? 'vpc' : 'subnet';
       if (parent.kind !== expected) {
-        return { ok: false, error: 'invalid-parent', detail: `une ressource ${resource.kind} se place dans un ${expected}` };
+        return {
+          ok: false,
+          error: 'invalid-parent',
+          detail: `une ressource ${resource.kind} se place dans un ${expected}`,
+        };
       }
     }
     const created: CloudResource = { state: 'running', ...resource };
@@ -105,7 +119,9 @@ export class CloudEngine {
   /** Verifie qu une ressource est bien isolee : aucun groupe de securite ouvert a tous. */
   auditExposure(): { resourceId: string; issue: string }[] {
     const issues: { resourceId: string; issue: string }[] = [];
-    for (const group of this.world.cloud.filter((r) => r.kind === 'security-group' && r.state !== 'deleted')) {
+    for (const group of this.world.cloud.filter(
+      (r) => r.kind === 'security-group' && r.state !== 'deleted',
+    )) {
       const rules = group.properties.rules;
       if (!Array.isArray(rules)) continue;
       for (const rule of rules) {

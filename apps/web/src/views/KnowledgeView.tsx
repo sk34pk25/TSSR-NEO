@@ -19,7 +19,8 @@ const DOMAIN_LABEL: Partial<Record<CompetencyDomain, string>> = {
 
 function text(value: unknown): string {
   if (typeof value === 'string') return value;
-  if (value !== null && typeof value === 'object') return Object.values(value as Record<string, string>)[0] ?? '';
+  if (value !== null && typeof value === 'object')
+    return Object.values(value as Record<string, string>)[0] ?? '';
   return '';
 }
 
@@ -99,7 +100,13 @@ export function KnowledgeView(): JSX.Element {
         </select>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: open ? 'minmax(260px, 1fr) minmax(0, 2fr)' : '1fr', gap: 'var(--neo-space-4)' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: open ? 'minmax(260px, 1fr) minmax(0, 2fr)' : '1fr',
+          gap: 'var(--neo-space-4)',
+        }}
+      >
         <div className="neo-stack">
           {entries.length === 0 ? (
             <p className="neo-muted">Aucune fiche ne correspond. Essayez un terme plus general.</p>
@@ -116,7 +123,9 @@ export function KnowledgeView(): JSX.Element {
                 <strong>{text(entry.title)}</strong>
                 <span className="neo-tag">{entry.kind}</span>
               </div>
-              <span className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>{text(entry.summary)}</span>
+              <span className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
+                {text(entry.summary)}
+              </span>
             </button>
           ))}
         </div>
@@ -125,14 +134,22 @@ export function KnowledgeView(): JSX.Element {
           <article className="neo-card">
             <div className="neo-row" style={{ justifyContent: 'space-between' }}>
               <h2>{text(open.title)}</h2>
-              <button type="button" className="neo-btn neo-btn--ghost neo-btn--sm" onClick={() => setOpenId(undefined)}>
+              <button
+                type="button"
+                className="neo-btn neo-btn--ghost neo-btn--sm"
+                onClick={() => setOpenId(undefined)}
+              >
                 Fermer
               </button>
             </div>
             <div className="neo-row" style={{ gap: 6, marginBottom: 'var(--neo-space-3)' }}>
-              <span className="neo-tag neo-tag--accent">{DOMAIN_LABEL[open.domain] ?? open.domain}</span>
+              <span className="neo-tag neo-tag--accent">
+                {DOMAIN_LABEL[open.domain] ?? open.domain}
+              </span>
               {open.competencies.map((id) => (
-                <span key={id} className="neo-tag">{id}</span>
+                <span key={id} className="neo-tag">
+                  {id}
+                </span>
               ))}
             </div>
             <div style={{ whiteSpace: 'pre-wrap' }}>{text(open.body)}</div>
@@ -140,7 +157,15 @@ export function KnowledgeView(): JSX.Element {
             {open.command ? (
               <section style={{ marginTop: 'var(--neo-space-4)' }}>
                 <h3 style={{ fontSize: 'var(--neo-fs-md)' }}>Syntaxe</h3>
-                <pre className="neo-mono" style={{ background: 'var(--neo-bg-1)', padding: 12, borderRadius: 8, overflowX: 'auto' }}>
+                <pre
+                  className="neo-mono"
+                  style={{
+                    background: 'var(--neo-bg-1)',
+                    padding: 12,
+                    borderRadius: 8,
+                    overflowX: 'auto',
+                  }}
+                >
                   {open.command.syntax}
                 </pre>
                 <table className="neo-table">
@@ -162,7 +187,11 @@ export function KnowledgeView(): JSX.Element {
                 {open.command.cautions.length > 0 ? (
                   <ul style={{ paddingLeft: 18 }}>
                     {open.command.cautions.map((caution) => (
-                      <li key={text(caution)} className="neo-tag neo-tag--warn" style={{ display: 'block', marginTop: 6 }}>
+                      <li
+                        key={text(caution)}
+                        className="neo-tag neo-tag--warn"
+                        style={{ display: 'block', marginTop: 6 }}
+                      >
                         {text(caution)}
                       </li>
                     ))}
@@ -176,7 +205,12 @@ export function KnowledgeView(): JSX.Element {
                 <h3 style={{ fontSize: 'var(--neo-fs-md)' }}>A consulter ensuite</h3>
                 <div className="neo-row">
                   {open.relatedIds.map((id) => (
-                    <button key={id} type="button" className="neo-tag neo-tag--accent" onClick={() => setOpenId(id)}>
+                    <button
+                      key={id}
+                      type="button"
+                      className="neo-tag neo-tag--accent"
+                      onClick={() => setOpenId(id)}
+                    >
                       {text(session.library.entry(id)?.title) || id}
                     </button>
                   ))}
@@ -190,7 +224,8 @@ export function KnowledgeView(): JSX.Element {
       <section style={{ marginTop: 'var(--neo-space-6)' }}>
         <h2>Graphe de connaissances</h2>
         <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
-          Vue simple par defaut : ce que chaque fiche enseigne, et ce qu il vaut mieux avoir vu avant.
+          Vue simple par defaut : ce que chaque fiche enseigne, et ce qu il vaut mieux avoir vu
+          avant.
         </p>
         <table className="neo-table">
           <thead>

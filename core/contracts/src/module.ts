@@ -24,7 +24,15 @@ export const zModuleManifest = z.object({
   scenarioIds: z.array(zId).default([]),
   /** Poids approximatif du pack en octets, pour la gestion du stockage hors ligne. */
   approximateSizeBytes: z.number().int().nonnegative().default(0),
-  assets: z.array(z.object({ path: z.string().min(1), sha256: z.string().length(64).optional(), sizeBytes: z.number().int().nonnegative().default(0) })).default([]),
+  assets: z
+    .array(
+      z.object({
+        path: z.string().min(1),
+        sha256: z.string().length(64).optional(),
+        sizeBytes: z.number().int().nonnegative().default(0),
+      }),
+    )
+    .default([]),
   license: z.string().min(1).default('MIT'),
   authors: z.array(z.string()).default(['NEO Systems']),
   offlineCapable: z.boolean().default(true),
@@ -41,7 +49,11 @@ export const zCourseManifest = z.object({
     .array(
       z.discriminatedUnion('kind', [
         z.object({ kind: z.literal('mission'), missionId: zId }),
-        z.object({ kind: z.literal('review'), competencyIds: z.array(zId).min(1), minutes: z.number().int().positive().default(10) }),
+        z.object({
+          kind: z.literal('review'),
+          competencyIds: z.array(zId).min(1),
+          minutes: z.number().int().positive().default(10),
+        }),
         z.object({ kind: z.literal('knowledge'), entryId: zId }),
       ]),
     )

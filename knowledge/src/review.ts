@@ -15,12 +15,7 @@ export interface ReviewChallenge {
 }
 
 function normalize(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
+  return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 export function checkAnswer(challenge: ReviewChallenge, given: string): boolean {
@@ -44,11 +39,22 @@ export function buildReviewSession(
   const entries = recommended
     .map((r) => library.entry(r.entryId))
     .filter((e): e is KnowledgeEntry => e !== undefined)
-    .filter((e) => options.competencyIds === undefined || e.competencies.some((c) => options.competencyIds?.includes(c)));
+    .filter(
+      (e) =>
+        options.competencyIds === undefined ||
+        e.competencies.some((c) => options.competencyIds?.includes(c)),
+    );
 
-  const pool = entries.length > 0 ? entries : library.all().filter(
-    (e) => options.competencyIds === undefined || e.competencies.some((c) => options.competencyIds?.includes(c)),
-  );
+  const pool =
+    entries.length > 0
+      ? entries
+      : library
+          .all()
+          .filter(
+            (e) =>
+              options.competencyIds === undefined ||
+              e.competencies.some((c) => options.competencyIds?.includes(c)),
+          );
 
   const challenges: ReviewChallenge[] = [];
   for (const entry of pool) {

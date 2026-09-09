@@ -1,6 +1,6 @@
 import type { MonitoringAlert, MonitoringCheck, SystemState, WorldState } from '@tssr/contracts';
 import type { EventBus } from '@tssr/events';
-import { NetworkEngine, serviceAvailable } from '@tssr/sim-network';
+import { serviceAvailable, type NetworkEngine } from '@tssr/sim-network';
 
 export interface CheckSample {
   checkId: string;
@@ -22,10 +22,7 @@ export class MonitoringEngine {
   private readonly systems: Map<string, SystemState>;
   private readonly history = new Map<string, CheckSample[]>();
 
-  constructor(
-    world: WorldState,
-    deps: { network: NetworkEngine; bus?: EventBus },
-  ) {
+  constructor(world: WorldState, deps: { network: NetworkEngine; bus?: EventBus }) {
     this.world = world;
     this.network = deps.network;
     this.bus = deps.bus;
@@ -44,7 +41,13 @@ export class MonitoringEngine {
       return { checkId: check.id, at, ok: false, severity: 'critical', message: 'cible inconnue' };
     }
     if (!node.powered) {
-      return { checkId: check.id, at, ok: false, severity: 'critical', message: `${node.hostname} hors tension` };
+      return {
+        checkId: check.id,
+        at,
+        ok: false,
+        severity: 'critical',
+        message: `${node.hostname} hors tension`,
+      };
     }
 
     switch (check.metric) {
@@ -52,11 +55,23 @@ export class MonitoringEngine {
       case 'latency': {
         const address = node.interfaces.flatMap((i) => i.addresses)[0]?.address;
         if (address === undefined) {
-          return { checkId: check.id, at, ok: false, severity: 'critical', message: 'aucune adresse IP a superviser' };
+          return {
+            checkId: check.id,
+            at,
+            ok: false,
+            severity: 'critical',
+            message: 'aucune adresse IP a superviser',
+          };
         }
         const probe = this.probeSource(check.targetNodeId);
         if (probe === undefined) {
-          return { checkId: check.id, at, ok: false, severity: 'warning', message: 'aucune sonde disponible' };
+          return {
+            checkId: check.id,
+            at,
+            ok: false,
+            severity: 'warning',
+            message: 'aucune sonde disponible',
+          };
         }
         const reach = this.network.reach(probe, address);
         if (!reach.delivered || !reach.returnOk) {
@@ -69,18 +84,53 @@ export class MonitoringEngine {
           };
         }
         const rtt = Math.round(reach.latencyMs * 2 * 100) / 100;
-        if (check.metric === 'latency' && check.criticalThreshold !== undefined && rtt > check.criticalThreshold) {
-          return { checkId: check.id, at, ok: false, value: rtt, severity: 'critical', message: `latence ${rtt} ms` };
+        if (
+          check.metric === 'latency' &&
+          check.criticalThreshold !== undefined &&
+          rtt > check.criticalThreshold
+        ) {
+          return {
+            checkId: check.id,
+            at,
+            ok: false,
+            value: rtt,
+            severity: 'critical',
+            message: `latence ${rtt} ms`,
+          };
         }
-        if (check.metric === 'latency' && check.warningThreshold !== undefined && rtt > check.warningThreshold) {
-          return { checkId: check.id, at, ok: false, value: rtt, severity: 'warning', message: `latence ${rtt} ms` };
+        if (
+          check.metric === 'latency' &&
+          check.warningThreshold !== undefined &&
+          rtt > check.warningThreshold
+        ) {
+          return {
+            checkId: check.id,
+            at,
+            ok: false,
+            value: rtt,
+            severity: 'warning',
+            message: `latence ${rtt} ms`,
+          };
         }
-        return { checkId: check.id, at, ok: true, value: rtt, severity: 'info', message: `repond en ${rtt} ms` };
+        return {
+          checkId: check.id,
+          at,
+          ok: true,
+          value: rtt,
+          severity: 'info',
+          message: `repond en ${rtt} ms`,
+        };
       }
       case 'service': {
         const service = node.services.find((s) => s.id === check.serviceId);
         if (!service) {
-          return { checkId: check.id, at, ok: false, severity: 'warning', message: 'service supervise introuvable' };
+          return {
+            checkId: check.id,
+            at,
+            ok: false,
+            severity: 'warning',
+            message: 'service supervise introuvable',
+          };
         }
         const up = serviceAvailable(node, service);
         return {
@@ -88,7 +138,9 @@ export class MonitoringEngine {
           at,
           ok: up,
           severity: up ? 'info' : 'critical',
-          message: up ? `${service.name} operationnel` : `${service.name} indisponible (${service.status})`,
+          message: up
+            ? `${service.name} operationnel`
+            : `${service.name} indisponible (${service.status})`,
         };
       }
       case 'cpu':
@@ -97,7 +149,13 @@ export class MonitoringEngine {
       case 'temperature': {
         const system = this.systems.get(check.targetNodeId);
         if (!system) {
-          return { checkId: check.id, at, ok: false, severity: 'warning', message: 'aucun systeme instrumente sur cette cible' };
+          return {
+            checkId: check.id,
+            at,
+            ok: false,
+            severity: 'warning',
+            message: 'aucun systeme instrumente sur cette cible',
+          };
         }
         const r = system.resources;
         const value =
@@ -109,18 +167,51 @@ export class MonitoringEngine {
                 ? Math.round((r.diskUsedGb / r.diskTotalGb) * 100)
                 : r.temperatureC;
         if (value === undefined) {
-          return { checkId: check.id, at, ok: false, severity: 'warning', message: 'mesure non disponible sur cet equipement' };
+          return {
+            checkId: check.id,
+            at,
+            ok: false,
+            severity: 'warning',
+            message: 'mesure non disponible sur cet equipement',
+          };
         }
         if (check.criticalThreshold !== undefined && value >= check.criticalThreshold) {
-          return { checkId: check.id, at, ok: false, value, severity: 'critical', message: `${check.metric} a ${value}` };
+          return {
+            checkId: check.id,
+            at,
+            ok: false,
+            value,
+            severity: 'critical',
+            message: `${check.metric} a ${value}`,
+          };
         }
         if (check.warningThreshold !== undefined && value >= check.warningThreshold) {
-          return { checkId: check.id, at, ok: false, value, severity: 'warning', message: `${check.metric} a ${value}` };
+          return {
+            checkId: check.id,
+            at,
+            ok: false,
+            value,
+            severity: 'warning',
+            message: `${check.metric} a ${value}`,
+          };
         }
-        return { checkId: check.id, at, ok: true, value, severity: 'info', message: `${check.metric} a ${value}` };
+        return {
+          checkId: check.id,
+          at,
+          ok: true,
+          value,
+          severity: 'info',
+          message: `${check.metric} a ${value}`,
+        };
       }
       default:
-        return { checkId: check.id, at, ok: false, severity: 'warning', message: 'metrique non supervisee' };
+        return {
+          checkId: check.id,
+          at,
+          ok: false,
+          severity: 'warning',
+          message: 'metrique non supervisee',
+        };
     }
   }
 
@@ -153,7 +244,9 @@ export class MonitoringEngine {
       if (samples.length > 120) samples.splice(0, samples.length - 120);
       this.history.set(check.id, samples);
 
-      const open = this.world.monitoringAlerts.find((a) => a.checkId === check.id && a.clearedAt === undefined);
+      const open = this.world.monitoringAlerts.find(
+        (a) => a.checkId === check.id && a.clearedAt === undefined,
+      );
       if (!sample.ok) {
         if (open) {
           open.severity = sample.severity === 'info' ? open.severity : sample.severity;
@@ -195,7 +288,11 @@ export class MonitoringEngine {
     const alert = this.world.monitoringAlerts.find((a) => a.id === alertId);
     if (!alert) return false;
     alert.acknowledgedBy = by;
-    this.bus?.emit({ category: 'incident', type: 'monitoring.alert.acknowledged', payload: { alertId, by } });
+    this.bus?.emit({
+      category: 'incident',
+      type: 'monitoring.alert.acknowledged',
+      payload: { alertId, by },
+    });
     return true;
   }
 

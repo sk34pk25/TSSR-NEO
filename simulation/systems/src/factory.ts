@@ -1,7 +1,13 @@
 import type { FsNode, OsFamily, SystemState } from '@tssr/contracts';
 
 function dir(owner = 'root', group = 'root', mode = '0755'): FsNode {
-  return { kind: 'dir', content: '', permissions: { owner, group, mode, acl: [] }, sizeBytes: 0, modifiedAt: 0 };
+  return {
+    kind: 'dir',
+    content: '',
+    permissions: { owner, group, mode, acl: [] },
+    sizeBytes: 0,
+    modifiedAt: 0,
+  };
 }
 
 function file(content: string, owner = 'root', group = 'root', mode = '0644'): FsNode {
@@ -51,7 +57,11 @@ const WINDOWS_BASE = (hostname: string): Record<string, FsNode> => ({
   'C:/Windows/System32': dir('Administrator', 'Administrators'),
   'C:/Windows/System32/drivers': dir('Administrator', 'Administrators'),
   'C:/Windows/System32/drivers/etc': dir('Administrator', 'Administrators'),
-  'C:/Windows/System32/drivers/etc/hosts': file(`127.0.0.1 localhost\n127.0.1.1 ${hostname}\n`, 'Administrator', 'Administrators'),
+  'C:/Windows/System32/drivers/etc/hosts': file(
+    `127.0.0.1 localhost\n127.0.1.1 ${hostname}\n`,
+    'Administrator',
+    'Administrators',
+  ),
   'C:/Users': dir('Administrator', 'Administrators'),
   'C:/Users/Administrator': dir('Administrator', 'Administrators', '0700'),
   'C:/Users/Public': dir('Administrator', 'Administrators'),
@@ -64,14 +74,37 @@ export function createSystem(spec: SystemSpec): SystemState {
   const isWindows = spec.os === 'windows';
   const baseUsers: SystemState['users'] = isWindows
     ? [
-        { name: 'Administrator', displayName: 'Administrateur', groups: ['Administrators'], enabled: true, passwordSet: true, mustChangePassword: false, lockedOut: false },
+        {
+          name: 'Administrator',
+          displayName: 'Administrateur',
+          groups: ['Administrators'],
+          enabled: true,
+          passwordSet: true,
+          mustChangePassword: false,
+          lockedOut: false,
+        },
       ]
     : [
-        { name: 'root', uid: 0, groups: ['root'], enabled: true, passwordSet: true, mustChangePassword: false, lockedOut: false, homeDir: '/root', shell: '/bin/bash' },
+        {
+          name: 'root',
+          uid: 0,
+          groups: ['root'],
+          enabled: true,
+          passwordSet: true,
+          mustChangePassword: false,
+          lockedOut: false,
+          homeDir: '/root',
+          shell: '/bin/bash',
+        },
       ];
   const baseGroups: SystemState['groups'] = isWindows
     ? [
-        { name: 'Administrators', members: ['Administrator'], scope: 'local', description: 'Administrateurs locaux' },
+        {
+          name: 'Administrators',
+          members: ['Administrator'],
+          scope: 'local',
+          description: 'Administrateurs locaux',
+        },
         { name: 'Users', members: [], scope: 'local', description: 'Utilisateurs' },
       ]
     : [
@@ -87,7 +120,10 @@ export function createSystem(spec: SystemSpec): SystemState {
     os: spec.os,
     osVersion: spec.osVersion ?? (isWindows ? 'Windows Server (simule)' : 'GNU/Linux (simule)'),
     powerState: 'running',
-    files: { ...(isWindows ? WINDOWS_BASE(spec.hostname) : LINUX_BASE(spec.hostname)), ...spec.files },
+    files: {
+      ...(isWindows ? WINDOWS_BASE(spec.hostname) : LINUX_BASE(spec.hostname)),
+      ...spec.files,
+    },
     users: [...baseUsers, ...(spec.users ?? [])],
     groups: [...baseGroups, ...(spec.groups ?? [])],
     processes: isWindows

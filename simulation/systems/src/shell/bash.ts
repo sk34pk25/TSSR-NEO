@@ -16,7 +16,15 @@ import {
   writeFile,
 } from '../fs.ts';
 import { basename, joinPath, resolvePath } from '../paths.ts';
-import { failure, output, parseArgs, table, type CommandResult, type CommandSpec, type ShellContext } from './core.ts';
+import {
+  failure,
+  output,
+  parseArgs,
+  table,
+  type CommandResult,
+  type CommandSpec,
+  type ShellContext,
+} from './core.ts';
 
 function requireArg(args: string[], index: number, usage: string): string | CommandResult {
   const value = args[index];
@@ -74,7 +82,8 @@ export const BASH_COMMANDS: CommandSpec[] = [
       const { flags, positional } = parseArgs(args);
       const target = resolvePath(ctx.session.cwd, positional[0] ?? '.');
       const node = getNode(ctx.system, target);
-      if (!node) return failure(`ls: ${positional[0] ?? target}: aucun fichier ou dossier de ce type`);
+      if (!node)
+        return failure(`ls: ${positional[0] ?? target}: aucun fichier ou dossier de ce type`);
       if (node.kind !== 'dir') return output(basename(target));
       if (!canAccess(ctx.system, target, ctx.session.user, 'read')) {
         return failure(`ls: ${target}: permission refusee`);
@@ -123,9 +132,14 @@ export const BASH_COMMANDS: CommandSpec[] = [
       const { flags, positional } = parseArgs(args);
       const path = requireArg(positional, 0, 'mkdir [-p] <chemin>');
       if (isResult(path)) return path;
-      const result = makeDirectory(ctx.system, resolvePath(ctx.session.cwd, path), ctx.session.user, {
-        recursive: flags.has('p'),
-      });
+      const result = makeDirectory(
+        ctx.system,
+        resolvePath(ctx.session.cwd, path),
+        ctx.session.user,
+        {
+          recursive: flags.has('p'),
+        },
+      );
       return result.ok ? output('') : failure(`mkdir: ${result.error.message}`);
     },
   },
@@ -235,8 +249,15 @@ export const BASH_COMMANDS: CommandSpec[] = [
       const name = args[0] ?? ctx.session.user;
       const user = ctx.system.users.find((u) => u.name === name);
       if (!user) return failure(`id: ${name}: utilisateur inexistant`);
-      const groups = [...new Set([...user.groups, ...ctx.system.groups.filter((g) => g.members.includes(name)).map((g) => g.name)])];
-      return output(`uid=${user.uid ?? 1000}(${user.name}) groupes=${groups.join(',') || '(aucun)'}`);
+      const groups = [
+        ...new Set([
+          ...user.groups,
+          ...ctx.system.groups.filter((g) => g.members.includes(name)).map((g) => g.name),
+        ]),
+      ];
+      return output(
+        `uid=${user.uid ?? 1000}(${user.name}) groupes=${groups.join(',') || '(aucun)'}`,
+      );
     },
   },
   {
@@ -264,7 +285,9 @@ export const BASH_COMMANDS: CommandSpec[] = [
     run: (_args, ctx) => {
       const ms = ctx.bus?.getSimTime() ?? 0;
       const minutes = Math.floor(ms / 60000);
-      return output(`fonctionne depuis ${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, '0')}, charge simulee ${(ctx.system.resources.cpuPercent / 100).toFixed(2)}`);
+      return output(
+        `fonctionne depuis ${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, '0')}, charge simulee ${(ctx.system.resources.cpuPercent / 100).toFixed(2)}`,
+      );
     },
   },
   {
@@ -276,7 +299,12 @@ export const BASH_COMMANDS: CommandSpec[] = [
       return output(
         table([
           ['', 'total', 'utilise', 'libre'],
-          ['Mem:', String(r.memoryTotalMb), String(r.memoryUsedMb), String(r.memoryTotalMb - r.memoryUsedMb)],
+          [
+            'Mem:',
+            String(r.memoryTotalMb),
+            String(r.memoryUsedMb),
+            String(r.memoryTotalMb - r.memoryUsedMb),
+          ],
         ]),
       );
     },
@@ -291,7 +319,14 @@ export const BASH_COMMANDS: CommandSpec[] = [
       return output(
         table([
           ['Systeme', 'Taille', 'Utilise', 'Dispo', 'Use%', 'Monte sur'],
-          ['/dev/sda1', `${r.diskTotalGb}G`, `${r.diskUsedGb}G`, `${Math.round(r.diskTotalGb - r.diskUsedGb)}G`, `${percent}%`, '/'],
+          [
+            '/dev/sda1',
+            `${r.diskTotalGb}G`,
+            `${r.diskUsedGb}G`,
+            `${Math.round(r.diskTotalGb - r.diskUsedGb)}G`,
+            `${percent}%`,
+            '/',
+          ],
         ]),
       );
     },
@@ -331,14 +366,21 @@ export const BASH_COMMANDS: CommandSpec[] = [
       }
       const name = args[1];
       if (name === undefined) return failure('systemctl: nom de service manquant', 2);
-      const service = services.find((s) => s.name === name || s.id === name || s.name === name.replace(/\.service$/, ''));
+      const service = services.find(
+        (s) => s.name === name || s.id === name || s.name === name.replace(/\.service$/, ''),
+      );
       if (!service) return failure(`systemctl: unite ${name} introuvable`);
       if (action === 'status') {
         return output(
           `${service.name} - ${service.kind}\n  Etat : ${service.status}\n  Demarrage : ${service.startupType}\n  Ecoute : ${service.protocol}/${service.port}\n  Depend de : ${service.dependsOn.join(', ') || '(rien)'}`,
         );
       }
-      const target = action === 'start' || action === 'restart' ? 'running' : action === 'stop' ? 'stopped' : undefined;
+      const target =
+        action === 'start' || action === 'restart'
+          ? 'running'
+          : action === 'stop'
+            ? 'stopped'
+            : undefined;
       if (target !== undefined) {
         if (!ctx.systems.setServiceStatus(service.id, target, ctx.session.user)) {
           return failure('systemctl: privileges insuffisants (essayez sudo)');
@@ -346,7 +388,13 @@ export const BASH_COMMANDS: CommandSpec[] = [
         return output('');
       }
       if (action === 'enable' || action === 'disable') {
-        if (!ctx.systems.setServiceStartup(service.id, action === 'enable' ? 'auto' : 'disabled', ctx.session.user)) {
+        if (
+          !ctx.systems.setServiceStartup(
+            service.id,
+            action === 'enable' ? 'auto' : 'disabled',
+            ctx.session.user,
+          )
+        ) {
           return failure('systemctl: privileges insuffisants (essayez sudo)');
         }
         return output('');
@@ -370,13 +418,15 @@ export const BASH_COMMANDS: CommandSpec[] = [
           if (cidr === undefined || dev === undefined) {
             return failure('ip: usage : ip addr add <ip>/<prefixe> dev <iface>', 2);
           }
-          if (!isPrivileged(ctx.system, ctx.session.user)) return failure('ip: operation non permise');
+          if (!isPrivileged(ctx.system, ctx.session.user))
+            return failure('ip: operation non permise');
           if (args[1] === 'del') {
             ctx.network.clearInterfaceAddresses(node.id, dev);
             return output('');
           }
           const [address, prefixText] = cidr.split('/');
-          if (address === undefined || prefixText === undefined) return failure('ip: adresse invalide', 2);
+          if (address === undefined || prefixText === undefined)
+            return failure('ip: adresse invalide', 2);
           const okAddr = ctx.network.setInterfaceAddress(node.id, dev, address, Number(prefixText));
           return okAddr ? output('') : failure(`ip: interface ${dev} introuvable`);
         }
@@ -410,11 +460,14 @@ export const BASH_COMMANDS: CommandSpec[] = [
           if (dev === undefined || (state !== 'up' && state !== 'down')) {
             return failure('ip: usage : ip link set <iface> up|down', 2);
           }
-          if (!isPrivileged(ctx.system, ctx.session.user)) return failure('ip: operation non permise');
+          if (!isPrivileged(ctx.system, ctx.session.user))
+            return failure('ip: operation non permise');
           const okLink = ctx.network.setInterfaceEnabled(node.id, dev, state === 'up');
           return okLink ? output('') : failure(`ip: interface ${dev} introuvable`);
         }
-        return output(node.interfaces.map((i) => `${i.name} ${i.enabled ? 'UP' : 'DOWN'} ${i.mac}`).join('\n'));
+        return output(
+          node.interfaces.map((i) => `${i.name} ${i.enabled ? 'UP' : 'DOWN'} ${i.mac}`).join('\n'),
+        );
       }
       return failure(`ip: sous-commande "${sub}" non simulee`, 2);
     },
@@ -426,7 +479,8 @@ export const BASH_COMMANDS: CommandSpec[] = [
     run: (args, ctx) => {
       const { flags: _flags, options, positional } = parseArgs(args);
       const countIndex = args.indexOf('-c');
-      const count = countIndex !== -1 ? Number(args[countIndex + 1] ?? 4) : Number(options.get('count') ?? 4);
+      const count =
+        countIndex !== -1 ? Number(args[countIndex + 1] ?? 4) : Number(options.get('count') ?? 4);
       const target = positional.find((p) => p !== String(count));
       if (target === undefined) return failure('ping: usage : ping [-c <n>] <hote>', 2);
       const node = ctx.systems.node();
@@ -434,7 +488,9 @@ export const BASH_COMMANDS: CommandSpec[] = [
       const result = ctx.network.ping(node.id, target, Number.isFinite(count) ? count : 4);
       const lines: string[] = [];
       if (result.resolvedAddress === undefined) {
-        return failure(`ping: ${target}: ${result.dns?.failure?.detail ?? 'nom ou service inconnu'}`);
+        return failure(
+          `ping: ${target}: ${result.dns?.failure?.detail ?? 'nom ou service inconnu'}`,
+        );
       }
       lines.push(`PING ${target} (${result.resolvedAddress})`);
       for (const reply of result.replies) {
@@ -463,7 +519,8 @@ export const BASH_COMMANDS: CommandSpec[] = [
       const node = ctx.systems.node();
       if (!node) return failure('traceroute: noeud reseau introuvable');
       const trace = ctx.network.traceroute(node.id, target);
-      if (trace.hops.length === 0) return failure(`traceroute: ${trace.failure ?? 'destination injoignable'}`);
+      if (trace.hops.length === 0)
+        return failure(`traceroute: ${trace.failure ?? 'destination injoignable'}`);
       const lines = trace.hops.map((h) => ` ${h.ttl}  ${h.hostname}  ${h.timeMs} ms`);
       if (!trace.completed) lines.push(` *  ${trace.failure ?? 'chemin interrompu'}`);
       return output([`traceroute vers ${target}`, ...lines].join('\n'));
@@ -480,7 +537,8 @@ export const BASH_COMMANDS: CommandSpec[] = [
       const node = ctx.systems.node();
       if (!node) return failure('dig: noeud reseau introuvable');
       const result = ctx.network.resolve(node.id, name);
-      if (!result.resolved) return failure(`dig: ${result.failure?.detail ?? 'resolution impossible'}`);
+      if (!result.resolved)
+        return failure(`dig: ${result.failure?.detail ?? 'resolution impossible'}`);
       const lines = [`;; SERVEUR : ${result.serverAddress ?? 'local'}`, ';; REPONSE :'];
       for (const step of result.chain) lines.push(`  ${step}`);
       lines.push(`${name}. A ${result.address}`);
@@ -497,7 +555,12 @@ export const BASH_COMMANDS: CommandSpec[] = [
       return output(
         table([
           ['Proto', 'Port', 'Etat', 'Service'],
-          ...services.map((s) => [s.protocol, String(s.port), s.status === 'running' ? 'LISTEN' : 'CLOSED', s.name]),
+          ...services.map((s) => [
+            s.protocol,
+            String(s.port),
+            s.status === 'running' ? 'LISTEN' : 'CLOSED',
+            s.name,
+          ]),
         ]),
       );
     },
@@ -510,7 +573,8 @@ export const BASH_COMMANDS: CommandSpec[] = [
       const dev = args[0] ?? 'eth0';
       const node = ctx.systems.node();
       if (!node) return failure('dhclient: noeud reseau introuvable');
-      if (!isPrivileged(ctx.system, ctx.session.user)) return failure('dhclient: operation non permise');
+      if (!isPrivileged(ctx.system, ctx.session.user))
+        return failure('dhclient: operation non permise');
       const result = ctx.network.renewDhcp(node.id, dev);
       if (result.success && result.offer) {
         return output(
@@ -547,7 +611,10 @@ export const BASH_COMMANDS: CommandSpec[] = [
         },
         ctx.session.user,
       );
-      if (!created) return failure(`useradd: impossible de creer ${name} (droits insuffisants ou compte existant)`);
+      if (!created)
+        return failure(
+          `useradd: impossible de creer ${name} (droits insuffisants ou compte existant)`,
+        );
       if (flags.has('m')) makeDirectory(ctx.system, `/home/${name}`, 'root', { recursive: true });
       if (extraGroup !== undefined) ctx.systems.addUserToGroup(name, extraGroup, ctx.session.user);
       return output('');
@@ -560,7 +627,10 @@ export const BASH_COMMANDS: CommandSpec[] = [
     run: (args, ctx) => {
       const name = args[0];
       if (name === undefined) return failure('groupadd: usage : groupadd <nom>', 2);
-      const created = ctx.systems.addGroup({ name, gid: 1000 + ctx.system.groups.length, scope: 'local' }, ctx.session.user);
+      const created = ctx.systems.addGroup(
+        { name, gid: 1000 + ctx.system.groups.length, scope: 'local' },
+        ctx.session.user,
+      );
       return created ? output('') : failure(`groupadd: impossible de creer ${name}`);
     },
   },
@@ -576,7 +646,9 @@ export const BASH_COMMANDS: CommandSpec[] = [
         return failure('usermod: usage : usermod -aG <groupe> <utilisateur>', 2);
       }
       const done = ctx.systems.addUserToGroup(user, group, ctx.session.user);
-      return done ? output('') : failure(`usermod: echec (droits, utilisateur ou groupe inexistant)`);
+      return done
+        ? output('')
+        : failure(`usermod: echec (droits, utilisateur ou groupe inexistant)`);
     },
   },
   {
@@ -585,7 +657,11 @@ export const BASH_COMMANDS: CommandSpec[] = [
     usage: 'getent passwd|group',
     run: (args, ctx) => {
       if (args[0] === 'group') {
-        return output(ctx.system.groups.map((g) => `${g.name}:x:${g.gid ?? ''}:${g.members.join(',')}`).join('\n'));
+        return output(
+          ctx.system.groups
+            .map((g) => `${g.name}:x:${g.gid ?? ''}:${g.members.join(',')}`)
+            .join('\n'),
+        );
       }
       return output(
         ctx.system.users
@@ -623,7 +699,11 @@ export const BASH_COMMANDS: CommandSpec[] = [
       if (pattern === undefined) return failure('grep: usage : grep <motif> [fichier]', 2);
       let content = stdin;
       if (positional[1] !== undefined) {
-        const read = readFile(ctx.system, resolvePath(ctx.session.cwd, positional[1]), ctx.session.user);
+        const read = readFile(
+          ctx.system,
+          resolvePath(ctx.session.cwd, positional[1]),
+          ctx.session.user,
+        );
         if (!read.ok) return failure(`grep: ${read.error.message}`);
         content = read.value;
       }
@@ -633,7 +713,9 @@ export const BASH_COMMANDS: CommandSpec[] = [
       } catch {
         return failure(`grep: motif invalide : ${pattern}`, 2);
       }
-      const lines = content.split('\n').filter((l) => (flags.has('v') ? !regex.test(l) : regex.test(l)));
+      const lines = content
+        .split('\n')
+        .filter((l) => (flags.has('v') ? !regex.test(l) : regex.test(l)));
       return { stdout: lines.join('\n'), stderr: '', exitCode: lines.length > 0 ? 0 : 1 };
     },
   },
@@ -679,7 +761,11 @@ export const BASH_COMMANDS: CommandSpec[] = [
       const { flags, positional } = parseArgs(args);
       let content = stdin;
       if (positional[0] !== undefined) {
-        const read = readFile(ctx.system, resolvePath(ctx.session.cwd, positional[0]), ctx.session.user);
+        const read = readFile(
+          ctx.system,
+          resolvePath(ctx.session.cwd, positional[0]),
+          ctx.session.user,
+        );
         if (!read.ok) return failure(`wc: ${read.error.message}`);
         content = read.value;
       }

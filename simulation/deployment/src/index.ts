@@ -81,7 +81,9 @@ export class DeploymentEngine {
         continue;
       }
 
-      const hostname = template.namingPattern.replace('{n}', String(index).padStart(2, '0')).toLowerCase();
+      const hostname = template.namingPattern
+        .replace('{n}', String(index).padStart(2, '0'))
+        .toLowerCase();
       const system: SystemState = createSystem({
         id: `sys-${hostname}`,
         hostname,
@@ -90,7 +92,11 @@ export class DeploymentEngine {
         networkNodeId: asset.networkNodeId,
         ...(template.joinDomain === undefined ? {} : { domain: template.joinDomain }),
       });
-      system.packages = template.packages.map((name) => ({ name, version: '1.0', state: 'installed' }));
+      system.packages = template.packages.map((name) => ({
+        name,
+        version: '1.0',
+        state: 'installed',
+      }));
       this.world.systems.push(system);
       createdSystems.push(system.id);
 

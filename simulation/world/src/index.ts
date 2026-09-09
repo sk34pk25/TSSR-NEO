@@ -40,7 +40,8 @@ export class SimulationWorld {
   private readonly systemEngines = new Map<string, SystemEngine>();
 
   constructor(state: WorldState, options: SimulationWorldOptions = {}) {
-    this.state = options.validate === true ? parseContract(zWorldState, state, 'WorldState') : state;
+    this.state =
+      options.validate === true ? parseContract(zWorldState, state, 'WorldState') : state;
     this.bus = options.bus ?? new EventBus();
     this.bus.setSimTime(this.state.simTime);
     this.clock = new SimClock(this.state.simTime);
@@ -51,19 +52,31 @@ export class SimulationWorld {
     this.monitoring = new MonitoringEngine(this.state, { network: this.network, bus: this.bus });
     this.hardware = new HardwareEngine(this.state, { network: this.network, bus: this.bus });
     this.backup = new BackupEngine(this.state, { bus: this.bus });
-    this.virtualization = new VirtualizationEngine(this.state, { network: this.network, bus: this.bus });
+    this.virtualization = new VirtualizationEngine(this.state, {
+      network: this.network,
+      bus: this.bus,
+    });
     this.cloud = new CloudEngine(this.state, { bus: this.bus });
     this.remote = new RemoteOperationsEngine(this.state, { network: this.network, bus: this.bus });
-    this.deployment = new DeploymentEngine(this.state, { network: this.network, bus: this.bus, rng: this.rng });
+    this.deployment = new DeploymentEngine(this.state, {
+      network: this.network,
+      bus: this.bus,
+      rng: this.rng,
+    });
 
     for (const system of this.state.systems) {
-      this.systemEngines.set(system.id, new SystemEngine(system, { network: this.network, bus: this.bus }));
+      this.systemEngines.set(
+        system.id,
+        new SystemEngine(system, { network: this.network, bus: this.bus }),
+      );
     }
     this.hardware.refreshLeds();
   }
 
   systemState(id: string): SystemState | undefined {
-    return this.state.systems.find((s) => s.id === id || s.hostname === id || s.networkNodeId === id);
+    return this.state.systems.find(
+      (s) => s.id === id || s.hostname === id || s.networkNodeId === id,
+    );
   }
 
   system(id: string): SystemEngine | undefined {
@@ -106,6 +119,9 @@ export class SimulationWorld {
   }
 }
 
-export function createWorld(state: WorldState, options: SimulationWorldOptions = {}): SimulationWorld {
+export function createWorld(
+  state: WorldState,
+  options: SimulationWorldOptions = {},
+): SimulationWorld {
   return new SimulationWorld(state, options);
 }

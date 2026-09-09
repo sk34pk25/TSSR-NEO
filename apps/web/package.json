@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "@tssr/contracts": "*",
-    "@tssr/events": "*",
     "@tssr/evaluation": "*",
+    "@tssr/events": "*",
     "@tssr/knowledge": "*",
     "@tssr/mission-engine": "*",
     "@tssr/nova": "*",
@@ -30,6 +30,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "vite": "^5.4.10"
   }
 }

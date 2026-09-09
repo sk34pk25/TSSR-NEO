@@ -76,8 +76,12 @@ export const zChangeRequest = z.object({
   risk: z.enum(['low', 'medium', 'high']).default('medium'),
   maintenanceWindow: z.object({ startsAt: zSimTime, endsAt: zSimTime }).optional(),
   approvalState: z.enum(['draft', 'submitted', 'approved', 'rejected']).default('draft'),
-  preChecks: z.array(z.object({ id: zId, label: z.string(), done: z.boolean().default(false) })).default([]),
-  postChecks: z.array(z.object({ id: zId, label: z.string(), done: z.boolean().default(false) })).default([]),
+  preChecks: z
+    .array(z.object({ id: zId, label: z.string(), done: z.boolean().default(false) }))
+    .default([]),
+  postChecks: z
+    .array(z.object({ id: zId, label: z.string(), done: z.boolean().default(false) }))
+    .default([]),
   rollbackPlan: z.string().optional(),
   snapshotId: zId.optional(),
   communicationSent: z.boolean().default(false),
@@ -93,7 +97,9 @@ export const zNpc = z.object({
   nodeId: zId.optional(),
   avatar: z.string().optional(),
   /** Connaissances que le PNJ peut reveler si on l interroge correctement. */
-  knownFacts: z.array(z.object({ id: zId, prompt: z.array(z.string()).default([]), answer: z.string() })).default([]),
+  knownFacts: z
+    .array(z.object({ id: zId, prompt: z.array(z.string()).default([]), answer: z.string() }))
+    .default([]),
 });
 
 export type TicketKind = z.infer<typeof zTicketKind>;

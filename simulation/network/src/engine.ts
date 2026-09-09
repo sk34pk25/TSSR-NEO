@@ -6,10 +6,21 @@ import type {
   ServiceStatus,
   VlanId,
 } from '@tssr/contracts';
-import { EventBus, Rng } from '@tssr/events';
+import { Rng, type EventBus } from '@tssr/events';
 import { TopologyIndex } from './topology-index.ts';
-import { checkReachability, forwardPacket, type ForwardResult, type ReachabilityResult } from './forward.ts';
-import { connectToService, requestDhcpLease, resolveName, type ConnectResult, type DnsResult } from './services.ts';
+import {
+  checkReachability,
+  forwardPacket,
+  type ForwardResult,
+  type ReachabilityResult,
+} from './forward.ts';
+import {
+  connectToService,
+  requestDhcpLease,
+  resolveName,
+  type ConnectResult,
+  type DnsResult,
+} from './services.ts';
 import { effectiveRoutes, type EffectiveRoute } from './routing.ts';
 import { networkOf } from './ip.ts';
 
@@ -92,7 +103,10 @@ export class NetworkEngine {
     });
   }
 
-  private findInterface(nodeId: string, nameOrId: string): { node: NetworkNode; iface: NetworkInterface } | undefined {
+  private findInterface(
+    nodeId: string,
+    nameOrId: string,
+  ): { node: NetworkNode; iface: NetworkInterface } | undefined {
     const node = this.node(nodeId);
     if (!node) return undefined;
     const iface =
@@ -111,7 +125,12 @@ export class NetworkEngine {
     return checkReachability(this.state, fromNodeId, address);
   }
 
-  connect(fromNodeId: string, address: string, port: number, protocol: 'tcp' | 'udp' = 'tcp'): ConnectResult {
+  connect(
+    fromNodeId: string,
+    address: string,
+    port: number,
+    protocol: 'tcp' | 'udp' = 'tcp',
+  ): ConnectResult {
     return connectToService(this.state, fromNodeId, address, port, protocol);
   }
 
@@ -137,7 +156,9 @@ export class NetworkEngine {
         replies.push({
           seq,
           success: false,
-          reason: path.delivered ? 'pas de route de retour' : (path.failure?.detail ?? 'destination injoignable'),
+          reason: path.delivered
+            ? 'pas de route de retour'
+            : (path.failure?.detail ?? 'destination injoignable'),
         });
         continue;
       }
@@ -147,7 +168,11 @@ export class NetworkEngine {
         continue;
       }
       const jitter = 1 + (this.rng.next() - 0.5) * 0.3;
-      replies.push({ seq, success: true, timeMs: Math.round(path.latencyMs * 2 * jitter * 100) / 100 });
+      replies.push({
+        seq,
+        success: true,
+        timeMs: Math.round(path.latencyMs * 2 * jitter * 100) / 100,
+      });
     }
     const received = replies.filter((r) => r.success).length;
     const times = replies.filter((r) => r.timeMs !== undefined).map((r) => r.timeMs as number);
@@ -174,7 +199,12 @@ export class NetworkEngine {
   traceroute(fromNodeId: string, target: string): TracerouteResult {
     const dns = resolveName(this.state, fromNodeId, target);
     if (!dns.resolved || dns.address === undefined) {
-      return { target, hops: [], completed: false, failure: dns.failure?.detail ?? 'nom non resolu' };
+      return {
+        target,
+        hops: [],
+        completed: false,
+        failure: dns.failure?.detail ?? 'nom non resolu',
+      };
     }
     const result: ForwardResult = forwardPacket(this.state, fromNodeId, dns.address);
     const hops: TracerouteHop[] = [];
@@ -258,7 +288,12 @@ export class NetworkEngine {
     if (nativeVlan !== undefined) found.iface.nativeVlan = nativeVlan;
     this.emit(
       'network.interface.vlan',
-      { nodeId: found.node.id, interfaceId: found.iface.id, mode: 'trunk', vlans: found.iface.trunkVlans },
+      {
+        nodeId: found.node.id,
+        interfaceId: found.iface.id,
+        mode: 'trunk',
+        vlans: found.iface.trunkVlans,
+      },
       `${found.node.hostname} : ${found.iface.name} en trunk`,
     );
     return true;
@@ -269,14 +304,20 @@ export class NetworkEngine {
     if (!node) return false;
     if (node.vlans.some((v) => v.id === vlan)) return true;
     node.vlans.push({ id: vlan, name });
-    this.emit('network.vlan.declared', { nodeId: node.id, vlan, name }, `VLAN ${vlan} declare sur ${node.hostname}`);
+    this.emit(
+      'network.vlan.declared',
+      { nodeId: node.id, vlan, name },
+      `VLAN ${vlan} declare sur ${node.hostname}`,
+    );
     return true;
   }
 
   addRoute(nodeId: string, route: Omit<Route, 'origin'> & { origin?: Route['origin'] }): boolean {
     const node = this.node(nodeId);
     if (!node) return false;
-    const exists = node.routes.some((r) => r.destination === route.destination && r.via === route.via);
+    const exists = node.routes.some(
+      (r) => r.destination === route.destination && r.via === route.via,
+    );
     if (exists) return true;
     node.routes.push({ origin: 'static', ...route, metric: route.metric ?? 0 });
     this.emit(
@@ -293,20 +334,36 @@ export class NetworkEngine {
     const before = node.routes.length;
     node.routes = node.routes.filter((r) => r.destination !== destination);
     if (node.routes.length === before) return false;
-    this.emit('network.route.removed', { nodeId: node.id, destination }, `${node.hostname} : route ${destination} supprimee`);
+    this.emit(
+      'network.route.removed',
+      { nodeId: node.id, destination },
+      `${node.hostname} : route ${destination} supprimee`,
+    );
     return true;
   }
 
   setDefaultGateway(nodeId: string, gateway: string): boolean {
     const node = this.node(nodeId);
     if (!node) return false;
-    const iface = node.interfaces.find((i) =>
-      i.enabled && i.addresses.some((a) => networkOf(a.address, a.prefix) === networkOf(gateway, a.prefix)),
+    const iface = node.interfaces.find(
+      (i) =>
+        i.enabled &&
+        i.addresses.some((a) => networkOf(a.address, a.prefix) === networkOf(gateway, a.prefix)),
     );
     if (!iface) return false;
     node.routes = node.routes.filter((r) => r.destination !== '0.0.0.0/0');
-    node.routes.push({ destination: '0.0.0.0/0', via: gateway, interfaceId: iface.id, metric: 10, origin: 'default' });
-    this.emit('network.route.default', { nodeId: node.id, gateway }, `${node.hostname} : passerelle par defaut ${gateway}`);
+    node.routes.push({
+      destination: '0.0.0.0/0',
+      via: gateway,
+      interfaceId: iface.id,
+      metric: 10,
+      origin: 'default',
+    });
+    this.emit(
+      'network.route.default',
+      { nodeId: node.id, gateway },
+      `${node.hostname} : passerelle par defaut ${gateway}`,
+    );
     return true;
   }
 
@@ -314,7 +371,11 @@ export class NetworkEngine {
     const node = this.node(nodeId);
     if (!node) return false;
     node.dnsClients = [...servers];
-    this.emit('network.dns.client', { nodeId: node.id, servers }, `${node.hostname} : DNS ${servers.join(', ')}`);
+    this.emit(
+      'network.dns.client',
+      { nodeId: node.id, servers },
+      `${node.hostname} : DNS ${servers.join(', ')}`,
+    );
     return true;
   }
 

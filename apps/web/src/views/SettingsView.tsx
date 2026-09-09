@@ -6,7 +6,9 @@ import { useSession } from '../state/hooks.ts';
 export function SettingsView(): JSX.Element {
   const session = useSession();
   const prefs = session.progress.preferences;
-  const [report, setReport] = useState<{ totalBytes: number; reclaimableBytes: number } | undefined>(undefined);
+  const [report, setReport] = useState<
+    { totalBytes: number; reclaimableBytes: number } | undefined
+  >(undefined);
   const [message, setMessage] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -43,22 +45,30 @@ export function SettingsView(): JSX.Element {
           </select>
         </div>
         <p className="neo-dim" style={{ fontSize: 'var(--neo-fs-xs)', marginTop: 8 }}>
-          Profil actif : {session.profile.quality}, resolution x{session.profile.pixelRatio},
-          cible {session.profile.targetFps} images/s. La detection se base sur les capacites reelles
-          du navigateur, jamais sur son identifiant.
+          Profil actif : {session.profile.quality}, resolution x{session.profile.pixelRatio}, cible{' '}
+          {session.profile.targetFps} images/s. La detection se base sur les capacites reelles du
+          navigateur, jamais sur son identifiant.
         </p>
       </section>
 
       <section className="neo-card">
         <h2 style={{ fontSize: 'var(--neo-fs-lg)' }}>Accessibilite</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--neo-space-4)' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 'var(--neo-space-4)',
+          }}
+        >
           <div className="neo-field">
             <label htmlFor="text-size">Taille du texte</label>
             <select
               id="text-size"
               className="neo-select"
               value={prefs.accessibility.textSize}
-              onChange={(event) => updateAccessibility({ textSize: event.target.value as 's' | 'm' | 'l' | 'xl' })}
+              onChange={(event) =>
+                updateAccessibility({ textSize: event.target.value as 's' | 'm' | 'l' | 'xl' })
+              }
             >
               <option value="s">Compacte</option>
               <option value="m">Normale</option>
@@ -85,7 +95,9 @@ export function SettingsView(): JSX.Element {
               id="contrast"
               className="neo-select"
               value={prefs.accessibility.contrast}
-              onChange={(event) => updateAccessibility({ contrast: event.target.value as 'normal' | 'high' })}
+              onChange={(event) =>
+                updateAccessibility({ contrast: event.target.value as 'normal' | 'high' })
+              }
             >
               <option value="normal">Standard</option>
               <option value="high">Renforce</option>
@@ -99,7 +111,8 @@ export function SettingsView(): JSX.Element {
               value={prefs.accessibility.colorBlindMode}
               onChange={(event) =>
                 updateAccessibility({
-                  colorBlindMode: event.target.value as 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia',
+                  colorBlindMode: event.target.value as
+                    'none' | 'protanopia' | 'deuteranopia' | 'tritanopia',
                 })
               }
             >
@@ -123,7 +136,9 @@ export function SettingsView(): JSX.Element {
             <input
               type="checkbox"
               checked={prefs.accessibility.reduceVisualComplexity}
-              onChange={(event) => updateAccessibility({ reduceVisualComplexity: event.target.checked })}
+              onChange={(event) =>
+                updateAccessibility({ reduceVisualComplexity: event.target.checked })
+              }
             />
             Reduire la complexite visuelle
           </label>
@@ -147,7 +162,9 @@ export function SettingsView(): JSX.Element {
               id="difficulty"
               className="neo-select"
               value={prefs.difficulty}
-              onChange={(event) => update({ difficulty: event.target.value as typeof prefs.difficulty })}
+              onChange={(event) =>
+                update({ difficulty: event.target.value as typeof prefs.difficulty })
+              }
             >
               <option value="adaptive">Adaptative</option>
               <option value="guided">Guidee</option>
@@ -162,7 +179,9 @@ export function SettingsView(): JSX.Element {
               id="nova"
               className="neo-select"
               value={prefs.novaVerbosity}
-              onChange={(event) => update({ novaVerbosity: event.target.value as typeof prefs.novaVerbosity })}
+              onChange={(event) =>
+                update({ novaVerbosity: event.target.value as typeof prefs.novaVerbosity })
+              }
             >
               <option value="minimal">Discrete</option>
               <option value="normal">Normale</option>
@@ -175,8 +194,8 @@ export function SettingsView(): JSX.Element {
       <section className="neo-card">
         <h2 style={{ fontSize: 'var(--neo-fs-lg)' }}>Confidentialite et donnees</h2>
         <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
-          Aucune publicite, aucun traqueur, aucune donnee personnelle collectee. La telemetrie technique
-          (images par seconde, erreurs de chargement) reste locale sauf accord explicite.
+          Aucune publicite, aucun traqueur, aucune donnee personnelle collectee. La telemetrie
+          technique (images par seconde, erreurs de chargement) reste locale sauf accord explicite.
         </p>
         <label className="neo-row" style={{ gap: 8 }}>
           <input
@@ -214,9 +233,11 @@ export function SettingsView(): JSX.Element {
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (!file) return;
-                void file.text().then((raw) =>
-                  session.importProfile(raw).then((result) => setMessage(result.message)),
-                );
+                void file
+                  .text()
+                  .then((raw) =>
+                    session.importProfile(raw).then((result) => setMessage(result.message)),
+                  );
               }}
             />
           </label>

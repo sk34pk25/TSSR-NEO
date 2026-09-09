@@ -1,10 +1,7 @@
 /** Recherche plein texte locale, sans dependance externe et tolerante aux fautes. */
 
 export function normalizeText(input: string): string {
-  return input
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
+  return input.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
 export function tokenize(input: string): string[] {

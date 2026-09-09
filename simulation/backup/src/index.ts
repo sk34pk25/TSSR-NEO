@@ -53,7 +53,10 @@ export class BackupEngine {
     const effectiveKind = kind ?? job.kind;
     const hasFull = job.points.some((p) => p.kind === 'full');
     if (effectiveKind !== 'full' && !hasFull) {
-      return { ok: false, error: 'aucune sauvegarde complete de reference : une incrementale seule est inutilisable' };
+      return {
+        ok: false,
+        error: 'aucune sauvegarde complete de reference : une incrementale seule est inutilisable',
+      };
     }
 
     const files: Record<string, SystemState['files']> = {};
@@ -132,7 +135,13 @@ export class BackupEngine {
     const job = this.job(jobId);
     if (!job) return { ok: false, restoredSystems: [], chain: [], error: 'tache introuvable' };
     const point = job.points.find((p) => p.id === pointId);
-    if (!point) return { ok: false, restoredSystems: [], chain: [], error: 'point de restauration introuvable' };
+    if (!point)
+      return {
+        ok: false,
+        restoredSystems: [],
+        chain: [],
+        error: 'point de restauration introuvable',
+      };
 
     // Reconstitution de la lignee : incrementale -> parent -> ... -> complete.
     const chain: string[] = [];
@@ -156,7 +165,12 @@ export class BackupEngine {
       const stored = this.store.get(id);
       const meta = job.points.find((p) => p.id === id);
       if (!stored || meta?.integrity === 'corrupted') {
-        return { ok: false, restoredSystems: [], chain, error: `point ${id} corrompu ou illisible` };
+        return {
+          ok: false,
+          restoredSystems: [],
+          chain,
+          error: `point ${id} corrompu ou illisible`,
+        };
       }
     }
 
@@ -188,7 +202,9 @@ export class BackupEngine {
     if (!job) return { ok: false, error: 'tache introuvable' };
     const valid = this.verify(jobId, pointId);
     if (valid) job.lastRestoreTestAt = this.now();
-    return valid ? { ok: true } : { ok: false, error: 'la sauvegarde ne passe pas le controle d integrite' };
+    return valid
+      ? { ok: true }
+      : { ok: false, error: 'la sauvegarde ne passe pas le controle d integrite' };
   }
 
   /** Perte de donnees maximale au moment donne, en minutes de temps simule. */

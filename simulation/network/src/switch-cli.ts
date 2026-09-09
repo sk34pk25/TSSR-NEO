@@ -148,15 +148,23 @@ export class SwitchConsole {
       const vlans = node.vlans.length > 0 ? node.vlans : [{ id: 1, name: 'default' }];
       for (const vlan of vlans) {
         const ports = node.interfaces
-          .filter((i) => (i.mode === 'access' && (i.accessVlan ?? 1) === vlan.id) || (i.mode === 'trunk' && i.trunkVlans.includes(vlan.id)))
+          .filter(
+            (i) =>
+              (i.mode === 'access' && (i.accessVlan ?? 1) === vlan.id) ||
+              (i.mode === 'trunk' && i.trunkVlans.includes(vlan.id)),
+          )
           .map((i) => i.name + (i.mode === 'trunk' ? '(trunk)' : ''));
-        rows.push(`${pad(String(vlan.id), 6)}${pad(vlan.name || `VLAN${vlan.id}`, 18)}${ports.join(', ') || '(aucun)'}`);
+        rows.push(
+          `${pad(String(vlan.id), 6)}${pad(vlan.name || `VLAN${vlan.id}`, 18)}${ports.join(', ') || '(aucun)'}`,
+        );
       }
       return ok(rows.join('\n'));
     }
     if (topic.startsWith('interfaces status') || topic === 'interfaces' || topic === 'int status') {
       const index = this.engine.index();
-      const rows = [`${pad('Port', 12)}${pad('Etat', 12)}${pad('VLAN', 10)}${pad('Mode', 10)}Debit`];
+      const rows = [
+        `${pad('Port', 12)}${pad('Etat', 12)}${pad('VLAN', 10)}${pad('Mode', 10)}Debit`,
+      ];
       for (const iface of node.interfaces) {
         const up = iface.enabled && index.isLinkUp(iface.id);
         const vlan = iface.mode === 'trunk' ? 'trunk' : String(iface.accessVlan ?? iface.vlan ?? 1);
@@ -224,8 +232,10 @@ export class SwitchConsole {
         lines.push(' switchport mode access', ` switchport access vlan ${iface.accessVlan ?? 1}`);
       } else if (iface.mode === 'trunk') {
         lines.push(' switchport mode trunk');
-        if (iface.trunkVlans.length > 0) lines.push(` switchport trunk allowed vlan ${iface.trunkVlans.join(',')}`);
-        if (iface.nativeVlan !== undefined) lines.push(` switchport trunk native vlan ${iface.nativeVlan}`);
+        if (iface.trunkVlans.length > 0)
+          lines.push(` switchport trunk allowed vlan ${iface.trunkVlans.join(',')}`);
+        if (iface.nativeVlan !== undefined)
+          lines.push(` switchport trunk native vlan ${iface.nativeVlan}`);
       }
       for (const address of iface.addresses) {
         lines.push(` ip address ${address.address}/${address.prefix}`);
@@ -238,7 +248,9 @@ export class SwitchConsole {
 
   private currentIface(node: NetworkNode): NetworkInterface | undefined {
     if (this.currentInterface === undefined) return undefined;
-    return node.interfaces.find((i) => i.name.toLowerCase() === (this.currentInterface as string).toLowerCase());
+    return node.interfaces.find(
+      (i) => i.name.toLowerCase() === (this.currentInterface as string).toLowerCase(),
+    );
   }
 
   private configure(node: NetworkNode, tokens: string[]): ConsoleResult {
@@ -304,9 +316,12 @@ export class SwitchConsole {
       }
       if (sub === 'access' && (tokens[2] ?? '').toLowerCase() === 'vlan') {
         const id = Number(tokens[3]);
-        if (!Number.isInteger(id) || id < 1 || id > 4094) return ko('% identifiant de VLAN invalide');
+        if (!Number.isInteger(id) || id < 1 || id > 4094)
+          return ko('% identifiant de VLAN invalide');
         if (node.vlans.length > 0 && !node.vlans.some((v) => v.id === id)) {
-          return ko(`% le VLAN ${id} n est pas declare sur ${node.hostname} (utilisez "vlan ${id}")`);
+          return ko(
+            `% le VLAN ${id} n est pas declare sur ${node.hostname} (utilisez "vlan ${id}")`,
+          );
         }
         this.engine.setAccessVlan(node.id, iface.name, id);
         return ok('');
@@ -331,12 +346,17 @@ export class SwitchConsole {
     if (head === 'ip' && (tokens[1] ?? '').toLowerCase() === 'address') {
       const address = tokens[2];
       const maskOrPrefix = tokens[3];
-      if (address === undefined || maskOrPrefix === undefined) return ko('% usage : ip address <ip> <masque|prefixe>');
+      if (address === undefined || maskOrPrefix === undefined)
+        return ko('% usage : ip address <ip> <masque|prefixe>');
       let prefix: number;
       if (maskOrPrefix.includes('.')) {
         const octets = maskOrPrefix.split('.').map(Number);
-        if (octets.length !== 4 || octets.some((o) => !Number.isInteger(o))) return ko('% masque invalide');
-        prefix = octets.reduce((count, octet) => count + ((octet >>> 0).toString(2).match(/1/g)?.length ?? 0), 0);
+        if (octets.length !== 4 || octets.some((o) => !Number.isInteger(o)))
+          return ko('% masque invalide');
+        prefix = octets.reduce(
+          (count, octet) => count + ((octet >>> 0).toString(2).match(/1/g)?.length ?? 0),
+          0,
+        );
       } else {
         prefix = Number(maskOrPrefix.replace('/', ''));
       }

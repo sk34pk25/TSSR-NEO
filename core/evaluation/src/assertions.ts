@@ -23,16 +23,29 @@ function fail(detail: string): AssertionResult {
   return { passed: false, detail };
 }
 
-function expected(value: boolean, actual: boolean, okText: string, koText: string): AssertionResult {
+function expected(
+  value: boolean,
+  actual: boolean,
+  okText: string,
+  koText: string,
+): AssertionResult {
   return actual === value ? pass(okText) : fail(koText);
 }
 
-function resolveTarget(ctx: EvaluationContext, fromNodeId: string, target: string): string | undefined {
+function resolveTarget(
+  ctx: EvaluationContext,
+  fromNodeId: string,
+  target: string,
+): string | undefined {
   const dns = ctx.world.network.resolve(fromNodeId, target);
   return dns.resolved ? dns.address : undefined;
 }
 
-function baselineSlice(ctx: EvaluationContext, scope: 'node' | 'system' | 'service', id: string): unknown {
+function baselineSlice(
+  ctx: EvaluationContext,
+  scope: 'node' | 'system' | 'service',
+  id: string,
+): unknown {
   const state = ctx.baseline;
   if (!state) return undefined;
   if (scope === 'node') return state.network.nodes.find((n) => n.id === id);
@@ -44,7 +57,11 @@ function baselineSlice(ctx: EvaluationContext, scope: 'node' | 'system' | 'servi
   return undefined;
 }
 
-function currentSlice(ctx: EvaluationContext, scope: 'node' | 'system' | 'service', id: string): unknown {
+function currentSlice(
+  ctx: EvaluationContext,
+  scope: 'node' | 'system' | 'service',
+  id: string,
+): unknown {
   const state = ctx.world.state;
   if (scope === 'node') return state.network.nodes.find((n) => n.id === id);
   if (scope === 'system') return state.systems.find((s) => s.id === id);
@@ -55,14 +72,18 @@ function currentSlice(ctx: EvaluationContext, scope: 'node' | 'system' | 'servic
   return undefined;
 }
 
-// eslint-disable-next-line complexity
 function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): AssertionResult {
   const world = ctx.world;
   switch (assertion.type) {
     case 'ping-reachable': {
       const address = resolveTarget(ctx, assertion.from, assertion.to);
       if (address === undefined) {
-        return expected(assertion.expect, false, '', `${assertion.to} n est pas resolu depuis ${assertion.from}`);
+        return expected(
+          assertion.expect,
+          false,
+          '',
+          `${assertion.to} n est pas resolu depuis ${assertion.from}`,
+        );
       }
       const reach = world.network.reach(assertion.from, address);
       const ok = reach.delivered && reach.returnOk;
@@ -78,9 +99,19 @@ function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): Asserti
     case 'service-reachable': {
       const address = resolveTarget(ctx, assertion.from, assertion.to);
       if (address === undefined) {
-        return expected(assertion.expect, false, '', `${assertion.to} n est pas resolu depuis ${assertion.from}`);
+        return expected(
+          assertion.expect,
+          false,
+          '',
+          `${assertion.to} n est pas resolu depuis ${assertion.from}`,
+        );
       }
-      const result = world.network.connect(assertion.from, address, assertion.port, assertion.protocol);
+      const result = world.network.connect(
+        assertion.from,
+        address,
+        assertion.port,
+        assertion.protocol,
+      );
       return expected(
         assertion.expect,
         result.connected,
@@ -93,19 +124,32 @@ function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): Asserti
     case 'dns-resolves': {
       const dns = world.network.resolve(assertion.from, assertion.name);
       if (!dns.resolved) {
-        return expected(assertion.expect, false, '', `${assertion.name} non resolu : ${dns.failure?.detail ?? ''}`);
+        return expected(
+          assertion.expect,
+          false,
+          '',
+          `${assertion.name} non resolu : ${dns.failure?.detail ?? ''}`,
+        );
       }
       if (assertion.expectedAddress !== undefined && dns.address !== assertion.expectedAddress) {
-        return fail(`${assertion.name} resout vers ${dns.address} au lieu de ${assertion.expectedAddress}`);
+        return fail(
+          `${assertion.name} resout vers ${dns.address} au lieu de ${assertion.expectedAddress}`,
+        );
       }
-      return expected(assertion.expect, true, `${assertion.name} resout vers ${dns.address}`, `${assertion.name} ne devrait pas resoudre`);
+      return expected(
+        assertion.expect,
+        true,
+        `${assertion.name} resout vers ${dns.address}`,
+        `${assertion.name} ne devrait pas resoudre`,
+      );
     }
     case 'dhcp-lease': {
       const node = world.network.node(assertion.nodeId);
       const address = node?.interfaces.flatMap((i) => i.addresses).find((a) => a.source === 'dhcp');
       const ok =
         address !== undefined &&
-        (assertion.expectedSubnet === undefined || inCidr(address.address, assertion.expectedSubnet));
+        (assertion.expectedSubnet === undefined ||
+          inCidr(address.address, assertion.expectedSubnet));
       return expected(
         assertion.expect,
         ok,
@@ -115,8 +159,11 @@ function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): Asserti
     }
     case 'interface-address': {
       const node = world.network.node(assertion.nodeId);
-      const iface = node?.interfaces.find((i) => i.name.toLowerCase() === assertion.interfaceName.toLowerCase());
-      if (!iface) return fail(`interface ${assertion.interfaceName} introuvable sur ${assertion.nodeId}`);
+      const iface = node?.interfaces.find(
+        (i) => i.name.toLowerCase() === assertion.interfaceName.toLowerCase(),
+      );
+      if (!iface)
+        return fail(`interface ${assertion.interfaceName} introuvable sur ${assertion.nodeId}`);
       if (assertion.enabled !== undefined && iface.enabled !== assertion.enabled) {
         return fail(`${assertion.interfaceName} est ${iface.enabled ? 'active' : 'desactivee'}`);
       }
@@ -128,7 +175,9 @@ function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): Asserti
           );
         }
         if (assertion.prefix !== undefined && found.prefix !== assertion.prefix) {
-          return fail(`${assertion.address} est configuree en /${found.prefix} au lieu de /${assertion.prefix}`);
+          return fail(
+            `${assertion.address} est configuree en /${found.prefix} au lieu de /${assertion.prefix}`,
+          );
         }
       }
       return pass(`${assertion.interfaceName} est correctement configuree`);
@@ -138,24 +187,36 @@ function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): Asserti
       if (!node) return fail(`${assertion.nodeId} introuvable`);
       const routes = effectiveRoutes(node);
       const match = routes.find(
-        (r) => r.destination === assertion.destination && (assertion.via === undefined || r.via === assertion.via),
+        (r) =>
+          r.destination === assertion.destination &&
+          (assertion.via === undefined || r.via === assertion.via),
       );
       return match
         ? pass(`route ${assertion.destination} presente sur ${node.hostname}`)
-        : fail(`aucune route ${assertion.destination}${assertion.via ? ` via ${assertion.via}` : ''} sur ${node.hostname}`);
+        : fail(
+            `aucune route ${assertion.destination}${assertion.via ? ` via ${assertion.via}` : ''} sur ${node.hostname}`,
+          );
     }
     case 'interface-vlan': {
       const node = world.network.node(assertion.nodeId);
-      const iface = node?.interfaces.find((i) => i.name.toLowerCase() === assertion.interfaceName.toLowerCase());
+      const iface = node?.interfaces.find(
+        (i) => i.name.toLowerCase() === assertion.interfaceName.toLowerCase(),
+      );
       if (!iface) return fail(`interface ${assertion.interfaceName} introuvable`);
       if (assertion.mode !== undefined && iface.mode !== assertion.mode) {
-        return fail(`${assertion.interfaceName} est en mode ${iface.mode} au lieu de ${assertion.mode}`);
+        return fail(
+          `${assertion.interfaceName} est en mode ${iface.mode} au lieu de ${assertion.mode}`,
+        );
       }
       if (assertion.accessVlan !== undefined && iface.accessVlan !== assertion.accessVlan) {
-        return fail(`${assertion.interfaceName} est dans le VLAN ${iface.accessVlan ?? '(aucun)'} au lieu de ${assertion.accessVlan}`);
+        return fail(
+          `${assertion.interfaceName} est dans le VLAN ${iface.accessVlan ?? '(aucun)'} au lieu de ${assertion.accessVlan}`,
+        );
       }
       if (assertion.trunkContains !== undefined) {
-        const missing = assertion.trunkContains.filter((v) => !iface.trunkVlans.includes(v) && iface.nativeVlan !== v);
+        const missing = assertion.trunkContains.filter(
+          (v) => !iface.trunkVlans.includes(v) && iface.nativeVlan !== v,
+        );
         if (missing.length > 0) return fail(`VLAN absents du trunk : ${missing.join(', ')}`);
       }
       return pass(`${assertion.interfaceName} est configuree comme attendu`);
@@ -163,28 +224,45 @@ function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): Asserti
     case 'link-up': {
       const link = world.state.network.links.find((l) => l.id === assertion.linkId);
       if (!link) return fail(`lien ${assertion.linkId} introuvable`);
-      return expected(assertion.expect, link.connected, `lien ${assertion.linkId} raccorde`, `lien ${assertion.linkId} interrompu`);
+      return expected(
+        assertion.expect,
+        link.connected,
+        `lien ${assertion.linkId} raccorde`,
+        `lien ${assertion.linkId} interrompu`,
+      );
     }
     case 'service-status': {
       const node = world.network.node(assertion.nodeId);
-      const service = node?.services.find((s) => s.id === assertion.serviceId || s.name === assertion.serviceId);
-      if (!service) return fail(`service ${assertion.serviceId} introuvable sur ${assertion.nodeId}`);
+      const service = node?.services.find(
+        (s) => s.id === assertion.serviceId || s.name === assertion.serviceId,
+      );
+      if (!service)
+        return fail(`service ${assertion.serviceId} introuvable sur ${assertion.nodeId}`);
       return service.status === assertion.status
         ? pass(`${service.name} est ${assertion.status}`)
         : fail(`${service.name} est ${service.status} au lieu de ${assertion.status}`);
     }
     case 'service-startup': {
       const node = world.network.node(assertion.nodeId);
-      const service = node?.services.find((s) => s.id === assertion.serviceId || s.name === assertion.serviceId);
+      const service = node?.services.find(
+        (s) => s.id === assertion.serviceId || s.name === assertion.serviceId,
+      );
       if (!service) return fail(`service ${assertion.serviceId} introuvable`);
       return service.startupType === assertion.startupType
         ? pass(`${service.name} demarre en mode ${assertion.startupType}`)
-        : fail(`${service.name} demarre en mode ${service.startupType} au lieu de ${assertion.startupType}`);
+        : fail(
+            `${service.name} demarre en mode ${service.startupType} au lieu de ${assertion.startupType}`,
+          );
     }
     case 'file-exists': {
       const system = world.systemState(assertion.systemId);
       const found = system?.files[assertion.path] !== undefined;
-      return expected(assertion.expect, found, `${assertion.path} existe`, `${assertion.path} est absent de ${assertion.systemId}`);
+      return expected(
+        assertion.expect,
+        found,
+        `${assertion.path} existe`,
+        `${assertion.path} est absent de ${assertion.systemId}`,
+      );
     }
     case 'file-matches': {
       const system = world.systemState(assertion.systemId);
@@ -204,28 +282,47 @@ function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): Asserti
       const system = world.systemState(assertion.systemId);
       const node = system?.files[assertion.path];
       if (!node) return fail(`${assertion.path} est absent`);
-      if (assertion.mode !== undefined && node.permissions.mode.replace(/^0+/, '') !== assertion.mode.replace(/^0+/, '')) {
-        return fail(`${assertion.path} est en ${node.permissions.mode} au lieu de ${assertion.mode}`);
+      if (
+        assertion.mode !== undefined &&
+        node.permissions.mode.replace(/^0+/, '') !== assertion.mode.replace(/^0+/, '')
+      ) {
+        return fail(
+          `${assertion.path} est en ${node.permissions.mode} au lieu de ${assertion.mode}`,
+        );
       }
       if (assertion.owner !== undefined && node.permissions.owner !== assertion.owner) {
-        return fail(`${assertion.path} appartient a ${node.permissions.owner} au lieu de ${assertion.owner}`);
+        return fail(
+          `${assertion.path} appartient a ${node.permissions.owner} au lieu de ${assertion.owner}`,
+        );
       }
       if (assertion.group !== undefined && node.permissions.group !== assertion.group) {
-        return fail(`${assertion.path} a le groupe ${node.permissions.group} au lieu de ${assertion.group}`);
+        return fail(
+          `${assertion.path} a le groupe ${node.permissions.group} au lieu de ${assertion.group}`,
+        );
       }
       return pass(`les droits de ${assertion.path} sont conformes`);
     }
     case 'user-exists': {
       const system = world.systemState(assertion.systemId);
-      const found = system?.users.some((u) => u.name.toLowerCase() === assertion.user.toLowerCase()) ?? false;
-      return expected(assertion.expect, found, `le compte ${assertion.user} existe`, `le compte ${assertion.user} est absent`);
+      const found =
+        system?.users.some((u) => u.name.toLowerCase() === assertion.user.toLowerCase()) ?? false;
+      return expected(
+        assertion.expect,
+        found,
+        `le compte ${assertion.user} existe`,
+        `le compte ${assertion.user} est absent`,
+      );
     }
     case 'user-in-group': {
       const system = world.systemState(assertion.systemId);
-      const group = system?.groups.find((g) => g.name.toLowerCase() === assertion.group.toLowerCase());
+      const group = system?.groups.find(
+        (g) => g.name.toLowerCase() === assertion.group.toLowerCase(),
+      );
       const inGroup =
         group?.members.some((m) => m.toLowerCase() === assertion.user.toLowerCase()) ??
-        system?.users.find((u) => u.name.toLowerCase() === assertion.user.toLowerCase())?.groups.some((g) => g.toLowerCase() === assertion.group.toLowerCase()) ??
+        system?.users
+          .find((u) => u.name.toLowerCase() === assertion.user.toLowerCase())
+          ?.groups.some((g) => g.toLowerCase() === assertion.group.toLowerCase()) ??
         false;
       return expected(
         assertion.expect,
@@ -240,32 +337,55 @@ function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): Asserti
       if (!user) return fail(`le compte ${assertion.user} est absent`);
       return user.enabled === assertion.enabled
         ? pass(`${assertion.user} est ${assertion.enabled ? 'actif' : 'desactive'}`)
-        : fail(`${assertion.user} est ${user.enabled ? 'actif' : 'desactive'} contrairement a l attendu`);
+        : fail(
+            `${assertion.user} est ${user.enabled ? 'actif' : 'desactive'} contrairement a l attendu`,
+          );
     }
     case 'share-exists': {
       const system = world.systemState(assertion.systemId);
-      const found = system?.shares.some((s) => s.name.toLowerCase() === assertion.share.toLowerCase() && s.enabled) ?? false;
-      return expected(assertion.expect, found, `le partage ${assertion.share} existe`, `le partage ${assertion.share} est absent ou desactive`);
+      const found =
+        system?.shares.some(
+          (s) => s.name.toLowerCase() === assertion.share.toLowerCase() && s.enabled,
+        ) ?? false;
+      return expected(
+        assertion.expect,
+        found,
+        `le partage ${assertion.share} existe`,
+        `le partage ${assertion.share} est absent ou desactive`,
+      );
     }
     case 'process-running': {
       const system = world.systemState(assertion.systemId);
-      const found = system?.processes.some((p) => p.name.toLowerCase().includes(assertion.processName.toLowerCase())) ?? false;
-      return expected(assertion.expect, found, `${assertion.processName} tourne`, `${assertion.processName} ne tourne pas`);
+      const found =
+        system?.processes.some((p) =>
+          p.name.toLowerCase().includes(assertion.processName.toLowerCase()),
+        ) ?? false;
+      return expected(
+        assertion.expect,
+        found,
+        `${assertion.processName} tourne`,
+        `${assertion.processName} ne tourne pas`,
+      );
     }
     case 'scheduled-task': {
       const system = world.systemState(assertion.systemId);
-      const task = system?.scheduledTasks.find((t) => t.name.toLowerCase() === assertion.taskName.toLowerCase());
+      const task = system?.scheduledTasks.find(
+        (t) => t.name.toLowerCase() === assertion.taskName.toLowerCase(),
+      );
       if (task === undefined) {
         return expected(assertion.expect, false, '', `la tache ${assertion.taskName} n existe pas`);
       }
       if (assertion.enabled !== undefined && task.enabled !== assertion.enabled) {
-        return fail(`la tache ${assertion.taskName} est ${task.enabled ? 'activee' : 'desactivee'}`);
+        return fail(
+          `la tache ${assertion.taskName} est ${task.enabled ? 'activee' : 'desactivee'}`,
+        );
       }
       return expected(assertion.expect, true, `la tache ${assertion.taskName} est configuree`, '');
     }
     case 'domain-joined': {
       const system = world.systemState(assertion.systemId);
-      const joined = system?.domainJoin?.joined === true && system.domainJoin.domain === assertion.domain;
+      const joined =
+        system?.domainJoin?.joined === true && system.domainJoin.domain === assertion.domain;
       return expected(
         assertion.expect,
         joined,
@@ -299,7 +419,9 @@ function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): Asserti
       if (!ticket) return fail(`ticket ${assertion.ticketId} introuvable`);
       const summary = ticket.resolutionSummary ?? '';
       if (summary.trim().length < assertion.minLength) {
-        return fail(`la resolution du ticket ${ticket.reference} est trop succincte (${summary.trim().length} caracteres)`);
+        return fail(
+          `la resolution du ticket ${ticket.reference} est trop succincte (${summary.trim().length} caracteres)`,
+        );
       }
       if (assertion.requireRootCause && (ticket.rootCause ?? '').trim().length < 10) {
         return fail(`la cause racine du ticket ${ticket.reference} n est pas documentee`);
@@ -311,7 +433,12 @@ function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): Asserti
       if (!job) return fail(`tache de sauvegarde ${assertion.jobId} introuvable`);
       const last = job.points[job.points.length - 1];
       const ok = last !== undefined && world.backup.testRestore(job.id, last.id).ok;
-      return expected(assertion.expect, ok, `la sauvegarde ${job.name} est restaurable`, `la sauvegarde ${job.name} n est pas restaurable`);
+      return expected(
+        assertion.expect,
+        ok,
+        `la sauvegarde ${job.name} est restaurable`,
+        `la sauvegarde ${job.name} n est pas restaurable`,
+      );
     }
     case 'snapshot-taken': {
       const taken = world.bus.count(
@@ -319,7 +446,12 @@ function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): Asserti
           e.type === 'virtualization.snapshot.taken' &&
           (assertion.targetId === undefined || e.payload.vmId === assertion.targetId),
       );
-      return expected(assertion.expect, taken > 0, 'un instantane a ete pris', 'aucun instantane n a ete pris avant l intervention');
+      return expected(
+        assertion.expect,
+        taken > 0,
+        'un instantane a ete pris',
+        'aucun instantane n a ete pris avant l intervention',
+      );
     }
     case 'command-used': {
       let regex: RegExp;
@@ -330,7 +462,8 @@ function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): Asserti
       }
       const count = world.bus.count((e) => {
         if (e.type !== 'terminal.command') return false;
-        if (assertion.systemId !== undefined && e.payload.systemId !== assertion.systemId) return false;
+        if (assertion.systemId !== undefined && e.payload.systemId !== assertion.systemId)
+          return false;
         return regex.test(String(e.payload.command ?? ''));
       });
       return expected(
@@ -351,7 +484,12 @@ function evaluateLeaf(assertion: LeafAssertion, ctx: EvaluationContext): Asserti
     }
     case 'event-occurred': {
       const found = world.bus.count((e) => e.type === assertion.eventType) > 0;
-      return expected(assertion.expect, found, `evenement ${assertion.eventType} observe`, `evenement ${assertion.eventType} absent`);
+      return expected(
+        assertion.expect,
+        found,
+        `evenement ${assertion.eventType} observe`,
+        `evenement ${assertion.eventType} absent`,
+      );
     }
     default: {
       const never: never = assertion;
@@ -367,7 +505,10 @@ export function evaluateAssertion(assertion: Assertion, ctx: EvaluationContext):
     const failed = children.filter((c) => !c.passed);
     return {
       passed: failed.length === 0,
-      detail: failed.length === 0 ? 'toutes les conditions sont remplies' : failed.map((f) => f.detail).join(' ; '),
+      detail:
+        failed.length === 0
+          ? 'toutes les conditions sont remplies'
+          : failed.map((f) => f.detail).join(' ; '),
       children,
     };
   }
@@ -376,7 +517,9 @@ export function evaluateAssertion(assertion: Assertion, ctx: EvaluationContext):
     const succeeded = children.find((c) => c.passed);
     return {
       passed: succeeded !== undefined,
-      detail: succeeded?.detail ?? `aucune solution valide : ${children.map((c) => c.detail).join(' ; ')}`,
+      detail:
+        succeeded?.detail ??
+        `aucune solution valide : ${children.map((c) => c.detail).join(' ; ')}`,
       children,
     };
   }
@@ -384,12 +527,16 @@ export function evaluateAssertion(assertion: Assertion, ctx: EvaluationContext):
     const inner = evaluateAssertion(assertion.of, ctx);
     return {
       passed: !inner.passed,
-      detail: inner.passed ? `condition interdite verifiee : ${inner.detail}` : 'la condition interdite n est pas remplie',
+      detail: inner.passed
+        ? `condition interdite verifiee : ${inner.detail}`
+        : 'la condition interdite n est pas remplie',
       children: [inner],
     };
   }
   const result = evaluateLeaf(assertion, ctx);
-  return assertion.note === undefined ? result : { ...result, detail: `${assertion.note} - ${result.detail}` };
+  return assertion.note === undefined
+    ? result
+    : { ...result, detail: `${assertion.note} - ${result.detail}` };
 }
 
 export function assertionPasses(assertion: Assertion, ctx: EvaluationContext): boolean {

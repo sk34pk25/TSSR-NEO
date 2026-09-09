@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { Ticket } from '@tssr/contracts';
 import type { MissionRunner } from '@tssr/mission-engine';
 import type { Nova, NovaMessage } from '@tssr/nova';
 import type { SimulationWorld } from '@tssr/sim-world';
+import { useSimValue } from '../state/hooks.ts';
 
 interface ObjectivesPanelProps {
   runner: MissionRunner;
@@ -11,7 +12,7 @@ interface ObjectivesPanelProps {
 
 /** Objectifs reevalues en continu contre l etat reel : jamais coches a la main. */
 export function ObjectivesPanel({ runner, version }: ObjectivesPanelProps): JSX.Element {
-  const objectives = useMemo(() => runner.objectives(), [runner, version]);
+  const objectives = useSimValue(version, () => runner.objectives());
   const done = objectives.filter((o) => o.status === 'completed').length;
 
   return (
@@ -24,7 +25,10 @@ export function ObjectivesPanel({ runner, version }: ObjectivesPanelProps): JSX.
       </div>
       <div className="neo-panel__body">
         <div className="meter" aria-hidden="true">
-          <div className="meter__fill" style={{ width: `${(done / Math.max(1, objectives.length)) * 100}%` }} />
+          <div
+            className="meter__fill"
+            style={{ width: `${(done / Math.max(1, objectives.length)) * 100}%` }}
+          />
         </div>
         <div style={{ marginTop: 'var(--neo-space-3)' }}>
           {objectives.map((objective) => (
@@ -37,7 +41,11 @@ export function ObjectivesPanel({ runner, version }: ObjectivesPanelProps): JSX.
               </span>
               <span>
                 <span className="objective__label">{objective.label}</span>
-                {objective.optional ? <span className="neo-tag" style={{ marginLeft: 6 }}>optionnel</span> : null}
+                {objective.optional ? (
+                  <span className="neo-tag" style={{ marginLeft: 6 }}>
+                    optionnel
+                  </span>
+                ) : null}
                 {objective.detail !== undefined && objective.status !== 'completed' ? (
                   <div className="neo-dim" style={{ fontSize: 'var(--neo-fs-xs)', marginTop: 3 }}>
                     {objective.detail}
@@ -67,7 +75,7 @@ interface NovaPanelProps {
 export function NovaPanel({ nova, version, onAction }: NovaPanelProps): JSX.Element {
   const [messages, setMessages] = useState<NovaMessage[]>([]);
   const [question, setQuestion] = useState('');
-  const observations = useMemo(() => nova.observations(), [nova, version]);
+  const observations = useSimValue(version, () => nova.observations());
 
   function push(message: NovaMessage): void {
     setMessages((current) => [...current.slice(-9), message]);
@@ -78,15 +86,25 @@ export function NovaPanel({ nova, version, onAction }: NovaPanelProps): JSX.Elem
     <div className="neo-panel" style={{ height: '100%' }}>
       <div className="neo-panel__head">
         <span>NOVA</span>
-        <span className="neo-dim" style={{ fontWeight: 400 }}>assistant pedagogique</span>
+        <span className="neo-dim" style={{ fontWeight: 400 }}>
+          assistant pedagogique
+        </span>
       </div>
       <div className="neo-panel__body neo-scroll">
         <div className="neo-stack">
           <div className="neo-row">
-            <button type="button" className="neo-btn neo-btn--sm" onClick={() => push(nova.guidance())}>
+            <button
+              type="button"
+              className="neo-btn neo-btn--sm"
+              onClick={() => push(nova.guidance())}
+            >
               Par ou commencer ?
             </button>
-            <button type="button" className="neo-btn neo-btn--sm" onClick={() => push(nova.requestHint())}>
+            <button
+              type="button"
+              className="neo-btn neo-btn--sm"
+              onClick={() => push(nova.requestHint())}
+            >
               Demander un indice
             </button>
           </div>
@@ -99,8 +117,8 @@ export function NovaPanel({ nova, version, onAction }: NovaPanelProps): JSX.Elem
 
           {messages.length === 0 ? (
             <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
-              Posez une question technique ou demandez une piste. Les indices consomment de l autonomie :
-              ils sont comptes dans le bilan de fin de mission.
+              Posez une question technique ou demandez une piste. Les indices consomment de l
+              autonomie : ils sont comptes dans le bilan de fin de mission.
             </p>
           ) : null}
 
@@ -173,7 +191,7 @@ const STATUS_LABEL: Record<Ticket['status'], string> = {
 
 /** Tickets relies a l etat technique : resoudre suppose avoir vraiment corrige. */
 export function TicketsPanel({ world, version, onChange }: TicketsPanelProps): JSX.Element {
-  const tickets = useMemo(() => world.itsm.tickets, [world, version]);
+  const tickets = useSimValue(version, () => [...world.itsm.tickets]);
   const [openId, setOpenId] = useState<string | undefined>(tickets[0]?.id);
   const [summary, setSummary] = useState('');
   const [rootCause, setRootCause] = useState('');
@@ -185,7 +203,9 @@ export function TicketsPanel({ world, version, onChange }: TicketsPanelProps): J
     <div className="neo-panel" style={{ height: '100%' }}>
       <div className="neo-panel__head">
         <span>Tickets</span>
-        <span className="neo-dim" style={{ fontWeight: 400 }}>{tickets.length} au total</span>
+        <span className="neo-dim" style={{ fontWeight: 400 }}>
+          {tickets.length} au total
+        </span>
       </div>
       <div className="neo-panel__body neo-scroll">
         <div className="neo-stack">
@@ -199,7 +219,9 @@ export function TicketsPanel({ world, version, onChange }: TicketsPanelProps): J
             >
               <div className="neo-row" style={{ justifyContent: 'space-between' }}>
                 <strong className="neo-mono">{item.reference}</strong>
-                <span className={`neo-tag ${item.priority === 'P1' ? 'neo-tag--danger' : item.priority === 'P2' ? 'neo-tag--warn' : ''}`}>
+                <span
+                  className={`neo-tag ${item.priority === 'P1' ? 'neo-tag--danger' : item.priority === 'P2' ? 'neo-tag--warn' : ''}`}
+                >
                   {item.priority}
                 </span>
               </div>
@@ -215,7 +237,9 @@ export function TicketsPanel({ world, version, onChange }: TicketsPanelProps): J
           {ticket ? (
             <div className="neo-card" style={{ padding: 'var(--neo-space-4)' }}>
               <h3>{ticket.title}</h3>
-              <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>{ticket.description}</p>
+              <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
+                {ticket.description}
+              </p>
               {sla ? (
                 <p className={sla.breached ? 'neo-tag neo-tag--danger' : 'neo-tag'}>
                   Delai : {sla.elapsedMinutes} / {sla.slaMinutes} min
@@ -237,7 +261,9 @@ export function TicketsPanel({ world, version, onChange }: TicketsPanelProps): J
               {ticket.status === 'resolved' || ticket.status === 'closed' ? (
                 <div className="neo-stack">
                   <span className="neo-tag neo-tag--ok">Resolution enregistree</span>
-                  <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>{ticket.resolutionSummary}</p>
+                  <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
+                    {ticket.resolutionSummary}
+                  </p>
                   {ticket.rootCause !== undefined ? (
                     <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
                       Cause racine : {ticket.rootCause}
@@ -305,7 +331,8 @@ export function TicketsPanel({ world, version, onChange }: TicketsPanelProps): J
                   </button>
                   {summary.trim().length < 20 ? (
                     <span className="neo-dim" style={{ fontSize: 'var(--neo-fs-xs)' }}>
-                      Une resolution exploitable demande au minimum une description du constat et de l action.
+                      Une resolution exploitable demande au minimum une description du constat et de
+                      l action.
                     </span>
                   ) : null}
                 </div>
@@ -326,12 +353,14 @@ interface MonitoringPanelProps {
 
 /** Supervision alimentee par les sondes reelles du moteur. */
 export function MonitoringPanel({ world, version, onChange }: MonitoringPanelProps): JSX.Element {
-  const checks = useMemo(
-    () => world.state.monitoringChecks.map((check) => ({ check, sample: world.monitoring.sample(check) })),
-    [world, version],
+  const checks = useSimValue(version, () =>
+    world.state.monitoringChecks.map((check) => ({
+      check,
+      sample: world.monitoring.sample(check),
+    })),
   );
-  const alerts = useMemo(() => world.monitoring.activeAlerts(), [world, version]);
-  const correlations = useMemo(() => world.monitoring.correlate(), [world, version]);
+  const alerts = useSimValue(version, () => world.monitoring.activeAlerts());
+  const correlations = useSimValue(version, () => world.monitoring.correlate());
 
   return (
     <div className="neo-panel" style={{ height: '100%' }}>
@@ -362,7 +391,9 @@ export function MonitoringPanel({ world, version, onChange }: MonitoringPanelPro
               <tr key={check.id}>
                 <td>{check.name}</td>
                 <td>
-                  <span className={`neo-tag ${sample.ok ? 'neo-tag--ok' : sample.severity === 'critical' ? 'neo-tag--danger' : 'neo-tag--warn'}`}>
+                  <span
+                    className={`neo-tag ${sample.ok ? 'neo-tag--ok' : sample.severity === 'critical' ? 'neo-tag--danger' : 'neo-tag--warn'}`}
+                  >
                     {sample.ok ? 'normal' : sample.severity}
                   </span>
                 </td>
@@ -402,9 +433,12 @@ export function MonitoringPanel({ world, version, onChange }: MonitoringPanelPro
         ) : null}
 
         {correlations.length > 0 ? (
-          <p className="neo-muted" style={{ marginTop: 'var(--neo-space-3)', fontSize: 'var(--neo-fs-sm)' }}>
-            Plusieurs alertes partagent un equipement amont commun : cherchez une cause unique avant de traiter
-            chaque symptome separement.
+          <p
+            className="neo-muted"
+            style={{ marginTop: 'var(--neo-space-3)', fontSize: 'var(--neo-fs-sm)' }}
+          >
+            Plusieurs alertes partagent un equipement amont commun : cherchez une cause unique avant
+            de traiter chaque symptome separement.
           </p>
         ) : null}
       </div>

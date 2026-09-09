@@ -134,7 +134,10 @@ describe('progression', () => {
     objectivesTotal: 6,
     hintsUsed: 0,
     durationMs: 900000,
-    competencyDeltas: missionPosteSansReseau.competencies.map((c) => ({ competencyId: c, delta: 0.4 })),
+    competencyDeltas: missionPosteSansReseau.competencies.map((c) => ({
+      competencyId: c,
+      delta: 0.4,
+    })),
   };
 
   it('accorde de l experience, des badges et fait progresser la maitrise', () => {
@@ -165,7 +168,12 @@ describe('progression', () => {
 
   it('programme les revisions de plus en plus loin quand la maitrise monte', () => {
     const weak = updateMastery(undefined, 'a', 0.2, 0);
-    const strong = updateMastery({ competencyId: 'b', mastery: 0.9, confidence: 1, observations: 6 }, 'b', 1, 0);
+    const strong = updateMastery(
+      { competencyId: 'b', mastery: 0.9, confidence: 1, observations: 6 },
+      'b',
+      1,
+      0,
+    );
     expect(strong.dueAt ?? 0).toBeGreaterThan(weak.dueAt ?? 0);
   });
 
@@ -177,8 +185,12 @@ describe('progression', () => {
       confidence: 1,
       observations: 8,
     }));
-    expect(suggestDifficulty(profile, missionPosteSansReseau.competencies, 'guided')).toBe('standard');
-    expect(suggestDifficulty(profile, missionPosteSansReseau.competencies, 'standard')).toBe('advanced');
+    expect(suggestDifficulty(profile, missionPosteSansReseau.competencies, 'guided')).toBe(
+      'standard',
+    );
+    expect(suggestDifficulty(profile, missionPosteSansReseau.competencies, 'standard')).toBe(
+      'advanced',
+    );
   });
 
   it('n interdit un contenu que sur un prerequis explicitement bloquant', () => {
@@ -241,8 +253,20 @@ describe('base de connaissances', () => {
   it('recommande en priorite ce qui est du a revision', () => {
     const recommendations = library.recommend(
       [
-        { competencyId: 'net-vlan-access', mastery: 0.2, confidence: 0.3, observations: 1, dueAt: 0 },
-        { competencyId: 'itsm-documentation', mastery: 0.95, confidence: 1, observations: 9, dueAt: 9_999_999_999_999 },
+        {
+          competencyId: 'net-vlan-access',
+          mastery: 0.2,
+          confidence: 0.3,
+          observations: 1,
+          dueAt: 0,
+        },
+        {
+          competencyId: 'itsm-documentation',
+          mastery: 0.95,
+          confidence: 1,
+          observations: 9,
+          dueAt: 9_999_999_999_999,
+        },
       ],
       3,
       100000,
@@ -253,7 +277,13 @@ describe('base de connaissances', () => {
   it('genere une session de revision a partir de fiches reelles', () => {
     const challenges = buildReviewSession(
       library,
-      trainingLabCompetencies.map((c) => ({ competencyId: c.id, mastery: 0.3, confidence: 0.4, observations: 1, dueAt: 0 })),
+      trainingLabCompetencies.map((c) => ({
+        competencyId: c.id,
+        mastery: 0.3,
+        confidence: 0.4,
+        observations: 1,
+        dueAt: 0,
+      })),
       { minutes: 10, rng: new Rng(3), now: 100000 },
     );
     expect(challenges.length).toBeGreaterThan(0);
@@ -278,7 +308,9 @@ describe('NOVA', () => {
     const world = buildWorld();
     const runner = new MissionRunner(missionPosteSansReseau, world, { seed: 7 });
     runner.start();
-    const library = new KnowledgeLibrary().addEntries(trainingLabKnowledge).addCompetencies(trainingLabCompetencies);
+    const library = new KnowledgeLibrary()
+      .addEntries(trainingLabKnowledge)
+      .addCompetencies(trainingLabCompetencies);
     return { world, runner, nova: new Nova({ library, world, runner }) };
   }
 

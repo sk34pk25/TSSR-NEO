@@ -159,11 +159,17 @@ export const zDirectoryDomain = z.object({
   netbiosName: z.string().min(1).max(15),
   controllerNodeIds: z.array(zId).default([]),
   organizationalUnits: z
-    .array(z.object({ dn: z.string().min(1), name: z.string().min(1), parentDn: z.string().optional() }))
+    .array(
+      z.object({ dn: z.string().min(1), name: z.string().min(1), parentDn: z.string().optional() }),
+    )
     .default([]),
   users: z.array(zUserAccount).default([]),
   groups: z.array(zGroupAccount).default([]),
-  computers: z.array(z.object({ name: zHostname, ou: z.string().optional(), enabled: z.boolean().default(true) })).default([]),
+  computers: z
+    .array(
+      z.object({ name: zHostname, ou: z.string().optional(), enabled: z.boolean().default(true) }),
+    )
+    .default([]),
   gpos: z.array(zGpo).default([]),
 });
 
@@ -176,11 +182,25 @@ export const zVirtualMachine = z.object({
   memoryMb: z.number().int().positive().default(2048),
   diskGb: z.number().positive().default(40),
   vnics: z
-    .array(z.object({ id: zId, virtualSwitchId: zId, vlan: z.number().int().optional(), networkInterfaceId: zId.optional() }))
+    .array(
+      z.object({
+        id: zId,
+        virtualSwitchId: zId,
+        vlan: z.number().int().optional(),
+        networkInterfaceId: zId.optional(),
+      }),
+    )
     .default([]),
   systemId: zId.optional(),
   snapshots: z
-    .array(z.object({ id: zId, name: z.string(), takenAt: z.number().int().nonnegative(), parentId: zId.optional() }))
+    .array(
+      z.object({
+        id: zId,
+        name: z.string(),
+        takenAt: z.number().int().nonnegative(),
+        parentId: zId.optional(),
+      }),
+    )
     .default([]),
   template: z.boolean().default(false),
 });
@@ -193,14 +213,30 @@ export const zHypervisorHost = z.object({
   memoryMb: z.number().int().positive().default(65536),
   storageGb: z.number().positive().default(2000),
   virtualSwitches: z
-    .array(z.object({ id: zId, name: z.string(), uplinkInterfaceId: zId.optional(), vlans: z.array(z.number().int()).default([]) }))
+    .array(
+      z.object({
+        id: zId,
+        name: z.string(),
+        uplinkInterfaceId: zId.optional(),
+        vlans: z.array(z.number().int()).default([]),
+      }),
+    )
     .default([]),
   state: z.enum(['up', 'down', 'maintenance']).default('up'),
 });
 
 export const zCloudResource = z.object({
   id: zId,
-  kind: z.enum(['vpc', 'subnet', 'vm', 'storage', 'load-balancer', 'dns-zone', 'security-group', 'iam-role']),
+  kind: z.enum([
+    'vpc',
+    'subnet',
+    'vm',
+    'storage',
+    'load-balancer',
+    'dns-zone',
+    'security-group',
+    'iam-role',
+  ]),
   name: z.string().min(1),
   region: z.string().min(1),
   zone: z.string().optional(),

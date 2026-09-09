@@ -46,7 +46,8 @@ export function scoreMission(input: ScoringInput): MissionScore {
     (o) => state.objectives.find((s) => s.objectiveId === o.id)?.status === 'completed',
   );
   const completedOptional = objectives.filter(
-    (o) => o.optional && state.objectives.find((s) => s.objectiveId === o.id)?.status === 'completed',
+    (o) =>
+      o.optional && state.objectives.find((s) => s.objectiveId === o.id)?.status === 'completed',
   );
 
   const requiredWeight = required.reduce((sum, o) => sum + o.weight, 0) || 1;
@@ -80,15 +81,21 @@ export function scoreMission(input: ScoringInput): MissionScore {
   const verification = clamp(verificationCommands / Math.max(2, required.length));
 
   // Documentation : commentaires et resolutions renseignes dans les tickets.
-  const documented = bus.count((e) => e.type === 'itsm.ticket.resolved' && e.payload.documented === true);
+  const documented = bus.count(
+    (e) => e.type === 'itsm.ticket.resolved' && e.payload.documented === true,
+  );
   const comments = bus.count((e) => e.type === 'itsm.ticket.comment');
   const documentation =
-    definition.ticketIds.length === 0 ? 1 : clamp((documented + Math.min(comments, 2) * 0.25) / definition.ticketIds.length);
+    definition.ticketIds.length === 0
+      ? 1
+      : clamp((documented + Math.min(comments, 2) * 0.25) / definition.ticketIds.length);
 
   const safety = input.safetyTotal === 0 ? 1 : clamp(input.safetyPassed / input.safetyTotal);
 
   // Impact : degradation reelle causee pendant l intervention.
-  const incidents = bus.count((e) => e.category === 'incident' && e.type === 'monitoring.alert.raised');
+  const incidents = bus.count(
+    (e) => e.category === 'incident' && e.type === 'monitoring.alert.raised',
+  );
   const impact = clamp(1 - incidents * 0.2);
 
   const dimensions: Record<ScoreDimension, number> = {
@@ -110,7 +117,9 @@ export function scoreMission(input: ScoringInput): MissionScore {
   // Progression de maitrise : proportionnelle a la reussite, jamais negative sur un echec unique.
   const competencyDeltas = definition.competencies.map((competencyId) => ({
     competencyId,
-    delta: Math.round((technicalAccuracy * 0.6 + autonomy * 0.2 + verification * 0.2 - 0.25) * 100) / 100,
+    delta:
+      Math.round((technicalAccuracy * 0.6 + autonomy * 0.2 + verification * 0.2 - 0.25) * 100) /
+      100,
   }));
 
   return {

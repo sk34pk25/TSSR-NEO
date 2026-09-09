@@ -113,7 +113,12 @@ export function buildCampusNetwork(): NetworkTopology {
       },
     ],
     dhcpPools: [
-      makePool('pool-serveurs', '10.10.20.0/24', { from: 100, to: 150, gateway: '10.10.20.1', dns: ['10.10.20.10'] }),
+      makePool('pool-serveurs', '10.10.20.0/24', {
+        from: 100,
+        to: 150,
+        gateway: '10.10.20.1',
+        dns: ['10.10.20.10'],
+      }),
     ],
   });
 

@@ -94,15 +94,26 @@ export class Terminal {
     this.ctx.bus?.emit({
       category: 'command',
       type: 'terminal.command',
-      payload: { systemId: this.ctx.system.id, hostname: this.ctx.system.hostname, command: trimmed },
+      payload: {
+        systemId: this.ctx.system.id,
+        hostname: this.ctx.system.hostname,
+        command: trimmed,
+      },
     });
 
     if (this.ctx.system.powerState !== 'running') {
-      return failure(`${this.ctx.system.hostname} ne repond pas : la machine est ${this.ctx.system.powerState}.`);
+      return failure(
+        `${this.ctx.system.hostname} ne repond pas : la machine est ${this.ctx.system.powerState}.`,
+      );
     }
 
     const lower = trimmed.toLowerCase();
-    if (lower === 'help' || lower === 'aide' || lower.startsWith('help ') || lower.startsWith('aide ')) {
+    if (
+      lower === 'help' ||
+      lower === 'aide' ||
+      lower.startsWith('help ') ||
+      lower.startsWith('aide ')
+    ) {
       const parts = trimmed.split(/\s+/);
       return output(this.helpText(parts[1]));
     }
@@ -123,7 +134,9 @@ export class Terminal {
       const previousUser = this.ctx.session.user;
       if ((tokens[0] === 'sudo' || tokens[0] === 'runas') && tokens.length > 1) {
         if (!this.canElevate(previousUser)) {
-          return failure(`${previousUser} n est pas autorise a utiliser sudo sur ${this.ctx.system.hostname}.`);
+          return failure(
+            `${previousUser} n est pas autorise a utiliser sudo sur ${this.ctx.system.hostname}.`,
+          );
         }
         elevated = true;
         this.ctx.session.user = this.ctx.system.os === 'windows' ? 'Administrator' : 'root';
@@ -148,7 +161,8 @@ export class Terminal {
       if (segment.redirect) {
         const target = resolvePath(this.ctx.session.cwd, segment.redirect.path);
         // Comme un vrai shell, une redirection termine toujours la ligne ecrite.
-        const payload = last.stdout === '' || last.stdout.endsWith('\n') ? last.stdout : `${last.stdout}\n`;
+        const payload =
+          last.stdout === '' || last.stdout.endsWith('\n') ? last.stdout : `${last.stdout}\n`;
         const written = writeFile(this.ctx.system, target, payload, this.ctx.session.user, {
           append: segment.redirect.append,
           simTime: this.ctx.bus?.getSimTime() ?? 0,

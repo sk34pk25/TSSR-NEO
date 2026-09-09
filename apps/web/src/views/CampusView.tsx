@@ -65,8 +65,8 @@ export function CampusView(): JSX.Element {
     <div>
       <h1>Campus NEO Systems</h1>
       <p className="neo-muted" style={{ maxWidth: '70ch' }}>
-        Vous etes technicien systemes et reseaux chez NEO Systems. Le campus regroupe vos points d entree :
-        chaque zone correspond a une activite reelle de la plateforme.
+        Vous etes technicien systemes et reseaux chez NEO Systems. Le campus regroupe vos points d
+        entree : chaque zone correspond a une activite reelle de la plateforme.
       </p>
 
       <section style={{ marginTop: 'var(--neo-space-5)' }}>
@@ -97,12 +97,14 @@ export function CampusView(): JSX.Element {
                 </p>
                 {record?.completed === true ? (
                   <span className="neo-tag neo-tag--ok">
-                    deja termine, meilleur bilan {Math.round((record.bestScore?.overall ?? 0) * 100)} %
+                    deja termine, meilleur bilan{' '}
+                    {Math.round((record.bestScore?.overall ?? 0) * 100)} %
                   </span>
                 ) : null}
                 {prerequisites.advisory.length > 0 ? (
                   <span className="neo-tag neo-tag--warn">
-                    conseil : consolider {prerequisites.advisory.map((a) => a.competencyId).join(', ')}
+                    conseil : consolider{' '}
+                    {prerequisites.advisory.map((a) => a.competencyId).join(', ')}
                   </span>
                 ) : null}
                 <div className="neo-row">

@@ -37,8 +37,8 @@ export function ReviewView(): JSX.Element {
     <div>
       <h1>NEO Review</h1>
       <p className="neo-muted" style={{ maxWidth: '70ch' }}>
-        Une session courte pour ancrer ce qui a ete travaille. Les questions sont derivees des fiches
-        reelles des modules charges, jamais generees au hasard.
+        Une session courte pour ancrer ce qui a ete travaille. Les questions sont derivees des
+        fiches reelles des modules charges, jamais generees au hasard.
       </p>
 
       {challenges.length === 0 ? (
@@ -79,7 +79,9 @@ export function ReviewView(): JSX.Element {
                     <tr key={item.competencyId}>
                       <td>{item.competencyId}</td>
                       <td>{Math.round(item.mastery * 100)} %</td>
-                      <td className="neo-muted">{item.reason === 'due' ? 'echeance atteinte' : 'maitrise fragile'}</td>
+                      <td className="neo-muted">
+                        {item.reason === 'due' ? 'echeance atteinte' : 'maitrise fragile'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -87,7 +89,8 @@ export function ReviewView(): JSX.Element {
             </div>
           ) : (
             <p className="neo-muted" style={{ marginTop: 'var(--neo-space-3)' }}>
-              Aucune competence suivie pour l instant : terminez une mission pour alimenter les revisions.
+              Aucune competence suivie pour l instant : terminez une mission pour alimenter les
+              revisions.
             </p>
           )}
         </div>
@@ -118,16 +121,27 @@ export function ReviewView(): JSX.Element {
               aria-label="Votre reponse"
               disabled={result !== 'none'}
             />
-            <button type="submit" className="neo-btn" disabled={result !== 'none' || answer.trim() === ''}>
+            <button
+              type="submit"
+              className="neo-btn"
+              disabled={result !== 'none' || answer.trim() === ''}
+            >
               Valider
             </button>
           </form>
 
           {result !== 'none' ? (
-            <div className={`nova-message ${result === 'correct' ? 'nova-message--encouraging' : 'nova-message--warning'}`} style={{ marginTop: 'var(--neo-space-3)' }}>
+            <div
+              className={`nova-message ${result === 'correct' ? 'nova-message--encouraging' : 'nova-message--warning'}`}
+              style={{ marginTop: 'var(--neo-space-3)' }}
+            >
               <strong>{result === 'correct' ? 'Correct' : 'A revoir'}</strong>
               <div>{current.explanation}</div>
-              <a className="neo-tag neo-tag--accent" href={`#/connaissances/${current.entryId}`} style={{ marginTop: 8 }}>
+              <a
+                className="neo-tag neo-tag--accent"
+                href={`#/connaissances/${current.entryId}`}
+                style={{ marginTop: 8 }}
+              >
                 Ouvrir la fiche
               </a>
             </div>
@@ -148,7 +162,9 @@ export function ReviewView(): JSX.Element {
                 setResult('none');
               }}
             >
-              {index + 1 >= challenges.length ? `Terminer (${correct}/${challenges.length})` : 'Question suivante'}
+              {index + 1 >= challenges.length
+                ? `Terminer (${correct}/${challenges.length})`
+                : 'Question suivante'}
             </button>
           ) : null}
         </div>

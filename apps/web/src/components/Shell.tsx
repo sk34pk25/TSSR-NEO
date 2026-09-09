@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Logo } from './Logo.tsx';
-import { navigate, useHotkey, useRoute, useSession, type RouteName } from '../state/hooks.ts';
+import {
+  navigate,
+  useHotkey,
+  useRoute,
+  useSession,
+  useSessionRevision,
+  useSimValue,
+  type RouteName,
+} from '../state/hooks.ts';
 
 const NAV: { name: RouteName; label: string }[] = [
   { name: 'campus', label: 'Campus' },
@@ -19,16 +27,18 @@ export interface CommandEntry {
 }
 
 /** Centre de commande global, ouvert par Ctrl+K. */
-function CommandCenter({ entries, onClose }: { entries: CommandEntry[]; onClose: () => void }): JSX.Element {
+function CommandCenter({
+  entries,
+  onClose,
+}: {
+  entries: CommandEntry[];
+  onClose: () => void;
+}): JSX.Element {
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
 
   const filtered = useMemo(() => {
-    const normalized = query
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
-      .toLowerCase()
-      .trim();
+    const normalized = query.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
     if (normalized === '') return entries;
     return entries.filter((entry) =>
       `${entry.label} ${entry.hint}`
@@ -122,7 +132,8 @@ export function AppShell({ children, wide = false }: AppShellProps): JSX.Element
   const openCommand = useCallback(() => setCommandOpen(true), []);
   useHotkey({ key: 'k', ctrlOrMeta: true }, openCommand);
 
-  const entries: CommandEntry[] = useMemo(() => {
+  const revision = useSessionRevision();
+  const entries: CommandEntry[] = useSimValue(revision, () => {
     const items: CommandEntry[] = NAV.map((item) => ({
       id: `nav-${item.name}`,
       label: `Aller a ${item.label}`,
@@ -130,10 +141,30 @@ export function AppShell({ children, wide = false }: AppShellProps): JSX.Element
       run: () => navigate(item.name),
     }));
     items.push(
-      { id: 'nav-reglages', label: 'Ouvrir les reglages', hint: 'navigation', run: () => navigate('reglages') },
-      { id: 'nav-diag', label: 'Ouvrir NEO Diagnostics', hint: 'navigation', run: () => navigate('diagnostics') },
-      { id: 'nav-formateur', label: 'Cockpit formateur', hint: 'navigation', run: () => navigate('formateur') },
-      { id: 'nav-supervision', label: 'Supervision', hint: 'navigation', run: () => navigate('supervision') },
+      {
+        id: 'nav-reglages',
+        label: 'Ouvrir les reglages',
+        hint: 'navigation',
+        run: () => navigate('reglages'),
+      },
+      {
+        id: 'nav-diag',
+        label: 'Ouvrir NEO Diagnostics',
+        hint: 'navigation',
+        run: () => navigate('diagnostics'),
+      },
+      {
+        id: 'nav-formateur',
+        label: 'Cockpit formateur',
+        hint: 'navigation',
+        run: () => navigate('formateur'),
+      },
+      {
+        id: 'nav-supervision',
+        label: 'Supervision',
+        hint: 'navigation',
+        run: () => navigate('supervision'),
+      },
       { id: 'nav-tickets', label: 'Tickets', hint: 'navigation', run: () => navigate('tickets') },
     );
     for (const mission of session.missions) {
@@ -153,11 +184,12 @@ export function AppShell({ children, wide = false }: AppShellProps): JSX.Element
         id: 'snapshot',
         label: 'Prendre un instantane de la situation',
         hint: 'session',
-        run: () => void session.takeSnapshot(`Instantane ${new Date().toLocaleTimeString('fr-FR')}`),
+        run: () =>
+          void session.takeSnapshot(`Instantane ${new Date().toLocaleTimeString('fr-FR')}`),
       });
     }
     return items;
-  }, [session, session.missions, session.world]);
+  });
 
   return (
     <div className="shell">
@@ -165,28 +197,42 @@ export function AppShell({ children, wide = false }: AppShellProps): JSX.Element
         Aller au contenu
       </a>
       <header className="shell__top">
-        <a href="#/accueil" aria-label="TSSR NEO, accueil" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <a
+          href="#/accueil"
+          aria-label="TSSR NEO, accueil"
+          style={{ textDecoration: 'none', color: 'inherit' }}
+        >
           <Logo size={30} />
         </a>
         <nav className="shell__nav neo-grow" aria-label="Navigation principale">
           {NAV.map((item) => (
-            <a key={item.name} href={`#/${item.name}`} aria-current={route.name === item.name ? 'page' : undefined}>
+            <a
+              key={item.name}
+              href={`#/${item.name}`}
+              aria-current={route.name === item.name ? 'page' : undefined}
+            >
               {item.label}
             </a>
           ))}
         </nav>
         <button type="button" className="neo-btn neo-btn--ghost neo-btn--sm" onClick={openCommand}>
           Rechercher
-          <kbd className="neo-dim" style={{ fontSize: 'var(--neo-fs-xs)' }}>Ctrl+K</kbd>
+          <kbd className="neo-dim" style={{ fontSize: 'var(--neo-fs-xs)' }}>
+            Ctrl+K
+          </kbd>
         </button>
         <a href="#/reglages" className="neo-btn neo-btn--ghost neo-btn--sm">
           Reglages
         </a>
       </header>
       <main id="contenu" className="shell__main neo-scroll">
-        <div className={wide ? 'shell__content shell__content--wide' : 'shell__content'}>{children}</div>
+        <div className={wide ? 'shell__content shell__content--wide' : 'shell__content'}>
+          {children}
+        </div>
       </main>
-      {commandOpen ? <CommandCenter entries={entries} onClose={() => setCommandOpen(false)} /> : null}
+      {commandOpen ? (
+        <CommandCenter entries={entries} onClose={() => setCommandOpen(false)} />
+      ) : null}
     </div>
   );
 }

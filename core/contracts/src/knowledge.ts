@@ -2,7 +2,14 @@ import { z } from 'zod';
 import { zId, zLocalizedText } from './primitives.ts';
 import { zCompetencyDomain } from './competency.ts';
 
-export const zKnowledgeKind = z.enum(['concept', 'command', 'procedure', 'diagram', 'glossary', 'pitfall']);
+export const zKnowledgeKind = z.enum([
+  'concept',
+  'command',
+  'procedure',
+  'diagram',
+  'glossary',
+  'pitfall',
+]);
 
 export const zKnowledgeEntry = z.object({
   schemaVersion: z.literal(1).default(1),
@@ -22,7 +29,9 @@ export const zKnowledgeEntry = z.object({
     .object({
       os: z.enum(['linux', 'windows', 'both']),
       syntax: z.string().min(1),
-      examples: z.array(z.object({ cmd: z.string().min(1), explanation: zLocalizedText })).default([]),
+      examples: z
+        .array(z.object({ cmd: z.string().min(1), explanation: zLocalizedText }))
+        .default([]),
       cautions: z.array(zLocalizedText).default([]),
     })
     .optional(),

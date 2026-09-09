@@ -2,9 +2,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { SwitchConsole } from '@tssr/sim-network';
 import { scoreLabel } from '@tssr/evaluation';
 import { NetworkXray } from '../components/NetworkXray.tsx';
-import { MonitoringPanel, NovaPanel, ObjectivesPanel, TicketsPanel } from '../components/MissionPanels.tsx';
-import { TerminalPanel, switchConsoleAdapter, terminalAdapter } from '../components/TerminalPanel.tsx';
-import { navigate, useSession } from '../state/hooks.ts';
+import {
+  MonitoringPanel,
+  NovaPanel,
+  ObjectivesPanel,
+  TicketsPanel,
+} from '../components/MissionPanels.tsx';
+import {
+  TerminalPanel,
+  switchConsoleAdapter,
+  terminalAdapter,
+} from '../components/TerminalPanel.tsx';
+import { navigate, useSession, useSimValue } from '../state/hooks.ts';
 
 type CenterTab = 'terminal' | 'console' | 'reseau';
 type SideTab = 'nova' | 'tickets' | 'supervision';
@@ -22,10 +31,11 @@ export function MissionView(): JSX.Element {
   const world = session.world;
   const runner = session.runner;
 
-  const machines = useMemo(() => world?.state.systems ?? [], [world, version]);
-  const switches = useMemo(
-    () => world?.state.network.nodes.filter((n) => n.kind === 'switch' || n.kind === 'router') ?? [],
-    [world, version],
+  const machines = useSimValue(version, () => world?.state.systems ?? []);
+  const switches = useSimValue(
+    version,
+    () =>
+      world?.state.network.nodes.filter((n) => n.kind === 'switch' || n.kind === 'router') ?? [],
   );
 
   useEffect(() => {
@@ -50,7 +60,11 @@ export function MissionView(): JSX.Element {
   }
 
   useEffect(() => {
-    if (runner && (runner.state.status === 'succeeded' || runner.state.status === 'failed') && debrief === undefined) {
+    if (
+      runner &&
+      (runner.state.status === 'succeeded' || runner.state.status === 'failed') &&
+      debrief === undefined
+    ) {
       void session.completeMission().then(() => setDebrief(scoreLabel(runner.score().overall)));
     }
   }, [runner, runner?.state.status, debrief, session]);
@@ -60,10 +74,15 @@ export function MissionView(): JSX.Element {
       <div className="neo-card">
         <h2>Aucune mission en cours</h2>
         <p className="neo-muted">
-          Choisissez un cours depuis le campus, ou ouvrez le laboratoire libre pour manipuler sans objectif impose.
+          Choisissez un cours depuis le campus, ou ouvrez le laboratoire libre pour manipuler sans
+          objectif impose.
         </p>
         <div className="neo-row">
-          <button type="button" className="neo-btn neo-btn--primary" onClick={() => navigate('campus')}>
+          <button
+            type="button"
+            className="neo-btn neo-btn--primary"
+            onClick={() => navigate('campus')}
+          >
             Aller au campus
           </button>
           <button
@@ -99,13 +118,21 @@ export function MissionView(): JSX.Element {
                   {typeof runner.definition.briefing === 'string' ? runner.definition.briefing : ''}
                 </p>
                 <div className="neo-row">
-                  <button type="button" className="neo-btn neo-btn--sm" onClick={() => session.advanceTime(5)}>
+                  <button
+                    type="button"
+                    className="neo-btn neo-btn--sm"
+                    onClick={() => session.advanceTime(5)}
+                  >
                     Avancer de 5 min
                   </button>
                   <button
                     type="button"
                     className="neo-btn neo-btn--ghost neo-btn--sm"
-                    onClick={() => void session.takeSnapshot(`Avant intervention ${new Date().toLocaleTimeString('fr-FR')}`)}
+                    onClick={() =>
+                      void session.takeSnapshot(
+                        `Avant intervention ${new Date().toLocaleTimeString('fr-FR')}`,
+                      )
+                    }
                   >
                     Instantane
                   </button>
@@ -118,7 +145,8 @@ export function MissionView(): JSX.Element {
           <div className="neo-panel">
             <div className="neo-panel__head">Laboratoire libre</div>
             <div className="neo-panel__body neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
-              Aucun objectif impose. Fixez-vous un etat cible et verifiez-le avec la vue reseau ou le terminal.
+              Aucun objectif impose. Fixez-vous un etat cible et verifiez-le avec la vue reseau ou
+              le terminal.
             </div>
           </div>
         )}
@@ -138,7 +166,9 @@ export function MissionView(): JSX.Element {
                   </div>
                 ))}
               </dl>
-              <h3 style={{ fontSize: 'var(--neo-fs-md)', marginTop: 'var(--neo-space-4)' }}>Points cles</h3>
+              <h3 style={{ fontSize: 'var(--neo-fs-md)', marginTop: 'var(--neo-space-4)' }}>
+                Points cles
+              </h3>
               <ul style={{ paddingLeft: 18 }}>
                 {summary?.keyPoints.map((point) => (
                   <li key={point} className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
@@ -151,11 +181,17 @@ export function MissionView(): JSX.Element {
                 <div key={alternative.id} className="nova-message" style={{ marginBottom: 8 }}>
                   <strong>{typeof alternative.label === 'string' ? alternative.label : ''}</strong>
                   <div className="neo-row" style={{ gap: 6, margin: '4px 0' }}>
-                    <span className={`neo-tag ${alternative.worksTechnically ? 'neo-tag--ok' : 'neo-tag--danger'}`}>
+                    <span
+                      className={`neo-tag ${alternative.worksTechnically ? 'neo-tag--ok' : 'neo-tag--danger'}`}
+                    >
                       {alternative.worksTechnically ? 'fonctionne' : 'ne fonctionne pas'}
                     </span>
-                    <span className={`neo-tag ${alternative.professionallySound ? 'neo-tag--ok' : 'neo-tag--warn'}`}>
-                      {alternative.professionallySound ? 'bonne pratique' : 'a eviter en production'}
+                    <span
+                      className={`neo-tag ${alternative.professionallySound ? 'neo-tag--ok' : 'neo-tag--warn'}`}
+                    >
+                      {alternative.professionallySound
+                        ? 'bonne pratique'
+                        : 'a eviter en production'}
                     </span>
                   </div>
                   <span className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
@@ -163,7 +199,11 @@ export function MissionView(): JSX.Element {
                   </span>
                 </div>
               ))}
-              <button type="button" className="neo-btn neo-btn--sm" onClick={() => navigate('campus')}>
+              <button
+                type="button"
+                className="neo-btn neo-btn--sm"
+                onClick={() => navigate('campus')}
+              >
                 Retour au campus
               </button>
             </div>
@@ -175,10 +215,20 @@ export function MissionView(): JSX.Element {
         <div className="neo-panel" style={{ minHeight: 0 }}>
           <div className="neo-panel__head">
             <div className="tabs" role="tablist" aria-label="Outils techniques">
-              <button type="button" role="tab" aria-selected={centerTab === 'terminal'} onClick={() => setCenterTab('terminal')}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={centerTab === 'terminal'}
+                onClick={() => setCenterTab('terminal')}
+              >
                 Terminal
               </button>
-              <button type="button" role="tab" aria-selected={centerTab === 'console'} onClick={() => setCenterTab('console')}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={centerTab === 'console'}
+                onClick={() => setCenterTab('console')}
+              >
                 Console equipement
               </button>
             </div>
@@ -218,7 +268,9 @@ export function MissionView(): JSX.Element {
                 key={machineId}
                 console={terminal}
                 title={machines.find((m) => m.id === machineId)?.hostname ?? 'terminal'}
-                intro={'Terminal simule. Tapez "aide" pour la liste exacte des commandes implementees.'}
+                intro={
+                  'Terminal simule. Tapez "aide" pour la liste exacte des commandes implementees.'
+                }
                 onCommand={refresh}
               />
             ) : null}
@@ -238,14 +290,34 @@ export function MissionView(): JSX.Element {
       </div>
 
       <aside style={{ minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <div className="tabs" role="tablist" aria-label="Panneaux lateraux" style={{ marginBottom: 8 }}>
-          <button type="button" role="tab" aria-selected={sideTab === 'nova'} onClick={() => setSideTab('nova')}>
+        <div
+          className="tabs"
+          role="tablist"
+          aria-label="Panneaux lateraux"
+          style={{ marginBottom: 8 }}
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={sideTab === 'nova'}
+            onClick={() => setSideTab('nova')}
+          >
             NOVA
           </button>
-          <button type="button" role="tab" aria-selected={sideTab === 'tickets'} onClick={() => setSideTab('tickets')}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={sideTab === 'tickets'}
+            onClick={() => setSideTab('tickets')}
+          >
             Tickets
           </button>
-          <button type="button" role="tab" aria-selected={sideTab === 'supervision'} onClick={() => setSideTab('supervision')}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={sideTab === 'supervision'}
+            onClick={() => setSideTab('supervision')}
+          >
             Supervision
           </button>
         </div>
@@ -253,8 +325,12 @@ export function MissionView(): JSX.Element {
           {sideTab === 'nova' && session.nova ? (
             <NovaPanel nova={session.nova} version={version} onAction={refresh} />
           ) : null}
-          {sideTab === 'tickets' ? <TicketsPanel world={world} version={version} onChange={refresh} /> : null}
-          {sideTab === 'supervision' ? <MonitoringPanel world={world} version={version} onChange={refresh} /> : null}
+          {sideTab === 'tickets' ? (
+            <TicketsPanel world={world} version={version} onChange={refresh} />
+          ) : null}
+          {sideTab === 'supervision' ? (
+            <MonitoringPanel world={world} version={version} onChange={refresh} />
+          ) : null}
         </div>
       </aside>
     </div>

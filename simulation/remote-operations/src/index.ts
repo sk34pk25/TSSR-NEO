@@ -64,39 +64,68 @@ export class RemoteOperationsEngine {
     if (!dns.resolved || dns.address === undefined) {
       return {
         ok: false,
-        failure: { reason: 'host-unresolved', detail: dns.failure?.detail ?? `${target} non resolu` },
+        failure: {
+          reason: 'host-unresolved',
+          detail: dns.failure?.detail ?? `${target} non resolu`,
+        },
       };
     }
     const connection = this.network.connect(fromNodeId, dns.address, PROTOCOL_PORTS[protocol]);
     if (!connection.connected) {
       const reason: RemoteFailure =
-        connection.failure?.reason === 'network-unreachable' ? 'network-unreachable' : 'service-unavailable';
-      return { ok: false, failure: { reason, detail: connection.failure?.detail ?? 'connexion refusee' } };
+        connection.failure?.reason === 'network-unreachable'
+          ? 'network-unreachable'
+          : 'service-unavailable';
+      return {
+        ok: false,
+        failure: { reason, detail: connection.failure?.detail ?? 'connexion refusee' },
+      };
     }
 
     const targetNode = this.network.index().ownersOf(dns.address)[0]?.node;
     if (!targetNode) {
-      return { ok: false, failure: { reason: 'network-unreachable', detail: 'hote distant introuvable' } };
+      return {
+        ok: false,
+        failure: { reason: 'network-unreachable', detail: 'hote distant introuvable' },
+      };
     }
     const system = this.systemFor(targetNode.id);
     if (!system) {
       return {
         ok: false,
-        failure: { reason: 'no-system', detail: 'cet equipement n expose pas de systeme administrable' },
+        failure: {
+          reason: 'no-system',
+          detail: 'cet equipement n expose pas de systeme administrable',
+        },
       };
     }
     const account = system.users.find((u) => u.name.toLowerCase() === user.toLowerCase());
     if (!account) {
-      return { ok: false, failure: { reason: 'authentication-failed', detail: `compte ${user} inconnu sur ${system.hostname}` } };
+      return {
+        ok: false,
+        failure: {
+          reason: 'authentication-failed',
+          detail: `compte ${user} inconnu sur ${system.hostname}`,
+        },
+      };
     }
     if (!account.enabled || account.lockedOut) {
-      return { ok: false, failure: { reason: 'account-disabled', detail: `le compte ${user} est desactive ou verrouille` } };
+      return {
+        ok: false,
+        failure: {
+          reason: 'account-disabled',
+          detail: `le compte ${user} est desactive ou verrouille`,
+        },
+      };
     }
     // L administration distante Windows exige des droits d administration.
     if (protocol === 'winrm' && !isPrivileged(system, account.name)) {
       return {
         ok: false,
-        failure: { reason: 'insufficient-rights', detail: `${user} n est pas administrateur de ${system.hostname}` },
+        failure: {
+          reason: 'insufficient-rights',
+          detail: `${user} n est pas administrateur de ${system.hostname}`,
+        },
       };
     }
 

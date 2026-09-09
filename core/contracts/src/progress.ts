@@ -87,7 +87,9 @@ export const zSaveState = z.object({
       area: zId.default('lobby'),
       position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
       rotationY: z.number().default(0),
-      cameraMode: z.enum(['first-person', 'third-person', 'equipment', 'tactical', 'network']).default('third-person'),
+      cameraMode: z
+        .enum(['first-person', 'third-person', 'equipment', 'tactical', 'network'])
+        .default('third-person'),
     })
     .default({}),
   /** Empreinte d integrite du contenu serialise, verifiee au chargement. */

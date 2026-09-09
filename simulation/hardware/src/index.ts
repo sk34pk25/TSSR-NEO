@@ -1,13 +1,15 @@
-import type { HardwareAsset, NetworkLink, PatchCable, PhysicalPort, WorldState } from '@tssr/contracts';
+import type {
+  HardwareAsset,
+  NetworkLink,
+  PatchCable,
+  PhysicalPort,
+  WorldState,
+} from '@tssr/contracts';
 import type { EventBus } from '@tssr/events';
 import type { NetworkEngine } from '@tssr/sim-network';
 
 export type PatchError =
-  | 'asset-not-found'
-  | 'port-not-found'
-  | 'port-occupied'
-  | 'same-port'
-  | 'no-logical-interface';
+  'asset-not-found' | 'port-not-found' | 'port-occupied' | 'same-port' | 'no-logical-interface';
 
 export interface PatchResult {
   ok: boolean;
@@ -53,10 +55,18 @@ export class HardwareEngine {
   patch(
     from: { assetId: string; portId: string },
     to: { assetId: string; portId: string },
-    options: { media?: 'copper' | 'fiber'; lengthM?: number; condition?: PatchCable['condition']; color?: string } = {},
+    options: {
+      media?: 'copper' | 'fiber';
+      lengthM?: number;
+      condition?: PatchCable['condition'];
+      color?: string;
+    } = {},
   ): PatchResult {
     if (from.assetId === to.assetId && from.portId === to.portId) {
-      return { ok: false, error: { reason: 'same-port', detail: 'un cable ne peut pas boucler sur le meme port' } };
+      return {
+        ok: false,
+        error: { reason: 'same-port', detail: 'un cable ne peut pas boucler sur le meme port' },
+      };
     }
     const assetA = this.asset(from.assetId);
     const assetB = this.asset(to.assetId);
@@ -66,15 +76,24 @@ export class HardwareEngine {
     const portA = this.port(from.assetId, from.portId);
     const portB = this.port(to.assetId, to.portId);
     if (!portA || !portB) {
-      return { ok: false, error: { reason: 'port-not-found', detail: 'port physique introuvable' } };
+      return {
+        ok: false,
+        error: { reason: 'port-not-found', detail: 'port physique introuvable' },
+      };
     }
     if (this.cableOnPort(assetA.id, portA.id) || this.cableOnPort(assetB.id, portB.id)) {
-      return { ok: false, error: { reason: 'port-occupied', detail: 'un des ports est deja brasse' } };
+      return {
+        ok: false,
+        error: { reason: 'port-occupied', detail: 'un des ports est deja brasse' },
+      };
     }
     if (portA.interfaceId === undefined || portB.interfaceId === undefined) {
       return {
         ok: false,
-        error: { reason: 'no-logical-interface', detail: 'ce port n est rattache a aucune interface reseau' },
+        error: {
+          reason: 'no-logical-interface',
+          detail: 'ce port n est rattache a aucune interface reseau',
+        },
       };
     }
 
@@ -167,7 +186,10 @@ export class HardwareEngine {
     asset.powered = powered;
     if (asset.networkNodeId !== undefined) this.network.setNodePower(asset.networkNodeId, powered);
     this.refreshLeds();
-    asset.history.push({ at: this.bus?.getSimTime() ?? 0, event: powered ? 'mise sous tension' : 'mise hors tension' });
+    asset.history.push({
+      at: this.bus?.getSimTime() ?? 0,
+      event: powered ? 'mise sous tension' : 'mise hors tension',
+    });
     return true;
   }
 
@@ -175,12 +197,19 @@ export class HardwareEngine {
    * Panne materielle : une carte reseau HS desactive l interface,
    * une alimentation HS coupe l equipement. La consequence est reelle.
    */
-  setComponentHealth(assetId: string, componentId: string, health: 'ok' | 'warning' | 'failed'): boolean {
+  setComponentHealth(
+    assetId: string,
+    componentId: string,
+    health: 'ok' | 'warning' | 'failed',
+  ): boolean {
     const asset = this.asset(assetId);
     const component = asset?.components.find((c) => c.id === componentId);
     if (!asset || !component) return false;
     component.health = health;
-    asset.history.push({ at: this.bus?.getSimTime() ?? 0, event: `${component.kind} ${component.slot} -> ${health}` });
+    asset.history.push({
+      at: this.bus?.getSimTime() ?? 0,
+      event: `${component.kind} ${component.slot} -> ${health}`,
+    });
 
     if (component.kind === 'psu' && health === 'failed') {
       const remaining = asset.components.filter((c) => c.kind === 'psu' && c.health === 'ok');
@@ -190,7 +219,12 @@ export class HardwareEngine {
       const port = asset.ports.find((p) => p.id === component.slot || p.label === component.slot);
       if (port?.interfaceId !== undefined) {
         const ref = this.network.index().interfaceRef(port.interfaceId);
-        if (ref) this.network.setInterfaceEnabled(asset.networkNodeId, ref.iface.name, health !== 'failed');
+        if (ref)
+          this.network.setInterfaceEnabled(
+            asset.networkNodeId,
+            ref.iface.name,
+            health !== 'failed',
+          );
       }
     }
     this.refreshLeds();
@@ -205,7 +239,13 @@ export class HardwareEngine {
   }
 
   /** Inventaire lisible : sert au module de gestion de parc. */
-  inventory(): { assetTag: string; kind: string; location: string; lifecycle: string; powered: boolean }[] {
+  inventory(): {
+    assetTag: string;
+    kind: string;
+    location: string;
+    lifecycle: string;
+    powered: boolean;
+  }[] {
     return this.world.assets.map((a) => ({
       assetTag: a.assetTag,
       kind: a.kind,

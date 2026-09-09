@@ -31,7 +31,8 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
         <div className="neo-card">
           <h1>Une erreur est survenue dans cet ecran</h1>
           <p className="neo-muted">
-            Votre progression est conservee. Vous pouvez revenir a l accueil ou consulter les diagnostics.
+            Votre progression est conservee. Vous pouvez revenir a l accueil ou consulter les
+            diagnostics.
           </p>
           <pre className="neo-mono" style={{ overflowX: 'auto', color: 'var(--neo-danger)' }}>
             {this.state.error.message}

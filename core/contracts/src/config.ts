@@ -7,7 +7,9 @@ export const zFeatureFlag = z.object({
   key: z.string().min(1),
   enabled: z.boolean().default(false),
   /** Restrictions cumulatives : toutes doivent etre satisfaites. */
-  environments: z.array(z.enum(['dev', 'test', 'preview', 'production'])).default(['dev', 'test', 'preview', 'production']),
+  environments: z
+    .array(z.enum(['dev', 'test', 'preview', 'production']))
+    .default(['dev', 'test', 'preview', 'production']),
   roles: z.array(zRole).default(['guest', 'student', 'trainer', 'admin']),
   moduleIds: z.array(zId).default([]),
   /** Capacite navigateur requise (ex "webgpu", "storage-persistent"). */
@@ -49,7 +51,9 @@ export const zAppConfig = z.object({
       maxPixelRatio: z.number().min(1).max(3).default(2),
     })
     .default({}),
-  pwa: z.object({ enabled: z.boolean().default(true), cacheVersion: z.string().default('v1') }).default({}),
+  pwa: z
+    .object({ enabled: z.boolean().default(true), cacheVersion: z.string().default('v1') })
+    .default({}),
   supabase: z
     .object({
       enabled: z.boolean().default(false),
@@ -61,12 +65,16 @@ export const zAppConfig = z.object({
   nova: z
     .object({
       /** Ordre de resolution : regles -> base de connaissances -> IA locale -> provider externe. */
-      strategy: z.array(z.enum(['rules', 'knowledge', 'local-model', 'remote-provider'])).default(['rules', 'knowledge']),
+      strategy: z
+        .array(z.enum(['rules', 'knowledge', 'local-model', 'remote-provider']))
+        .default(['rules', 'knowledge']),
       maxHintLevel: z.number().int().min(1).max(4).default(4),
     })
     .default({}),
   budgets: zPerformanceBudget.default({}),
-  telemetry: z.object({ localOnly: z.boolean().default(true), remoteEndpoint: z.string().url().optional() }).default({}),
+  telemetry: z
+    .object({ localOnly: z.boolean().default(true), remoteEndpoint: z.string().url().optional() })
+    .default({}),
 });
 
 export type Role = z.infer<typeof zRole>;

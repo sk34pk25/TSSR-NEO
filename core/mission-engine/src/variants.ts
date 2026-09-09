@@ -20,7 +20,10 @@ export function substitute<T>(value: T, params: VariantParams): T {
   return JSON.parse(replaced) as T;
 }
 
-export function applyVariant(definition: MissionDefinition, variant: VariantSpec | undefined): MissionDefinition {
+export function applyVariant(
+  definition: MissionDefinition,
+  variant: VariantSpec | undefined,
+): MissionDefinition {
   if (!variant) return definition;
   return substitute(definition, variant.parameters);
 }

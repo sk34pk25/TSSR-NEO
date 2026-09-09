@@ -13,10 +13,21 @@ import {
   writeFile,
 } from '../fs.ts';
 import { joinPath, resolvePath, toDisplay } from '../paths.ts';
-import { failure, output, table, type CommandResult, type CommandSpec, type ShellContext } from './core.ts';
+import {
+  failure,
+  output,
+  table,
+  type CommandResult,
+  type CommandSpec,
+  type ShellContext,
+} from './core.ts';
 
 /** Analyse des parametres nommes PowerShell (-Path valeur, -Recurse). */
-function named(args: string[]): { params: Map<string, string>; switches: Set<string>; positional: string[] } {
+function named(args: string[]): {
+  params: Map<string, string>;
+  switches: Set<string>;
+  positional: string[];
+} {
   const params = new Map<string, string>();
   const switches = new Set<string>();
   const positional: string[] = [];
@@ -64,7 +75,8 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
       const target = pathArg(ctx, args);
       const node = getNode(ctx.system, target);
       if (!node) return failure(`Set-Location : le chemin ${display(ctx, target)} n existe pas.`);
-      if (node.kind !== 'dir') return failure(`Set-Location : ${display(ctx, target)} n est pas un repertoire.`);
+      if (node.kind !== 'dir')
+        return failure(`Set-Location : ${display(ctx, target)} n est pas un repertoire.`);
       ctx.session.cwd = target;
       return output('');
     },
@@ -126,7 +138,9 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
         type === 'directory'
           ? makeDirectory(ctx.system, target, ctx.session.user, { recursive: true })
           : writeFile(ctx.system, target, params.get('value') ?? '', ctx.session.user);
-      return result.ok ? output(display(ctx, target)) : failure(`New-Item : ${result.error.message}`);
+      return result.ok
+        ? output(display(ctx, target))
+        : failure(`New-Item : ${result.error.message}`);
     },
   },
   {
@@ -137,7 +151,9 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
     run: (args, ctx) => {
       const { switches } = named(args);
       const target = pathArg(ctx, args);
-      const result = removePath(ctx.system, target, ctx.session.user, { recursive: switches.has('recurse') });
+      const result = removePath(ctx.system, target, ctx.session.user, {
+        recursive: switches.has('recurse'),
+      });
       return result.ok ? output('') : failure(`Remove-Item : ${result.error.message}`);
     },
   },
@@ -150,7 +166,9 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
       const { switches, params, positional } = named(args);
       const from = resolvePath(ctx.session.cwd, params.get('path') ?? positional[0] ?? '');
       const to = resolvePath(ctx.session.cwd, params.get('destination') ?? positional[1] ?? '');
-      const result = copyPath(ctx.system, from, to, ctx.session.user, { recursive: switches.has('recurse') });
+      const result = copyPath(ctx.system, from, to, ctx.session.user, {
+        recursive: switches.has('recurse'),
+      });
       return result.ok ? output('') : failure(`Copy-Item : ${result.error.message}`);
     },
   },
@@ -175,7 +193,11 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
       output(
         table([
           ['Nom', 'Actif', 'Description'],
-          ...ctx.system.users.map((u) => [u.name, u.enabled ? 'True' : 'False', u.displayName ?? '']),
+          ...ctx.system.users.map((u) => [
+            u.name,
+            u.enabled ? 'True' : 'False',
+            u.displayName ?? '',
+          ]),
         ]),
       ),
   },
@@ -201,7 +223,12 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
     summary: 'liste les groupes locaux',
     usage: 'Get-LocalGroup',
     run: (_args, ctx) =>
-      output(table([['Nom', 'Membres'], ...ctx.system.groups.map((g) => [g.name, g.members.join(', ')])])),
+      output(
+        table([
+          ['Nom', 'Membres'],
+          ...ctx.system.groups.map((g) => [g.name, g.members.join(', ')]),
+        ]),
+      ),
   },
   {
     name: 'Add-LocalGroupMember',
@@ -215,7 +242,9 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
         return failure('Add-LocalGroupMember : parametres -Group et -Member obligatoires.', 2);
       }
       const done = ctx.systems.addUserToGroup(member, group, ctx.session.user);
-      return done ? output('') : failure('Add-LocalGroupMember : echec (droits, groupe ou compte inexistant).');
+      return done
+        ? output('')
+        : failure('Add-LocalGroupMember : echec (droits, groupe ou compte inexistant).');
     },
   },
   {
@@ -226,7 +255,9 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
     run: (args, ctx) => {
       const { params, positional } = named(args);
       const filter = params.get('name') ?? positional[0];
-      const services = ctx.systems.services().filter((s) => filter === undefined || s.name.toLowerCase().includes(filter.toLowerCase()));
+      const services = ctx.systems
+        .services()
+        .filter((s) => filter === undefined || s.name.toLowerCase().includes(filter.toLowerCase()));
       return output(
         table([
           ['Statut', 'Nom', 'Demarrage', 'Port'],
@@ -275,8 +306,16 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
       const name = params.get('name');
       const startup = (params.get('startuptype') ?? '').toLowerCase();
       if (name === undefined) return failure('Set-Service : parametre -Name obligatoire.', 2);
-      const mapped = startup === 'automatic' ? 'auto' : startup === 'manual' ? 'manual' : startup === 'disabled' ? 'disabled' : undefined;
-      if (mapped === undefined) return failure('Set-Service : -StartupType attendu (Automatic, Manual, Disabled).', 2);
+      const mapped =
+        startup === 'automatic'
+          ? 'auto'
+          : startup === 'manual'
+            ? 'manual'
+            : startup === 'disabled'
+              ? 'disabled'
+              : undefined;
+      if (mapped === undefined)
+        return failure('Set-Service : -StartupType attendu (Automatic, Manual, Disabled).', 2);
       return ctx.systems.setServiceStartup(name, mapped, ctx.session.user)
         ? output('')
         : failure('Set-Service : service introuvable ou privileges insuffisants.');
@@ -321,7 +360,9 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
         if (lease.success && lease.offer) {
           return output(
             `Configuration IP renouvelee sur ${iface.name} :\n   Adresse IPv4 . . . . . . . : ${lease.offer.address}/${lease.offer.prefix}` +
-              (lease.offer.gateway === undefined ? '' : `\n   Passerelle par defaut . . . : ${lease.offer.gateway}`),
+              (lease.offer.gateway === undefined
+                ? ''
+                : `\n   Passerelle par defaut . . . : ${lease.offer.gateway}`),
           );
         }
         return failure(
@@ -345,7 +386,10 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
       for (const iface of node.interfaces) {
         lines.push(`Carte ${iface.name} :`);
         lines.push(`   Etat . . . . . . . . . . . : ${iface.enabled ? 'connecte' : 'deconnecte'}`);
-        if (all) lines.push(`   Adresse physique . . . . . : ${iface.mac.toUpperCase().replace(/:/g, '-')}`);
+        if (all)
+          lines.push(
+            `   Adresse physique . . . . . : ${iface.mac.toUpperCase().replace(/:/g, '-')}`,
+          );
         for (const addr of iface.addresses) {
           lines.push(`   Adresse IPv4 . . . . . . . : ${addr.address} (${addr.source})`);
           lines.push(`   Masque de sous-reseau. . . : /${addr.prefix}`);
@@ -354,7 +398,8 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
         lines.push('');
       }
       if (gateway !== undefined) lines.push(`Passerelle par defaut . . . : ${gateway}`);
-      if (node.dnsClients.length > 0) lines.push(`Serveurs DNS . . . . . . . : ${node.dnsClients.join(', ')}`);
+      if (node.dnsClients.length > 0)
+        lines.push(`Serveurs DNS . . . . . . . : ${node.dnsClients.join(', ')}`);
       return output(lines.join('\n'));
     },
   },
@@ -455,7 +500,8 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
       if (node === undefined) return failure('Resolve-DnsName : noeud reseau introuvable.');
       if (name === undefined) return failure('Resolve-DnsName : nom manquant.', 2);
       const result = ctx.network.resolve(node.id, name);
-      if (!result.resolved) return failure(`Resolve-DnsName : ${result.failure?.detail ?? 'echec'}`);
+      if (!result.resolved)
+        return failure(`Resolve-DnsName : ${result.failure?.detail ?? 'echec'}`);
       return output(
         table([
           ['Nom', 'Type', 'Adresse'],
@@ -533,7 +579,10 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
             : `${reply.reason}`,
         );
       }
-      lines.push('', `Paquets : envoyes = ${result.transmitted}, recus = ${result.received}, perdus = ${result.transmitted - result.received} (perte ${result.lossPercent}%)`);
+      lines.push(
+        '',
+        `Paquets : envoyes = ${result.transmitted}, recus = ${result.received}, perdus = ${result.transmitted - result.received} (perte ${result.lossPercent}%)`,
+      );
       return { stdout: lines.join('\n'), stderr: '', exitCode: result.received > 0 ? 0 : 1 };
     },
   },

@@ -16,14 +16,18 @@ export interface RenderCapabilities {
   rendererName: string | undefined;
 }
 
-function detectWebgl(): Pick<RenderCapabilities, 'webgl2' | 'webgl1' | 'maxTextureSize' | 'rendererName'> {
+function detectWebgl(): Pick<
+  RenderCapabilities,
+  'webgl2' | 'webgl1' | 'maxTextureSize' | 'rendererName'
+> {
   if (typeof document === 'undefined') {
     return { webgl2: false, webgl1: false, maxTextureSize: undefined, rendererName: undefined };
   }
   const canvas = document.createElement('canvas');
   const gl2 = canvas.getContext('webgl2');
   const gl = gl2 ?? canvas.getContext('webgl');
-  if (!gl) return { webgl2: false, webgl1: false, maxTextureSize: undefined, rendererName: undefined };
+  if (!gl)
+    return { webgl2: false, webgl1: false, maxTextureSize: undefined, rendererName: undefined };
   let rendererName: string | undefined;
   try {
     const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
@@ -75,10 +79,50 @@ export interface QualityProfile {
 }
 
 export const QUALITY_PROFILES: Record<Exclude<GraphicsQuality, 'auto'>, QualityProfile> = {
-  performance: { quality: 'performance', pixelRatio: 1, shadows: false, postProcessing: false, drawDistance: 0.5, maxInstances: 200, textureScale: 0.5, ambientParticles: false, targetFps: 30 },
-  balanced: { quality: 'balanced', pixelRatio: 1.25, shadows: true, postProcessing: false, drawDistance: 0.75, maxInstances: 600, textureScale: 0.75, ambientParticles: false, targetFps: 60 },
-  quality: { quality: 'quality', pixelRatio: 1.5, shadows: true, postProcessing: true, drawDistance: 1, maxInstances: 1200, textureScale: 1, ambientParticles: true, targetFps: 60 },
-  ultra: { quality: 'ultra', pixelRatio: 2, shadows: true, postProcessing: true, drawDistance: 1, maxInstances: 2400, textureScale: 1, ambientParticles: true, targetFps: 60 },
+  performance: {
+    quality: 'performance',
+    pixelRatio: 1,
+    shadows: false,
+    postProcessing: false,
+    drawDistance: 0.5,
+    maxInstances: 200,
+    textureScale: 0.5,
+    ambientParticles: false,
+    targetFps: 30,
+  },
+  balanced: {
+    quality: 'balanced',
+    pixelRatio: 1.25,
+    shadows: true,
+    postProcessing: false,
+    drawDistance: 0.75,
+    maxInstances: 600,
+    textureScale: 0.75,
+    ambientParticles: false,
+    targetFps: 60,
+  },
+  quality: {
+    quality: 'quality',
+    pixelRatio: 1.5,
+    shadows: true,
+    postProcessing: true,
+    drawDistance: 1,
+    maxInstances: 1200,
+    textureScale: 1,
+    ambientParticles: true,
+    targetFps: 60,
+  },
+  ultra: {
+    quality: 'ultra',
+    pixelRatio: 2,
+    shadows: true,
+    postProcessing: true,
+    drawDistance: 1,
+    maxInstances: 2400,
+    textureScale: 1,
+    ambientParticles: true,
+    targetFps: 60,
+  },
 };
 
 /** Profil deduit des capacites reelles de la machine. */
@@ -93,7 +137,10 @@ export function autoProfile(capabilities: RenderCapabilities): QualityProfile {
   return QUALITY_PROFILES.balanced;
 }
 
-export function resolveProfile(setting: GraphicsQuality, capabilities: RenderCapabilities): QualityProfile {
+export function resolveProfile(
+  setting: GraphicsQuality,
+  capabilities: RenderCapabilities,
+): QualityProfile {
   const profile = setting === 'auto' ? autoProfile(capabilities) : QUALITY_PROFILES[setting];
   return {
     ...profile,
@@ -107,7 +154,12 @@ export function resolveProfile(setting: GraphicsQuality, capabilities: RenderCap
  * On ne remonte jamais automatiquement pour eviter les oscillations.
  */
 export function degradeProfile(profile: QualityProfile): QualityProfile | undefined {
-  const ladder: Exclude<GraphicsQuality, 'auto'>[] = ['ultra', 'quality', 'balanced', 'performance'];
+  const ladder: Exclude<GraphicsQuality, 'auto'>[] = [
+    'ultra',
+    'quality',
+    'balanced',
+    'performance',
+  ];
   const index = ladder.indexOf(profile.quality);
   const next = ladder[index + 1];
   return next === undefined ? undefined : QUALITY_PROFILES[next];

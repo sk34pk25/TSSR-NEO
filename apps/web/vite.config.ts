@@ -8,6 +8,7 @@ const base = process.env.TSSR_BASE_PATH ?? '/';
 
 export default defineConfig({
   base,
+  plugins: [react()],
   resolve: { alias: workspaceAliases },
   define: {
     __TSSR_BASE_PATH__: JSON.stringify(base),

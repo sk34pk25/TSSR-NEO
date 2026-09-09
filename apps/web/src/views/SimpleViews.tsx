@@ -8,10 +8,15 @@ function NoWorld({ what }: { what: string }): JSX.Element {
     <div className="neo-card">
       <h2>{what} indisponible</h2>
       <p className="neo-muted">
-        Cette vue s appuie sur une infrastructure chargee. Demarrez une mission ou ouvrez le laboratoire libre.
+        Cette vue s appuie sur une infrastructure chargee. Demarrez une mission ou ouvrez le
+        laboratoire libre.
       </p>
       <div className="neo-row">
-        <button type="button" className="neo-btn neo-btn--primary" onClick={() => navigate('campus')}>
+        <button
+          type="button"
+          className="neo-btn neo-btn--primary"
+          onClick={() => navigate('campus')}
+        >
           Aller au campus
         </button>
         <button
@@ -85,9 +90,9 @@ export function TrainerView(): JSX.Element {
         <div>
           <strong>Portee actuelle</strong>
           <p className="neo-muted" style={{ margin: '4px 0 0', fontSize: 'var(--neo-fs-sm)' }}>
-            Le suivi de classe necessite un service de synchronisation, qui n est pas encore active sur
-            cette installation. Seules les donnees locales de cet appareil sont affichees ci-dessous.
-            Aucune donnee fictive n est presentee comme reelle.
+            Le suivi de classe necessite un service de synchronisation, qui n est pas encore active
+            sur cette installation. Seules les donnees locales de cet appareil sont affichees
+            ci-dessous. Aucune donnee fictive n est presentee comme reelle.
           </p>
         </div>
       </div>

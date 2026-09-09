@@ -1,9 +1,4 @@
-import type {
-  NetworkInterface,
-  NetworkLink,
-  NetworkNode,
-  NetworkTopology,
-} from '@tssr/contracts';
+import type { NetworkInterface, NetworkLink, NetworkNode, NetworkTopology } from '@tssr/contracts';
 
 export interface InterfaceRef {
   node: NetworkNode;

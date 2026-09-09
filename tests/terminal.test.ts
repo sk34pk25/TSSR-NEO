@@ -76,7 +76,9 @@ describe('terminal Linux', () => {
     expect(env.terminal.execute('systemctl stop svc-dns').exitCode).not.toBe(0);
     expect(env.terminal.execute('sudo systemctl stop svc-dns').exitCode).toBe(0);
     expect(env.terminal.session.user).toBe('bob');
-    expect(env.network.node('srv-infra')?.services.find((s) => s.id === 'svc-dns')?.status).toBe('stopped');
+    expect(env.network.node('srv-infra')?.services.find((s) => s.id === 'svc-dns')?.status).toBe(
+      'stopped',
+    );
   });
 
   it('un utilisateur sans sudo ne peut pas elever ses droits', () => {
@@ -122,8 +124,12 @@ describe('terminal Linux', () => {
     env.terminal.execute('systemctl stop svc-smb');
     env.terminal.execute('systemctl disable svc-smb');
     env.terminal.execute('reboot');
-    expect(env.network.node('srv-infra')?.services.find((s) => s.id === 'svc-smb')?.status).toBe('stopped');
-    expect(env.network.node('srv-infra')?.services.find((s) => s.id === 'svc-dns')?.status).toBe('running');
+    expect(env.network.node('srv-infra')?.services.find((s) => s.id === 'svc-smb')?.status).toBe(
+      'stopped',
+    );
+    expect(env.network.node('srv-infra')?.services.find((s) => s.id === 'svc-dns')?.status).toBe(
+      'running',
+    );
   });
 
   it('journalise chaque commande pour l evaluation de la methode', () => {

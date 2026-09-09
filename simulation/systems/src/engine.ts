@@ -78,7 +78,11 @@ export class SystemEngine {
     return ok;
   }
 
-  setServiceStartup(serviceName: string, startupType: 'auto' | 'manual' | 'disabled', actor: string): boolean {
+  setServiceStartup(
+    serviceName: string,
+    startupType: 'auto' | 'manual' | 'disabled',
+    actor: string,
+  ): boolean {
     if (!isPrivileged(this.system, actor)) return false;
     const service = this.services().find((s) => s.id === serviceName || s.name === serviceName);
     if (!service) return false;
@@ -89,9 +93,14 @@ export class SystemEngine {
 
   addUser(account: Omit<UserAccount, 'groups'> & { groups?: string[] }, actor: string): boolean {
     if (!isPrivileged(this.system, actor)) return false;
-    if (this.system.users.some((u) => u.name.toLowerCase() === account.name.toLowerCase())) return false;
+    if (this.system.users.some((u) => u.name.toLowerCase() === account.name.toLowerCase()))
+      return false;
     this.system.users.push({ ...account, groups: account.groups ?? [] });
-    this.emit('system.user.created', { user: account.name }, `${this.system.hostname} : compte ${account.name} cree`);
+    this.emit(
+      'system.user.created',
+      { user: account.name },
+      `${this.system.hostname} : compte ${account.name} cree`,
+    );
     this.log('info', 'accounts', `compte ${account.name} cree`);
     return true;
   }
@@ -107,7 +116,8 @@ export class SystemEngine {
 
   addGroup(group: Omit<GroupAccount, 'members'> & { members?: string[] }, actor: string): boolean {
     if (!isPrivileged(this.system, actor)) return false;
-    if (this.system.groups.some((g) => g.name.toLowerCase() === group.name.toLowerCase())) return false;
+    if (this.system.groups.some((g) => g.name.toLowerCase() === group.name.toLowerCase()))
+      return false;
     this.system.groups.push({ ...group, members: group.members ?? [] });
     this.emit('system.group.created', { group: group.name });
     return true;

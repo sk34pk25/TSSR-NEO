@@ -32,7 +32,11 @@ export function rankForLevel(level: number): PlayerProgress['careerRank'] {
 }
 
 /** XP gagne : proportionnel a la qualite reelle, jamais au temps passe. */
-export function xpForMission(definition: MissionDefinition, score: MissionScore, firstCompletion: boolean): number {
+export function xpForMission(
+  definition: MissionDefinition,
+  score: MissionScore,
+  firstCompletion: boolean,
+): number {
   const base = definition.estimatedMinutes * 2;
   const quality = 0.4 + score.overall * 0.6;
   const repeatFactor = firstCompletion ? 1 : 0.25;
@@ -72,7 +76,8 @@ export const BADGE_RULES: BadgeRule[] = [
     id: 'badge-sans-degat',
     label: 'Sans degat collateral',
     description: 'Intervention menee sans rien casser autour.',
-    earned: (_progress, score) => (score.dimensions.safety ?? 0) === 1 && (score.dimensions.impact ?? 0) === 1,
+    earned: (_progress, score) =>
+      (score.dimensions.safety ?? 0) === 1 && (score.dimensions.impact ?? 0) === 1,
   },
   {
     id: 'badge-perseverant',
@@ -145,7 +150,13 @@ export function applyMissionResult(
     }
   }
 
-  return { progress: next, xpGained, levelUp: next.level > previousLevel, newBadges, masteryChanges };
+  return {
+    progress: next,
+    xpGained,
+    levelUp: next.level > previousLevel,
+    newBadges,
+    masteryChanges,
+  };
 }
 
 export interface PrerequisiteReport {
@@ -169,7 +180,11 @@ export function checkPrerequisites(
     const mastery = progress.competencies.find((c) => c.competencyId === prerequisite.competencyId);
     const actual = mastery?.mastery ?? 0;
     if (actual >= prerequisite.requiredMastery) continue;
-    const entry = { competencyId: prerequisite.competencyId, required: prerequisite.requiredMastery, actual };
+    const entry = {
+      competencyId: prerequisite.competencyId,
+      required: prerequisite.requiredMastery,
+      actual,
+    };
     if (prerequisite.blocking) blocking.push(entry);
     else advisory.push(entry);
   }
@@ -193,7 +208,13 @@ export function suggestDifficulty(
   const average = relevant.reduce((sum, c) => sum + c.mastery, 0) / relevant.length;
   const confidence = relevant.reduce((sum, c) => sum + c.confidence, 0) / relevant.length;
   const target: DifficultyMode =
-    average >= 0.85 && confidence >= 0.6 ? 'expert' : average >= 0.65 ? 'advanced' : average >= 0.35 ? 'standard' : 'guided';
+    average >= 0.85 && confidence >= 0.6
+      ? 'expert'
+      : average >= 0.65
+        ? 'advanced'
+        : average >= 0.35
+          ? 'standard'
+          : 'guided';
   const currentIndex = ladder.indexOf(current === 'adaptive' ? 'standard' : current);
   const targetIndex = ladder.indexOf(target);
   const step = Math.sign(targetIndex - currentIndex);
@@ -217,7 +238,11 @@ export function planReviewSession(
     }));
 }
 
-export function createProfile(profileId: string, displayName = 'Technicien', now = Date.now()): PlayerProgress {
+export function createProfile(
+  profileId: string,
+  displayName = 'Technicien',
+  now = Date.now(),
+): PlayerProgress {
   return {
     schemaVersion: 1,
     profileId,

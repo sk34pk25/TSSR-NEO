@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Mises a jour groupees pour limiter le bruit, avec revue manuelle obligatoire.
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      outils-de-developpement:
+        patterns: ['eslint*', 'typescript*', 'prettier', 'vitest', '@vitest/*', 'globals']
+      construction:
+        patterns: ['vite', '@vitejs/*']
+      execution:
+        patterns: ['react', 'react-dom', '@types/react', '@types/react-dom', 'zod']
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: monthly

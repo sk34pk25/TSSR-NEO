@@ -1,6 +1,7 @@
 import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
   {
@@ -31,6 +32,14 @@ export default tseslint.config(
       eqeqeq: ['error', 'always'],
       'prefer-const': 'error',
       'no-var': 'error',
+    },
+  },
+  {
+    // Regles des hooks React : elles previennent des bogues d etat difficiles a diagnostiquer.
+    files: ['apps/**/*.tsx', 'apps/**/*.ts'],
+    plugins: { 'react-hooks': reactHooks },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
     },
   },
   {

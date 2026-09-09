@@ -56,12 +56,24 @@ function groupsOf(system: SystemState, user: string): string[] {
 export function isPrivileged(system: SystemState, user: string): boolean {
   if (system.os === 'linux') return user === 'root';
   const groups = groupsOf(system, user);
-  return user === 'Administrator' || groups.includes('Administrators') || groups.includes('Administrateurs');
+  return (
+    user === 'Administrator' ||
+    groups.includes('Administrators') ||
+    groups.includes('Administrateurs')
+  );
 }
 
-function posixAllows(permissions: Permissions, user: string, groups: string[], access: Access): boolean {
+function posixAllows(
+  permissions: Permissions,
+  user: string,
+  groups: string[],
+  access: Access,
+): boolean {
   const mode = permissions.mode.padStart(4, '0');
-  const digits = mode.slice(-3).split('').map((d) => parseInt(d, 10));
+  const digits = mode
+    .slice(-3)
+    .split('')
+    .map((d) => parseInt(d, 10));
   const bit = access === 'read' ? 4 : access === 'write' ? 2 : 1;
   const [ownerBits = 0, groupBits = 0, otherBits = 0] = digits;
   if (permissions.owner === user) return (ownerBits & bit) !== 0;
@@ -69,7 +81,12 @@ function posixAllows(permissions: Permissions, user: string, groups: string[], a
   return (otherBits & bit) !== 0;
 }
 
-function aclAllows(permissions: Permissions, user: string, groups: string[], access: Access): boolean {
+function aclAllows(
+  permissions: Permissions,
+  user: string,
+  groups: string[],
+  access: Access,
+): boolean {
   const principals = new Set([user, ...groups, 'Everyone', 'Tout le monde']);
   const required: Record<Access, string[]> = {
     read: ['read', 'modify', 'full'],
@@ -90,7 +107,12 @@ function aclAllows(permissions: Permissions, user: string, groups: string[], acc
 }
 
 /** Controle d acces reel : POSIX cote Linux, ACL avec priorite au refus cote Windows. */
-export function canAccess(system: SystemState, path: string, user: string, access: Access): boolean {
+export function canAccess(
+  system: SystemState,
+  path: string,
+  user: string,
+  access: Access,
+): boolean {
   const node = getNode(system, path);
   if (!node) return false;
   if (isPrivileged(system, user)) return true;
@@ -106,7 +128,8 @@ export function readFile(system: SystemState, path: string, user: string): FsRes
   const node = system.files[target];
   if (!node) return err('ENOENT', `${path} : aucun fichier ou dossier de ce type`);
   if (node.kind === 'dir') return err('EISDIR', `${path} : est un repertoire`);
-  if (!canAccess(system, target, user, 'read')) return err('EACCES', `${path} : permission refusee`);
+  if (!canAccess(system, target, user, 'read'))
+    return err('EACCES', `${path} : permission refusee`);
   return ok(node.content);
 }
 
@@ -126,7 +149,8 @@ export function writeFile(
   const existing = system.files[target];
   if (existing) {
     if (existing.kind === 'dir') return err('EISDIR', `${path} : est un repertoire`);
-    if (!canAccess(system, target, user, 'write')) return err('EACCES', `${path} : permission refusee`);
+    if (!canAccess(system, target, user, 'write'))
+      return err('EACCES', `${path} : permission refusee`);
     const next = options.append === true ? existing.content + content : content;
     system.files[target] = {
       ...existing,
@@ -137,7 +161,8 @@ export function writeFile(
     return ok(undefined);
   }
 
-  if (!canAccess(system, parent, user, 'write')) return err('EACCES', `${parent} : permission refusee`);
+  if (!canAccess(system, parent, user, 'write'))
+    return err('EACCES', `${parent} : permission refusee`);
   system.files[target] = {
     kind: 'file',
     content,
@@ -168,7 +193,8 @@ export function makeDirectory(
     const created = makeDirectory(system, parent, user, options);
     if (!created.ok) return created;
   }
-  if (!canAccess(system, parent, user, 'write')) return err('EACCES', `${parent} : permission refusee`);
+  if (!canAccess(system, parent, user, 'write'))
+    return err('EACCES', `${parent} : permission refusee`);
   system.files[target] = {
     kind: 'dir',
     content: '',
@@ -239,13 +265,21 @@ export function copyPath(
     if (!child) continue;
     const relative = key.slice(source.length + 1);
     const targetKey = joinPath(destination, relative);
-    system.files[targetKey] = { ...child, permissions: { ...child.permissions, acl: [...child.permissions.acl] } };
+    system.files[targetKey] = {
+      ...child,
+      permissions: { ...child.permissions, acl: [...child.permissions.acl] },
+    };
     count += 1;
   }
   return ok(count);
 }
 
-export function movePath(system: SystemState, from: string, to: string, user: string): FsResult<void> {
+export function movePath(
+  system: SystemState,
+  from: string,
+  to: string,
+  user: string,
+): FsResult<void> {
   const copied = copyPath(system, from, to, user, { recursive: true });
   if (!copied.ok) return err(copied.error.code, copied.error.message);
   const removed = removePath(system, from, user, { recursive: true });
@@ -253,7 +287,12 @@ export function movePath(system: SystemState, from: string, to: string, user: st
   return ok(undefined);
 }
 
-export function chmod(system: SystemState, path: string, mode: string, user: string): FsResult<void> {
+export function chmod(
+  system: SystemState,
+  path: string,
+  mode: string,
+  user: string,
+): FsResult<void> {
   const target = resolvePath('/', path);
   const node = system.files[target];
   if (!node) return err('ENOENT', `${path} : aucun fichier ou dossier de ce type`);

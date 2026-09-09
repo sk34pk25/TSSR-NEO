@@ -1,20 +1,39 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { session } from './session.ts';
-
-/** Re-rend le composant a chaque notification de la session. */
-export function useSession(): typeof session {
-  useSyncExternalStore(
-    (listener) => session.subscribe(listener),
-    () => sessionVersion,
-    () => sessionVersion,
-  );
-  return session;
-}
 
 let sessionVersion = 0;
 session.subscribe(() => {
   sessionVersion += 1;
 });
+
+/** Numero de revision de la session, incremente a chaque notification. */
+export function useSessionRevision(): number {
+  return useSyncExternalStore(
+    (listener) => session.subscribe(listener),
+    () => sessionVersion,
+    () => sessionVersion,
+  );
+}
+
+/** Re-rend le composant a chaque notification de la session. */
+export function useSession(): typeof session {
+  useSessionRevision();
+  return session;
+}
+
+/**
+ * Valeur derivee d un etat mute en place.
+ *
+ * Le monde simule est volontairement mutable : c est ce qui garantit que la 3D,
+ * le terminal, les tickets et l evaluation observent strictement le meme objet.
+ * L identite des objets ne change donc jamais, et React ne peut pas detecter
+ * seul qu il faut recalculer. Le numero de revision joue ce role, une seule fois
+ * et de facon explicite, plutot que d etre repete a chaque appel.
+ */
+export function useSimValue<T>(revision: number, compute: () => T): T {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(compute, [revision]);
+}
 
 export type RouteName =
   | 'accueil'

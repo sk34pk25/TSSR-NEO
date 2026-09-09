@@ -1,4 +1,9 @@
-import { MemoryStorageAdapter, STORE_NAMES, type StorageAdapter, type StoreName } from './adapter.ts';
+import {
+  MemoryStorageAdapter,
+  STORE_NAMES,
+  type StorageAdapter,
+  type StoreName,
+} from './adapter.ts';
 
 const DB_NAME = 'tssr-neo';
 const DB_VERSION = 1;
@@ -55,8 +60,10 @@ export class IndexedDbStorageAdapter implements StorageAdapter {
   }
 
   async get<T>(store: StoreName, key: string): Promise<T | undefined> {
-    return this.transaction<T | undefined>(store, 'readonly', (objectStore) =>
-      objectStore.get(key) as IDBRequest<T | undefined>,
+    return this.transaction<T | undefined>(
+      store,
+      'readonly',
+      (objectStore) => objectStore.get(key) as IDBRequest<T | undefined>,
     );
   }
 
@@ -83,8 +90,13 @@ export class IndexedDbStorageAdapter implements StorageAdapter {
     const result = {} as Record<StoreName, number>;
     const db = await this.open();
     for (const name of STORE_NAMES) {
-      const values = await requestToPromise(db.transaction(name, 'readonly').objectStore(name).getAll());
-      result[name] = values.reduce((sum: number, value: unknown) => sum + JSON.stringify(value).length, 0);
+      const values = await requestToPromise(
+        db.transaction(name, 'readonly').objectStore(name).getAll(),
+      );
+      result[name] = values.reduce(
+        (sum: number, value: unknown) => sum + JSON.stringify(value).length,
+        0,
+      );
     }
     return result;
   }

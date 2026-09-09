@@ -59,13 +59,33 @@ export const zDynamicEvent = z.object({
   effects: z.array(
     z.discriminatedUnion('kind', [
       z.object({ kind: z.literal('set-link'), linkId: zId, connected: z.boolean() }),
-      z.object({ kind: z.literal('set-service-status'), nodeId: zId, serviceId: zId, status: z.enum(['running', 'stopped', 'failed', 'degraded']) }),
-      z.object({ kind: z.literal('set-interface-enabled'), nodeId: zId, interfaceName: z.string(), enabled: z.boolean() }),
+      z.object({
+        kind: z.literal('set-service-status'),
+        nodeId: zId,
+        serviceId: zId,
+        status: z.enum(['running', 'stopped', 'failed', 'degraded']),
+      }),
+      z.object({
+        kind: z.literal('set-interface-enabled'),
+        nodeId: zId,
+        interfaceName: z.string(),
+        enabled: z.boolean(),
+      }),
       z.object({ kind: z.literal('set-node-power'), nodeId: zId, powered: z.boolean() }),
       z.object({ kind: z.literal('open-ticket'), ticketId: zId }),
       z.object({ kind: z.literal('npc-message'), npcId: zId, text: zLocalizedText }),
-      z.object({ kind: z.literal('set-component-health'), assetId: zId, componentId: zId, health: z.enum(['ok', 'warning', 'failed']) }),
-      z.object({ kind: z.literal('log'), nodeId: zId, level: z.enum(['debug', 'info', 'warning', 'error', 'critical']), message: z.string() }),
+      z.object({
+        kind: z.literal('set-component-health'),
+        assetId: zId,
+        componentId: zId,
+        health: z.enum(['ok', 'warning', 'failed']),
+      }),
+      z.object({
+        kind: z.literal('log'),
+        nodeId: zId,
+        level: z.enum(['debug', 'info', 'warning', 'error', 'critical']),
+        message: z.string(),
+      }),
     ]),
   ),
 });
@@ -100,7 +120,9 @@ export const zMissionDefinition = z.object({
   dynamicEvents: z.array(zDynamicEvent).default([]),
   variants: z.array(zVariantSpec).default([]),
   /** Conditions d echec explicites (ex : service critique casse). */
-  failureConditions: z.array(z.object({ id: zId, label: zLocalizedText, when: zAssertion })).default([]),
+  failureConditions: z
+    .array(z.object({ id: zId, label: zLocalizedText, when: zAssertion }))
+    .default([]),
   /** Elements de debrief compares aux strategies possibles. */
   debrief: z
     .object({

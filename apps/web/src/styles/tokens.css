@@ -35,8 +35,10 @@
   --neo-info: #8b9dff;
 
   /* Typographie */
-  --neo-font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --neo-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --neo-font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --neo-font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
   --neo-fs-xs: calc(0.72rem * var(--neo-text-scale, 1));
   --neo-fs-sm: calc(0.82rem * var(--neo-text-scale, 1));
   --neo-fs-md: calc(0.94rem * var(--neo-text-scale, 1));

@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { EventBus, Rng } from '@tssr/events';
 import { SimulationWorld } from '@tssr/sim-world';
-import { MissionRunner, ScenarioRegistry, applyVariant, findMissingPlaceholders, pickVariant } from '@tssr/mission-engine';
+import {
+  MissionRunner,
+  ScenarioRegistry,
+  applyVariant,
+  findMissingPlaceholders,
+  pickVariant,
+} from '@tssr/mission-engine';
 import { SwitchConsole } from '@tssr/sim-network';
 import { zMissionDefinition, zModuleManifest, zWorldState } from '@tssr/contracts';
 import {
@@ -59,7 +65,9 @@ describe('mission : poste sans reseau', () => {
     expect(env.runner.state.status).toBe('active');
     const lease = env.world.network.renewDhcp('pc-camille', 'eth0');
     expect(lease.success).toBe(false);
-    expect(env.world.network.node('pc-camille')?.interfaces[0]?.addresses[0]?.address).toMatch(/^169\.254\./);
+    expect(env.world.network.node('pc-camille')?.interfaces[0]?.addresses[0]?.address).toMatch(
+      /^169\.254\./,
+    );
     expect(env.runner.objectives().find((o) => o.id === 'obj-lease')?.status).toBe('pending');
   });
 
@@ -106,9 +114,13 @@ describe('mission : poste sans reseau', () => {
 
     let tick = env.runner.tick();
     expect(tick.completed).toContain('obj-lease');
-    expect(env.runner.objectives().find((o) => o.id === 'obj-ping-serveur')?.status).toBe('completed');
+    expect(env.runner.objectives().find((o) => o.id === 'obj-ping-serveur')?.status).toBe(
+      'completed',
+    );
     expect(env.runner.objectives().find((o) => o.id === 'obj-dns')?.status).toBe('completed');
-    expect(env.runner.objectives().find((o) => o.id === 'obj-verification')?.status).toBe('completed');
+    expect(env.runner.objectives().find((o) => o.id === 'obj-verification')?.status).toBe(
+      'completed',
+    );
     expect(env.runner.state.status).toBe('active');
 
     env.world.itsm.comment('inc-2041', {
@@ -118,7 +130,7 @@ describe('mission : poste sans reseau', () => {
     });
     env.world.itsm.resolve(
       'inc-2041',
-      "Le port Gi0/2 du commutateur sw-lab etait reste dans le VLAN 99 (quarantaine) apres les travaux. Il a ete replace dans le VLAN 10 puis le bail DHCP a ete renouvele sur le poste.",
+      'Le port Gi0/2 du commutateur sw-lab etait reste dans le VLAN 99 (quarantaine) apres les travaux. Il a ete replace dans le VLAN 10 puis le bail DHCP a ete renouvele sur le poste.',
       'Port laisse en VLAN de quarantaine lors du deplacement du poste pendant les travaux.',
     );
 
@@ -142,7 +154,9 @@ describe('mission : poste sans reseau', () => {
     env.world.network.renewDhcp('pc-camille', 'eth0');
     env.runner.tick();
     expect(env.runner.objectives().find((o) => o.id === 'obj-lease')?.status).toBe('completed');
-    expect(env.runner.objectives().find((o) => o.id === 'obj-ping-serveur')?.status).toBe('completed');
+    expect(env.runner.objectives().find((o) => o.id === 'obj-ping-serveur')?.status).toBe(
+      'completed',
+    );
   });
 
   it('detecte un degat collateral sur le serveur', () => {
@@ -232,7 +246,9 @@ describe('supervision pendant la mission', () => {
     const alerts = env.world.monitoring.runAll();
     const camille = alerts.find((a) => a.checkId === 'chk-camille-icmp');
     expect(camille).toBeDefined();
-    expect(env.world.monitoring.activeAlerts().some((a) => a.checkId === 'chk-srv-icmp')).toBe(false);
+    expect(env.world.monitoring.activeAlerts().some((a) => a.checkId === 'chk-srv-icmp')).toBe(
+      false,
+    );
   });
 
   it('l alerte se resorbe une fois la panne corrigee', () => {
@@ -246,6 +262,8 @@ describe('supervision pendant la mission', () => {
     console_.execute('switchport access vlan 10');
     env.world.network.renewDhcp('pc-camille', 'eth0');
     env.world.monitoring.runAll();
-    expect(env.world.monitoring.activeAlerts().some((a) => a.checkId === 'chk-camille-icmp')).toBe(false);
+    expect(env.world.monitoring.activeAlerts().some((a) => a.checkId === 'chk-camille-icmp')).toBe(
+      false,
+    );
   });
 });

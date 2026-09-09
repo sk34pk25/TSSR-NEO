@@ -70,15 +70,16 @@ export interface NodeSpec {
 }
 
 function buildInterface(nodeId: string, spec: IfaceSpec): NetworkInterface {
-  const addresses = spec.ip === undefined
-    ? []
-    : [
-        {
-          address: spec.ip.split('/')[0] as string,
-          prefix: parseCidr(spec.ip).prefix,
-          source: 'static' as const,
-        },
-      ];
+  const addresses =
+    spec.ip === undefined
+      ? []
+      : [
+          {
+            address: spec.ip.split('/')[0] as string,
+            prefix: parseCidr(spec.ip).prefix,
+            source: 'static' as const,
+          },
+        ];
   macCounter += 1;
   return {
     id: `${nodeId}-${spec.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
@@ -95,7 +96,9 @@ function buildInterface(nodeId: string, spec: IfaceSpec): NetworkInterface {
     ...(spec.vlan === undefined ? {} : { vlan: spec.vlan }),
     ...(spec.parent === undefined
       ? {}
-      : { parentInterfaceId: `${nodeId}-${spec.parent.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` }),
+      : {
+          parentInterfaceId: `${nodeId}-${spec.parent.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+        }),
   };
 }
 
@@ -106,7 +109,11 @@ function buildService(spec: ServiceSpec): ServiceState {
     name: spec.name ?? spec.kind,
     status: spec.status ?? 'running',
     port: spec.port ?? DEFAULT_PORTS[spec.kind],
-    protocol: spec.protocol ?? (spec.kind === 'dns' || spec.kind === 'dhcp' || spec.kind === 'ntp' || spec.kind === 'snmp' ? 'udp' : 'tcp'),
+    protocol:
+      spec.protocol ??
+      (spec.kind === 'dns' || spec.kind === 'dhcp' || spec.kind === 'ntp' || spec.kind === 'snmp'
+        ? 'udp'
+        : 'tcp'),
     startupType: spec.startupType ?? 'auto',
     dependsOn: spec.dependsOn ?? [],
     bindInterfaceIds: [],
@@ -129,7 +136,8 @@ export class TopologyBuilder {
     if (specs.length === 0) {
       if (kind === 'switch' || kind === 'access-point') {
         const ports = spec.ports ?? 8;
-        for (let i = 1; i <= ports; i += 1) specs.push({ name: `Gi0/${i}`, mode: 'access', accessVlan: 1 });
+        for (let i = 1; i <= ports; i += 1)
+          specs.push({ name: `Gi0/${i}`, mode: 'access', accessVlan: 1 });
       } else {
         specs.push({ name: 'eth0', ...(spec.ip === undefined ? {} : { ip: spec.ip }) });
       }
@@ -199,7 +207,18 @@ export class TopologyBuilder {
     return this;
   }
 
-  link(nodeA: string, ifaceA: string, nodeB: string, ifaceB: string, options: { connected?: boolean; latencyMs?: number; lossRate?: number; media?: 'copper' | 'fiber' | 'wireless' | 'virtual' } = {}): this {
+  link(
+    nodeA: string,
+    ifaceA: string,
+    nodeB: string,
+    ifaceB: string,
+    options: {
+      connected?: boolean;
+      latencyMs?: number;
+      lossRate?: number;
+      media?: 'copper' | 'fiber' | 'wireless' | 'virtual';
+    } = {},
+  ): this {
     const a = this.resolve(nodeA, ifaceA);
     const b = this.resolve(nodeB, ifaceB);
     if (!a || !b) throw new Error(`Lien impossible : ${nodeA}/${ifaceA} <-> ${nodeB}/${ifaceB}`);

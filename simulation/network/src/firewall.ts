@@ -17,13 +17,18 @@ export interface FirewallDecision {
   implicit: boolean;
 }
 
-function matches(rule: FirewallRule, packet: PacketDescriptor, direction: FirewallDirection): boolean {
+function matches(
+  rule: FirewallRule,
+  packet: PacketDescriptor,
+  direction: FirewallDirection,
+): boolean {
   if (!rule.enabled) return false;
   if (rule.direction !== direction) return false;
   if (rule.protocol !== 'any' && rule.protocol !== packet.protocol) return false;
   if (rule.source !== 'any' && !inCidr(packet.source, rule.source)) return false;
   if (rule.destination !== 'any' && !inCidr(packet.destination, rule.destination)) return false;
-  if (rule.destinationPort !== undefined && rule.destinationPort !== packet.destinationPort) return false;
+  if (rule.destinationPort !== undefined && rule.destinationPort !== packet.destinationPort)
+    return false;
   return true;
 }
 

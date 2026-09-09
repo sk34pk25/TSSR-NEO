@@ -77,7 +77,9 @@ export class Nova {
       source: 'rules',
       tone: 'encouraging',
       text: `Bienvenue. Objectif du moment : ${title}. Commencez par etablir les faits avant de modifier quoi que ce soit.`,
-      knowledgeEntryIds: this.library.search('methode diagnostic', { limit: 1 }).map((r) => r.entry.id),
+      knowledgeEntryIds: this.library
+        .search('methode diagnostic', { limit: 1 })
+        .map((r) => r.entry.id),
       checks: [
         'lire le ticket et relever les elements factuels',
         'delimiter le perimetre : qui est touche, depuis quand',
@@ -98,9 +100,7 @@ export class Nova {
       };
     }
 
-    const pending = this.runner
-      .objectives()
-      .find((o) => o.status !== 'completed' && !o.optional);
+    const pending = this.runner.objectives().find((o) => o.status !== 'completed' && !o.optional);
     if (!pending) {
       return {
         id: this.nextId(),
@@ -117,7 +117,10 @@ export class Nova {
     const keywords = rule?.knowledgeKeywords ?? ['diagnostic'];
     const entries = this.library.search(keywords.join(' '), { limit: 2 }).map((r) => r.entry.id);
 
-    const detail = this.verbosity === 'detailed' && pending.detail !== undefined ? ` Constat actuel : ${pending.detail}.` : '';
+    const detail =
+      this.verbosity === 'detailed' && pending.detail !== undefined
+        ? ` Constat actuel : ${pending.detail}.`
+        : '';
     return {
       id: this.nextId(),
       source: 'rules',
@@ -140,8 +143,8 @@ export class Nova {
         source: 'rules',
         tone: 'neutral',
         text:
-          "Je n ai pas de fiche correspondant a cette question dans les modules charges. "
-          + 'Reformulez avec un terme technique, ou consultez la base de connaissances par domaine.',
+          'Je n ai pas de fiche correspondant a cette question dans les modules charges. ' +
+          'Reformulez avec un terme technique, ou consultez la base de connaissances par domaine.',
         knowledgeEntryIds: [],
         checks: ['essayer un terme plus precis', 'parcourir les fiches du domaine concerne'],
       };
@@ -182,13 +185,13 @@ export class Nova {
         source: 'rules',
         tone: 'neutral',
         text:
-          'Aucun indice supplementaire n est disponible a ce niveau de difficulte. '
-          + 'Reprenez la comparaison entre l etat constate et l etat attendu.',
+          'Aucun indice supplementaire n est disponible a ce niveau de difficulte. ' +
+          'Reprenez la comparaison entre l etat constate et l etat attendu.',
         knowledgeEntryIds: [],
         checks: ['comparer avec un element equivalent qui fonctionne'],
       };
     }
-    const text = typeof hint.text === 'string' ? hint.text : Object.values(hint.text)[0] ?? '';
+    const text = typeof hint.text === 'string' ? hint.text : (Object.values(hint.text)[0] ?? '');
     return {
       id: this.nextId(),
       source: 'hint',

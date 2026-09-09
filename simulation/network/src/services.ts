@@ -1,4 +1,10 @@
-import type { DnsZone, NetworkNode, NetworkTopology, ServiceKind, ServiceState } from '@tssr/contracts';
+import type {
+  DnsZone,
+  NetworkNode,
+  NetworkTopology,
+  ServiceKind,
+  ServiceState,
+} from '@tssr/contracts';
 import { TopologyIndex } from './topology-index.ts';
 import { forwardPacket, type ForwardResult } from './forward.ts';
 import { floodDomain } from './l2.ts';
@@ -22,7 +28,11 @@ export const DEFAULT_PORTS: Record<ServiceKind, number> = {
 };
 
 /** Un service est reellement disponible si lui et toutes ses dependances tournent. */
-export function serviceAvailable(node: NetworkNode, service: ServiceState, seen = new Set<string>()): boolean {
+export function serviceAvailable(
+  node: NetworkNode,
+  service: ServiceState,
+  seen = new Set<string>(),
+): boolean {
   if (!node.powered) return false;
   if (service.status !== 'running') return false;
   if (seen.has(service.id)) return true;
@@ -84,7 +94,11 @@ export function connectToService(
   const index = new TopologyIndex(topology);
   const owner = index.ownersOf(destinationAddress)[0]?.node;
   if (!owner) {
-    return { connected: false, transport, failure: { reason: 'host-not-found', detail: 'hote introuvable' } };
+    return {
+      connected: false,
+      transport,
+      failure: { reason: 'host-not-found', detail: 'hote introuvable' },
+    };
   }
 
   const service = findListeningService(owner, port, protocol);
@@ -133,7 +147,8 @@ export function connectToService(
   return { connected: true, transport, service };
 }
 
-export type DnsFailure = 'no-resolver' | 'resolver-unreachable' | 'service-down' | 'nxdomain' | 'loop';
+export type DnsFailure =
+  'no-resolver' | 'resolver-unreachable' | 'service-down' | 'nxdomain' | 'loop';
 
 export interface DnsResult {
   resolved: boolean;
@@ -156,12 +171,19 @@ function zoneFor(node: NetworkNode, name: string): DnsZone | undefined {
   });
 }
 
-function lookupInZone(node: NetworkNode, name: string, chain: string[], depth = 0): string | undefined {
+function lookupInZone(
+  node: NetworkNode,
+  name: string,
+  chain: string[],
+  depth = 0,
+): string | undefined {
   if (depth > 5) return undefined;
   const zone = zoneFor(node, name);
   if (!zone) return undefined;
   const target = normalize(name);
-  const record = zone.records.find((r) => normalize(r.name) === target && (r.type === 'A' || r.type === 'CNAME'));
+  const record = zone.records.find(
+    (r) => normalize(r.name) === target && (r.type === 'A' || r.type === 'CNAME'),
+  );
   if (!record) return undefined;
   chain.push(`${record.name} ${record.type} ${record.value}`);
   if (record.type === 'A') return record.value;
@@ -180,19 +202,29 @@ export function resolveName(
   const index = new TopologyIndex(topology);
   const client = index.node(fromNodeId);
   if (!client) {
-    return { resolved: false, chain, failure: { reason: 'no-resolver', detail: 'client introuvable' } };
+    return {
+      resolved: false,
+      chain,
+      failure: { reason: 'no-resolver', detail: 'client introuvable' },
+    };
   }
   if (client.dnsClients.length === 0) {
     return {
       resolved: false,
       chain,
-      failure: { reason: 'no-resolver', detail: `aucun serveur DNS configure sur ${client.hostname}` },
+      failure: {
+        reason: 'no-resolver',
+        detail: `aucun serveur DNS configure sur ${client.hostname}`,
+      },
     };
   }
 
   let lastFailure: DnsResult['failure'];
   for (const serverIp of client.dnsClients) {
-    const reach = forwardPacket(topology, fromNodeId, serverIp, { protocol: 'udp', destinationPort: 53 });
+    const reach = forwardPacket(topology, fromNodeId, serverIp, {
+      protocol: 'udp',
+      destinationPort: 53,
+    });
     if (!reach.delivered) {
       lastFailure = {
         reason: 'resolver-unreachable',
@@ -307,7 +339,10 @@ export function requestDhcpLease(
     return {
       success: false,
       apipa: apipaFor(mac),
-      failure: { reason: 'no-server', detail: 'aucun serveur DHCP n a repondu dans ce domaine de diffusion' },
+      failure: {
+        reason: 'no-server',
+        detail: 'aucun serveur DHCP n a repondu dans ce domaine de diffusion',
+      },
     };
   }
 
@@ -386,7 +421,10 @@ export function requestDhcpLease(
     return {
       success: false,
       apipa: apipaFor(mac),
-      failure: { reason: 'pool-exhausted', detail: `la plage ${pool.rangeStart}-${pool.rangeEnd} est saturee` },
+      failure: {
+        reason: 'pool-exhausted',
+        detail: `la plage ${pool.rangeStart}-${pool.rangeEnd} est saturee`,
+      },
     };
   }
 

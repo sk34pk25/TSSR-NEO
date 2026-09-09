@@ -1,6 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { TopologyRenderer, buildScene, type QualityProfile, type SceneGraph } from '@tssr/rendering';
+import { useEffect, useRef, useState } from 'react';
+import {
+  TopologyRenderer,
+  buildScene,
+  type QualityProfile,
+  type SceneGraph,
+} from '@tssr/rendering';
 import type { SimulationWorld } from '@tssr/sim-world';
+import { useSimValue } from '../state/hooks.ts';
 
 interface NetworkXrayProps {
   world: SimulationWorld;
@@ -28,18 +34,18 @@ export function NetworkXray({ world, profile, version, onSelect }: NetworkXrayPr
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [flow, setFlow] = useState<FlowState | undefined>(undefined);
+  // Le moteur de rendu est cree une seule fois ; son profil est mis a jour separement.
+  const [renderer] = useState(() => new TopologyRenderer(profile));
 
-  const nodes = useMemo(
-    () => world.state.network.nodes.map((n) => ({ id: n.id, hostname: n.hostname })),
-    [world, version],
+  const nodes = useSimValue(version, () =>
+    world.state.network.nodes.map((n) => ({ id: n.id, hostname: n.hostname })),
   );
 
-  const scene: SceneGraph = useMemo(() => buildScene(world.state), [world, version]);
+  const scene: SceneGraph = useSimValue(version, () => buildScene(world.state));
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
-    const renderer = new TopologyRenderer(profile);
     renderer.mount(canvas);
     renderer.start();
     rendererRef.current = renderer;
@@ -50,15 +56,13 @@ export function NetworkXray({ world, profile, version, onSelect }: NetworkXrayPr
       renderer.dispose();
       rendererRef.current = undefined;
     };
-  }, []);
+  }, [renderer]);
 
   useEffect(() => {
-    rendererRef.current?.setProfile(profile);
-  }, [profile]);
+    renderer.setProfile(profile);
+  }, [renderer, profile]);
 
   useEffect(() => {
-    const renderer = rendererRef.current;
-    if (!renderer) return;
     renderer.setScene({
       ...scene,
       flows:
@@ -67,7 +71,7 @@ export function NetworkXray({ world, profile, version, onSelect }: NetworkXrayPr
           : [{ path: flow.path, status: flow.status, blockedAt: flow.blockedAt, label: flow.info }],
     });
     renderer.setSelected(selected);
-  }, [scene, flow, selected]);
+  }, [renderer, scene, flow, selected]);
 
   function runFlow(): void {
     if (from === '' || to === '') return;
@@ -105,7 +109,10 @@ export function NetworkXray({ world, profile, version, onSelect }: NetworkXrayPr
         </span>
       </div>
       <div className="xray">
-        <div className="neo-row" style={{ padding: '8px 16px', borderBottom: '1px solid var(--neo-border)' }}>
+        <div
+          className="neo-row"
+          style={{ padding: '8px 16px', borderBottom: '1px solid var(--neo-border)' }}
+        >
           <label className="neo-visually-hidden" htmlFor="xray-from">
             Source du test de flux
           </label>
@@ -141,11 +148,20 @@ export function NetworkXray({ world, profile, version, onSelect }: NetworkXrayPr
               </option>
             ))}
           </select>
-          <button type="button" className="neo-btn neo-btn--sm" onClick={runFlow} disabled={from === '' || to === ''}>
+          <button
+            type="button"
+            className="neo-btn neo-btn--sm"
+            onClick={runFlow}
+            disabled={from === '' || to === ''}
+          >
             Tracer le flux
           </button>
           {flow !== undefined ? (
-            <button type="button" className="neo-btn neo-btn--ghost neo-btn--sm" onClick={() => setFlow(undefined)}>
+            <button
+              type="button"
+              className="neo-btn neo-btn--ghost neo-btn--sm"
+              onClick={() => setFlow(undefined)}
+            >
               Effacer
             </button>
           ) : null}
@@ -182,7 +198,9 @@ export function NetworkXray({ world, profile, version, onSelect }: NetworkXrayPr
             lien degrade
           </span>
           <span>Le bandeau colore d un equipement indique son VLAN.</span>
-          {flow !== undefined ? <strong style={{ color: 'var(--neo-text)' }}>{flow.info}</strong> : null}
+          {flow !== undefined ? (
+            <strong style={{ color: 'var(--neo-text)' }}>{flow.info}</strong>
+          ) : null}
         </div>
       </div>
     </div>

@@ -53,7 +53,8 @@ export function parseCidr(cidr: string): Cidr {
   const [addr, prefixText] = cidr.split('/');
   if (addr === undefined || prefixText === undefined) throw new Error(`CIDR invalide : ${cidr}`);
   const prefix = Number(prefixText);
-  if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32) throw new Error(`CIDR invalide : ${cidr}`);
+  if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32)
+    throw new Error(`CIDR invalide : ${cidr}`);
   return { networkInt: (ipToInt(addr) & prefixToMaskInt(prefix)) >>> 0, prefix };
 }
 
@@ -71,12 +72,12 @@ export function broadcastOf(ip: string, prefix: number): string {
 
 export function inCidr(ip: string, cidr: string): boolean {
   const { networkInt, prefix } = parseCidr(cidr);
-  return ((ipToInt(ip) & prefixToMaskInt(prefix)) >>> 0) === networkInt;
+  return (ipToInt(ip) & prefixToMaskInt(prefix)) >>> 0 === networkInt;
 }
 
 export function sameSubnet(a: string, b: string, prefix: number): boolean {
   const mask = prefixToMaskInt(prefix);
-  return ((ipToInt(a) & mask) >>> 0) === ((ipToInt(b) & mask) >>> 0);
+  return (ipToInt(a) & mask) >>> 0 === (ipToInt(b) & mask) >>> 0;
 }
 
 /** Adresses utilisables d un sous-reseau (hors reseau et broadcast, sauf /31 et /32). */
@@ -84,17 +85,21 @@ export function usableRange(cidr: string): { first: string; last: string; count:
   const { networkInt, prefix } = parseCidr(cidr);
   const size = prefix >= 31 ? 2 ** (32 - prefix) : 2 ** (32 - prefix) - 2;
   const firstInt = prefix >= 31 ? networkInt : networkInt + 1;
-  const lastInt = prefix >= 31 ? networkInt + 2 ** (32 - prefix) - 1 : networkInt + 2 ** (32 - prefix) - 2;
+  const lastInt =
+    prefix >= 31 ? networkInt + 2 ** (32 - prefix) - 1 : networkInt + 2 ** (32 - prefix) - 2;
   return { first: intToIp(firstInt), last: intToIp(lastInt), count: size };
 }
 
-export function isSpecial(ip: string): 'loopback' | 'apipa' | 'multicast' | 'broadcast' | 'private' | 'public' {
+export function isSpecial(
+  ip: string,
+): 'loopback' | 'apipa' | 'multicast' | 'broadcast' | 'private' | 'public' {
   const v = ipToInt(ip);
   if (v === 0xffffffff) return 'broadcast';
   if (inCidr(ip, '127.0.0.0/8')) return 'loopback';
   if (inCidr(ip, '169.254.0.0/16')) return 'apipa';
   if (v >= ipToInt('224.0.0.0') && v <= ipToInt('239.255.255.255')) return 'multicast';
-  if (inCidr(ip, '10.0.0.0/8') || inCidr(ip, '172.16.0.0/12') || inCidr(ip, '192.168.0.0/16')) return 'private';
+  if (inCidr(ip, '10.0.0.0/8') || inCidr(ip, '172.16.0.0/12') || inCidr(ip, '192.168.0.0/16'))
+    return 'private';
   return 'public';
 }
 

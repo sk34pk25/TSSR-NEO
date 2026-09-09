@@ -28,8 +28,7 @@ export function parseContract<T extends z.ZodTypeAny>(
 }
 
 export type ContractResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; issues: { path: string; message: string }[] };
+  { ok: true; value: T } | { ok: false; issues: { path: string; message: string }[] };
 
 /** Variante non levante, utilisee a l import de donnees utilisateur. */
 export function safeParseContract<T extends z.ZodTypeAny>(

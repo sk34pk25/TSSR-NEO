@@ -60,7 +60,11 @@ export class ItsmEngine {
     return this.bus?.getSimTime() ?? this.world.simTime;
   }
 
-  create(input: Omit<Ticket, 'schemaVersion' | 'priority' | 'createdAt' | 'updatedAt' | 'comments'> & { comments?: TicketComment[] }): Ticket {
+  create(
+    input: Omit<Ticket, 'schemaVersion' | 'priority' | 'createdAt' | 'updatedAt' | 'comments'> & {
+      comments?: TicketComment[];
+    },
+  ): Ticket {
     const priority = computePriority(input.impact, input.urgency);
     const ticket: Ticket = {
       schemaVersion: 1,
@@ -72,7 +76,11 @@ export class ItsmEngine {
       comments: input.comments ?? [],
     };
     this.world.tickets.push(ticket);
-    this.emit('itsm.ticket.created', { ticketId: ticket.id, priority }, `Ticket ${ticket.reference} ouvert`);
+    this.emit(
+      'itsm.ticket.created',
+      { ticketId: ticket.id, priority },
+      `Ticket ${ticket.reference} ouvert`,
+    );
     return ticket;
   }
 
@@ -105,7 +113,11 @@ export class ItsmEngine {
     ticket.status = status;
     ticket.updatedAt = this.now();
     if (status === 'resolved') ticket.resolvedAt = this.now();
-    this.emit('itsm.ticket.status', { ticketId, status }, `Ticket ${ticket.reference} -> ${status}`);
+    this.emit(
+      'itsm.ticket.status',
+      { ticketId, status },
+      `Ticket ${ticket.reference} -> ${status}`,
+    );
     return true;
   }
 
@@ -233,7 +245,10 @@ export class ItsmEngine {
       if (change.risk === 'high' && change.maintenanceWindow === undefined) {
         change.approvalState = 'rejected';
         this.emit('itsm.change.rejected', { changeId: id, reason: 'window' });
-        return { approved: false, reason: 'fenetre de maintenance obligatoire pour un changement a risque eleve' };
+        return {
+          approved: false,
+          reason: 'fenetre de maintenance obligatoire pour un changement a risque eleve',
+        };
       }
     }
     change.approvalState = 'approved';

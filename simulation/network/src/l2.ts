@@ -202,7 +202,11 @@ function forwardThroughSwitch(
       continue;
     }
     if (trunkAllows(iface, vlan)) {
-      queue.push({ nodeId: node.id, interfaceId: iface.id, tag: iface.nativeVlan === vlan ? null : vlan });
+      queue.push({
+        nodeId: node.id,
+        interfaceId: iface.id,
+        tag: iface.nativeVlan === vlan ? null : vlan,
+      });
     } else {
       // Un trunk qui ne transporte pas le VLAN est une cause de panne frequente :
       // on la remonte explicitement au lieu de la faire disparaitre silencieusement.

@@ -164,9 +164,7 @@ export const zNetworkNode = z.object({
   interfaces: z.array(zNetworkInterface).default([]),
   routes: z.array(zRoute).default([]),
   /** VLAN declares sur un commutateur. */
-  vlans: z
-    .array(z.object({ id: zVlanId, name: z.string().max(32).default('') }))
-    .default([]),
+  vlans: z.array(z.object({ id: zVlanId, name: z.string().max(32).default('') })).default([]),
   services: z.array(zServiceState).default([]),
   dhcpPools: z.array(zDhcpPool).default([]),
   dnsZones: z.array(zDnsZone).default([]),
@@ -176,7 +174,12 @@ export const zNetworkNode = z.object({
   dnsClients: z.array(zIPv4).default([]),
   /** Emplacement 3D / plan logique (rack, salle). */
   placement: z
-    .object({ site: zId.optional(), room: zId.optional(), rackId: zId.optional(), unit: z.number().int().optional() })
+    .object({
+      site: zId.optional(),
+      room: zId.optional(),
+      rackId: zId.optional(),
+      unit: z.number().int().optional(),
+    })
     .optional(),
   systemId: zId.optional(),
   tags: z.array(z.string().max(32)).default([]),

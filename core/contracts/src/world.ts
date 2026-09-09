@@ -1,7 +1,13 @@
 import { z } from 'zod';
 import { zId, zSeed, zSimTime } from './primitives.ts';
 import { zNetworkTopology } from './network.ts';
-import { zCloudResource, zDirectoryDomain, zHypervisorHost, zSystemState, zVirtualMachine } from './systems.ts';
+import {
+  zCloudResource,
+  zDirectoryDomain,
+  zHypervisorHost,
+  zSystemState,
+  zVirtualMachine,
+} from './systems.ts';
 import { zChangeRequest, zNpc, zTicket } from './itsm.ts';
 import { zHardwareAsset, zPatchCable, zRack } from './hardware.ts';
 
@@ -70,7 +76,15 @@ export const zDeploymentTemplate = z.object({
 export const zDeploymentJob = z.object({
   id: zId,
   templateId: zId,
-  targets: z.array(z.object({ assetId: zId, status: z.enum(['pending', 'running', 'success', 'failed']).default('pending'), message: z.string().optional() })).default([]),
+  targets: z
+    .array(
+      z.object({
+        assetId: zId,
+        status: z.enum(['pending', 'running', 'success', 'failed']).default('pending'),
+        message: z.string().optional(),
+      }),
+    )
+    .default([]),
   startedAt: zSimTime.optional(),
   finishedAt: zSimTime.optional(),
   status: z.enum(['draft', 'running', 'completed', 'failed', 'rolled-back']).default('draft'),

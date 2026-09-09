@@ -80,7 +80,8 @@ export function buildScene(world: WorldState): SceneGraph {
     const check = world.monitoringChecks.find((c) => c.id === alert.checkId);
     if (!check) continue;
     const current = alerts.get(check.targetNodeId);
-    if (current !== 'critical') alerts.set(check.targetNodeId, alert.severity === 'critical' ? 'critical' : 'warning');
+    if (current !== 'critical')
+      alerts.set(check.targetNodeId, alert.severity === 'critical' ? 'critical' : 'warning');
   }
 
   const nodes: SceneNode[] = world.network.nodes.map((node) => {
@@ -108,7 +109,8 @@ export function buildScene(world: WorldState): SceneGraph {
     const ifaceA = a?.interfaces.find((i) => i.id === link.a.interfaceId);
     const ifaceB = b?.interfaces.find((i) => i.id === link.b.interfaceId);
     const bothEnabled = (ifaceA?.enabled ?? false) && (ifaceB?.enabled ?? false);
-    const state: SceneLink['state'] = !link.connected || !bothEnabled ? 'down' : link.lossRate > 0.05 ? 'degraded' : 'up';
+    const state: SceneLink['state'] =
+      !link.connected || !bothEnabled ? 'down' : link.lossRate > 0.05 ? 'degraded' : 'up';
     const vlans = [
       ...new Set([
         ...(ifaceA?.trunkVlans ?? []),

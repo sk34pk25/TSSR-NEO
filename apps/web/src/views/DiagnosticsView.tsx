@@ -16,7 +16,11 @@ export function DiagnosticsView(): JSX.Element {
     void session.storageReport().then((report) => setStorage(report.byStore));
     if ('serviceWorker' in navigator) {
       void navigator.serviceWorker.getRegistration().then((registration) => {
-        setSwState(registration === undefined ? 'non enregistre' : (registration.active?.state ?? 'en cours'));
+        setSwState(
+          registration === undefined
+            ? 'non enregistre'
+            : (registration.active?.state ?? 'en cours'),
+        );
       });
     } else {
       setSwState('non supporte par ce navigateur');
@@ -62,13 +66,20 @@ export function DiagnosticsView(): JSX.Element {
           <dt>Coeurs logiques</dt>
           <dd>{capabilities.cores ?? 'non expose'}</dd>
           <dt>Memoire annoncee</dt>
-          <dd>{capabilities.deviceMemoryGb === undefined ? 'non exposee' : `${capabilities.deviceMemoryGb} Go`}</dd>
+          <dd>
+            {capabilities.deviceMemoryGb === undefined
+              ? 'non exposee'
+              : `${capabilities.deviceMemoryGb} Go`}
+          </dd>
           <dt>Profil retenu</dt>
           <dd>
-            {session.profile.quality}, x{session.profile.pixelRatio}, cible {session.profile.targetFps} img/s
+            {session.profile.quality}, x{session.profile.pixelRatio}, cible{' '}
+            {session.profile.targetFps} img/s
           </dd>
           <dt>Animations reduites</dt>
-          <dd>{capabilities.prefersReducedMotion ? 'demandees par le systeme' : 'non demandees'}</dd>
+          <dd>
+            {capabilities.prefersReducedMotion ? 'demandees par le systeme' : 'non demandees'}
+          </dd>
         </dl>
       </section>
 

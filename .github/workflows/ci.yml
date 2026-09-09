@@ -1,0 +1,75 @@
+name: Integration continue et publication
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Une seule publication a la fois : une construction plus recente annule la precedente.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    name: Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installer les dependances
+        run: npm ci --cache .npm-ci-cache
+
+      - name: Verifier les types
+        run: npm run typecheck
+
+      - name: Analyse statique
+        run: npm run lint
+
+      - name: Frontieres architecturales
+        run: npm run check:arch
+
+      - name: Tests
+        run: npm run test
+
+      - name: Construction de production
+        run: npm run build
+        env:
+          TSSR_BASE_PATH: ${{ github.event_name == 'push' && format('/{0}/', github.event.repository.name) || '/' }}
+          TSSR_BUILD_ID: ${{ github.sha }}
+
+      - name: Budgets de performance
+        run: npm run check:budget
+
+      - name: Conserver la construction
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/dist
+
+  publier:
+    name: Publication sur GitHub Pages
+    # La publication n a lieu que si toutes les portes de qualite sont passees.
+    needs: verifier
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deployer
+        id: deployment
+        uses: actions/deploy-pages@v4

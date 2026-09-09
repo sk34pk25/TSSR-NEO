@@ -22,12 +22,16 @@ export function ProgressionView(): JSX.Element {
           </div>
           <span className="neo-tag neo-tag--accent">{progress.xp} XP</span>
         </div>
-        <div className="meter" style={{ marginTop: 'var(--neo-space-3)' }} aria-label="Progression vers le niveau suivant">
+        <div
+          className="meter"
+          style={{ marginTop: 'var(--neo-space-3)' }}
+          aria-label="Progression vers le niveau suivant"
+        >
           <div className="meter__fill" style={{ width: `${ratio * 100}%` }} />
         </div>
         <p className="neo-dim" style={{ fontSize: 'var(--neo-fs-xs)', marginTop: 6 }}>
-          {nextFloor - progress.xp} XP avant le niveau {progress.level + 1}. Les niveaux et badges sont
-          pedagogiques : TSSR NEO ne delivre aucune certification.
+          {nextFloor - progress.xp} XP avant le niveau {progress.level + 1}. Les niveaux et badges
+          sont pedagogiques : TSSR NEO ne delivre aucune certification.
         </p>
       </div>
 
@@ -54,7 +58,10 @@ export function ProgressionView(): JSX.Element {
                   <td>{competency.competencyId}</td>
                   <td>
                     <div className="meter" style={{ width: 120 }}>
-                      <div className="meter__fill" style={{ width: `${competency.mastery * 100}%` }} />
+                      <div
+                        className="meter__fill"
+                        style={{ width: `${competency.mastery * 100}%` }}
+                      />
                     </div>
                     <span className="neo-dim" style={{ fontSize: 'var(--neo-fs-xs)' }}>
                       {Math.round(competency.mastery * 100)} %
@@ -78,8 +85,14 @@ export function ProgressionView(): JSX.Element {
         <h2>Missions</h2>
         {progress.missions.length === 0 ? (
           <div className="neo-row">
-            <p className="neo-muted" style={{ margin: 0 }}>Aucune mission jouee.</p>
-            <button type="button" className="neo-btn neo-btn--sm" onClick={() => navigate('campus')}>
+            <p className="neo-muted" style={{ margin: 0 }}>
+              Aucune mission jouee.
+            </p>
+            <button
+              type="button"
+              className="neo-btn neo-btn--sm"
+              onClick={() => navigate('campus')}
+            >
               Choisir un cours
             </button>
           </div>
@@ -98,9 +111,13 @@ export function ProgressionView(): JSX.Element {
                 <tr key={record.missionId}>
                   <td>{session.mission(record.missionId)?.id ?? record.missionId}</td>
                   <td className="neo-muted">{record.attempts}</td>
-                  <td className="neo-muted">{Math.round((record.bestScore?.overall ?? 0) * 100)} %</td>
+                  <td className="neo-muted">
+                    {Math.round((record.bestScore?.overall ?? 0) * 100)} %
+                  </td>
                   <td>
-                    <span className={`neo-tag ${record.completed ? 'neo-tag--ok' : 'neo-tag--warn'}`}>
+                    <span
+                      className={`neo-tag ${record.completed ? 'neo-tag--ok' : 'neo-tag--warn'}`}
+                    >
                       {record.completed ? 'terminee' : 'en cours'}
                     </span>
                   </td>

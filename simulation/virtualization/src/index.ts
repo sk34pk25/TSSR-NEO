@@ -13,7 +13,8 @@ export interface CapacityReport {
   overcommitRatio: number;
 }
 
-export type VmError = 'not-found' | 'host-down' | 'insufficient-memory' | 'insufficient-storage' | 'already-running';
+export type VmError =
+  'not-found' | 'host-down' | 'insufficient-memory' | 'insufficient-storage' | 'already-running';
 
 /**
  * Virtualisation : les VM consomment reellement les ressources de leur hote
@@ -65,10 +66,15 @@ export class VirtualizationEngine {
   start(vmId: string): { ok: boolean; error?: VmError; detail?: string } {
     const vm = this.vm(vmId);
     if (!vm) return { ok: false, error: 'not-found', detail: 'machine virtuelle introuvable' };
-    if (vm.state === 'running') return { ok: false, error: 'already-running', detail: 'la VM est deja demarree' };
+    if (vm.state === 'running')
+      return { ok: false, error: 'already-running', detail: 'la VM est deja demarree' };
     const host = this.host(vm.hostId);
     if (!host || host.state !== 'up') {
-      return { ok: false, error: 'host-down', detail: 'l hote de virtualisation n est pas disponible' };
+      return {
+        ok: false,
+        error: 'host-down',
+        detail: 'l hote de virtualisation n est pas disponible',
+      };
     }
     const cap = this.capacity(host.id);
     if (cap && cap.memoryAllocatedMb + vm.memoryMb > cap.memoryTotalMb) {

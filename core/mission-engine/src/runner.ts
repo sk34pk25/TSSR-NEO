@@ -9,7 +9,12 @@ import type {
   WorldState,
 } from '@tssr/contracts';
 import type { EventBus } from '@tssr/events';
-import { evaluateAssertion, scoreMission, type AssertionResult, type EvaluationContext } from '@tssr/evaluation';
+import {
+  evaluateAssertion,
+  scoreMission,
+  type AssertionResult,
+  type EvaluationContext,
+} from '@tssr/evaluation';
 import type { SimulationWorld } from '@tssr/sim-world';
 
 export interface ObjectiveView {
@@ -167,7 +172,11 @@ export class MissionRunner {
         this.bus.emit({
           category: 'objective',
           type: 'mission.objective.regressed',
-          payload: { missionId: this.definition.id, objectiveId: objective.id, reason: evaluation.detail },
+          payload: {
+            missionId: this.definition.id,
+            objectiveId: objective.id,
+            reason: evaluation.detail,
+          },
           significant: true,
           label: `Objectif de nouveau en echec : ${localized(objective.label)}`,
         });
@@ -236,7 +245,11 @@ export class MissionRunner {
           this.world.network.setServiceStatus(effect.nodeId, effect.serviceId, effect.status);
           break;
         case 'set-interface-enabled':
-          this.world.network.setInterfaceEnabled(effect.nodeId, effect.interfaceName, effect.enabled);
+          this.world.network.setInterfaceEnabled(
+            effect.nodeId,
+            effect.interfaceName,
+            effect.enabled,
+          );
           break;
         case 'set-node-power':
           this.world.network.setNodePower(effect.nodeId, effect.powered);
@@ -293,7 +306,11 @@ export class MissionRunner {
   objectives(locale = 'fr'): ObjectiveView[] {
     const showDetail = SHOW_OBJECTIVE_DETAIL[this.state.difficulty];
     return this.definition.objectives
-      .filter((o) => !o.hidden || this.state.objectives.find((s) => s.objectiveId === o.id)?.discovered === true)
+      .filter(
+        (o) =>
+          !o.hidden ||
+          this.state.objectives.find((s) => s.objectiveId === o.id)?.discovered === true,
+      )
       .map((o) => {
         const status = this.statusOf(o.id);
         const result = this.lastResults.get(o.id);
@@ -303,7 +320,9 @@ export class MissionRunner {
           optional: o.optional,
           hidden: o.hidden,
           status,
-          ...(showDetail && status !== 'completed' && result !== undefined ? { detail: result.detail } : {}),
+          ...(showDetail && status !== 'completed' && result !== undefined
+            ? { detail: result.detail }
+            : {}),
         };
       });
   }
@@ -375,7 +394,9 @@ export class MissionRunner {
       keyPoints: this.definition.debrief.keyPoints.map((k) => localized(k, locale)),
       alternatives: this.definition.debrief.alternatives,
       knowledgeEntryIds: this.definition.debrief.knowledgeEntryIds,
-      timeline: this.bus.timeline().map((e) => ({ at: e.simTime, label: e.label ?? e.type, type: e.type })),
+      timeline: this.bus
+        .timeline()
+        .map((e) => ({ at: e.simTime, label: e.label ?? e.type, type: e.type })),
       ...(this.state.status === 'succeeded' || this.state.status === 'failed'
         ? { score: this.score(now) }
         : {}),

@@ -18,9 +18,9 @@ export const missionPosteSansReseau: MissionDefinition = {
   competencies: ['net-vlan-access', 'net-dhcp', 'sup-diagnostic', 'itsm-documentation'],
   prerequisites: [],
   briefing:
-    "Camille Renard, du service comptabilite, n a plus acces au reseau depuis ce matin. "
-    + "Son poste a ete deplace pendant les travaux. Ses collegues du meme bureau ne rencontrent aucun probleme. "
-    + 'Diagnostiquez la panne, retablissez le service et documentez le ticket INC-2041.',
+    'Camille Renard, du service comptabilite, n a plus acces au reseau depuis ce matin. ' +
+    'Son poste a ete deplace pendant les travaux. Ses collegues du meme bureau ne rencontrent aucun probleme. ' +
+    'Diagnostiquez la panne, retablissez le service et documentez le ticket INC-2041.',
   scenarioId: 'neo-training-lab-site',
   ticketIds: ['inc-2041'],
   npcIds: ['npc-camille', 'npc-yanis'],
@@ -28,10 +28,16 @@ export const missionPosteSansReseau: MissionDefinition = {
     {
       id: 'obj-lease',
       label: 'Le poste obtient une adresse du reseau bureautique',
-      description: 'Le poste doit recuperer un bail DHCP dans le sous-reseau des bureaux, pas une adresse d auto-configuration.',
+      description:
+        'Le poste doit recuperer un bail DHCP dans le sous-reseau des bureaux, pas une adresse d auto-configuration.',
       optional: false,
       hidden: false,
-      check: { type: 'dhcp-lease', nodeId: 'pc-camille', expectedSubnet: '10.20.10.0/24', expect: true },
+      check: {
+        type: 'dhcp-lease',
+        nodeId: 'pc-camille',
+        expectedSubnet: '10.20.10.0/24',
+        expect: true,
+      },
       competencies: ['net-dhcp'],
       weight: 2,
       dimensions: ['technicalAccuracy', 'diagnosis'],
@@ -51,7 +57,13 @@ export const missionPosteSansReseau: MissionDefinition = {
       label: 'La resolution de noms fonctionne depuis le poste',
       optional: false,
       hidden: false,
-      check: { type: 'dns-resolves', from: 'pc-camille', name: 'partages.neo.lan', expectedAddress: '10.20.20.10', expect: true },
+      check: {
+        type: 'dns-resolves',
+        from: 'pc-camille',
+        name: 'partages.neo.lan',
+        expectedAddress: '10.20.20.10',
+        expect: true,
+      },
       competencies: ['net-dhcp'],
       weight: 1,
       dimensions: ['technicalAccuracy', 'verification'],
@@ -59,14 +71,20 @@ export const missionPosteSansReseau: MissionDefinition = {
     {
       id: 'obj-ticket',
       label: 'Le ticket est resolu et documente',
-      description: 'La resolution doit expliquer la cause reelle, pas seulement le retour a la normale.',
+      description:
+        'La resolution doit expliquer la cause reelle, pas seulement le retour a la normale.',
       optional: false,
       hidden: false,
       check: {
         type: 'all',
         of: [
           { type: 'ticket-status', ticketId: 'inc-2041', status: 'resolved' },
-          { type: 'ticket-documented', ticketId: 'inc-2041', minLength: 60, requireRootCause: true },
+          {
+            type: 'ticket-documented',
+            ticketId: 'inc-2041',
+            minLength: 60,
+            requireRootCause: true,
+          },
         ],
       },
       competencies: ['itsm-documentation'],
@@ -76,7 +94,8 @@ export const missionPosteSansReseau: MissionDefinition = {
     {
       id: 'obj-no-collateral',
       label: 'Aucun degat collateral sur le serveur',
-      description: 'Le serveur d infrastructure ne doit pas avoir ete modifie pour resoudre un probleme de poste.',
+      description:
+        'Le serveur d infrastructure ne doit pas avoir ete modifie pour resoudre un probleme de poste.',
       optional: false,
       hidden: false,
       check: { type: 'unchanged', scope: 'node', targetId: 'srv-neo' },
@@ -92,8 +111,20 @@ export const missionPosteSansReseau: MissionDefinition = {
       check: {
         type: 'any',
         of: [
-          { type: 'command-used', pattern: 'ping', systemId: 'sys-pc-camille', expect: true, minCount: 1 },
-          { type: 'command-used', pattern: 'test-netconnection', systemId: 'sys-pc-camille', expect: true, minCount: 1 },
+          {
+            type: 'command-used',
+            pattern: 'ping',
+            systemId: 'sys-pc-camille',
+            expect: true,
+            minCount: 1,
+          },
+          {
+            type: 'command-used',
+            pattern: 'test-netconnection',
+            systemId: 'sys-pc-camille',
+            expect: true,
+            minCount: 1,
+          },
         ],
       },
       competencies: ['sup-diagnostic'],
@@ -105,26 +136,31 @@ export const missionPosteSansReseau: MissionDefinition = {
     {
       id: 'hint-1',
       level: 1,
-      text: "Les collegues du meme bureau fonctionnent normalement. Qu est-ce qui differe entre leur poste et celui de Camille ?",
+      text: 'Les collegues du meme bureau fonctionnent normalement. Qu est-ce qui differe entre leur poste et celui de Camille ?',
       autonomyCost: 0.05,
     },
     {
       id: 'hint-2',
       level: 2,
-      text: "Le poste n a pas d adresse utilisable. Une demande DHCP est une diffusion : elle ne sort pas du VLAN du port.",
+      text: 'Le poste n a pas d adresse utilisable. Une demande DHCP est une diffusion : elle ne sort pas du VLAN du port.',
       autonomyCost: 0.12,
-      when: { type: 'dhcp-lease', nodeId: 'pc-camille', expectedSubnet: '10.20.10.0/24', expect: false },
+      when: {
+        type: 'dhcp-lease',
+        nodeId: 'pc-camille',
+        expectedSubnet: '10.20.10.0/24',
+        expect: false,
+      },
     },
     {
       id: 'hint-3',
       level: 3,
-      text: "Depuis la console de sw-lab, comparez la configuration du port de Camille (Gi0/2) avec celle d un poste qui fonctionne (Gi0/1) : \"show vlan brief\".",
+      text: 'Depuis la console de sw-lab, comparez la configuration du port de Camille (Gi0/2) avec celle d un poste qui fonctionne (Gi0/1) : "show vlan brief".',
       autonomyCost: 0.2,
     },
     {
       id: 'hint-4',
       level: 4,
-      text: "Le port Gi0/2 est dans le VLAN 99 (quarantaine). Replacez-le dans le VLAN 10, puis renouvelez le bail sur le poste avec \"ipconfig /renew\".",
+      text: 'Le port Gi0/2 est dans le VLAN 99 (quarantaine). Replacez-le dans le VLAN 10, puis renouvelez le bail sur le poste avec "ipconfig /renew".',
       autonomyCost: 0.35,
     },
   ],
@@ -138,7 +174,7 @@ export const missionPosteSansReseau: MissionDefinition = {
         {
           kind: 'npc-message',
           npcId: 'npc-camille',
-          text: "Bonjour, avez-vous du nouveau ? J ai une cloture comptable a rendre ce soir.",
+          text: 'Bonjour, avez-vous du nouveau ? J ai une cloture comptable a rendre ce soir.',
         },
       ],
     },

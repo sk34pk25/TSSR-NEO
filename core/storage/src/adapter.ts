@@ -17,7 +17,14 @@ export const STORE_NAMES = ['saves', 'snapshots', 'labs', 'progress', 'modules',
 export type StoreName = (typeof STORE_NAMES)[number];
 
 /** Ordre de purge quand le stockage est sature : du plus reconstructible au plus precieux. */
-export const EVICTION_ORDER: StoreName[] = ['cache', 'modules', 'labs', 'snapshots', 'saves', 'progress'];
+export const EVICTION_ORDER: StoreName[] = [
+  'cache',
+  'modules',
+  'labs',
+  'snapshots',
+  'saves',
+  'progress',
+];
 
 export class MemoryStorageAdapter implements StorageAdapter {
   private readonly stores = new Map<StoreName, Map<string, unknown>>();
