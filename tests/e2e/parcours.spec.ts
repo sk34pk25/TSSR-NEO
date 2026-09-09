@@ -313,3 +313,50 @@ test.describe('prise en main', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });
+
+
+test.describe('travailler sur place', () => {
+  test('se rendre dans une piece, utiliser un poste, sans quitter le campus', async ({ page }) => {
+    test.slow();
+    await ouvrir(page, 'campus');
+
+    // Le panneau d orientation propose deux acces : l ecran, ou le lieu.
+    await page.getByRole('button', { name: /S y rendre dans la zone Bureaux/ }).click();
+    await page.waitForTimeout(1500);
+    // On est bien reste dans le campus : la route n a pas change.
+    expect(page.url()).toContain('#/campus');
+
+    // On avance en cherchant des yeux, comme dans n importe quel lieu.
+    const invite = page.locator('.campus3d__invite');
+    for (let pas = 0; pas < 8 && (await invite.count()) === 0; pas += 1) {
+      await page.keyboard.down('KeyW');
+      await page.waitForTimeout(260);
+      await page.keyboard.up('KeyW');
+      for (let vue = 0; vue < 8 && (await invite.count()) === 0; vue += 1) {
+        await page.keyboard.down('ArrowRight');
+        await page.waitForTimeout(120);
+        await page.keyboard.up('ArrowRight');
+        await page.waitForTimeout(120);
+      }
+    }
+    await expect(invite).toContainText(/Utiliser|Ouvrir/);
+
+    await page.keyboard.press('KeyE');
+    const outil = page.getByRole('dialog', { name: /Poste|Baie|Console/ });
+    await expect(outil).toBeVisible();
+
+    // Sans infrastructure, l outil le dit au lieu d afficher un decor vide.
+    await expect(outil.getByText('Aucune infrastructure chargee')).toBeVisible();
+    await outil.getByRole('button', { name: 'Demarrer le laboratoire libre' }).click();
+
+    // Le terminal ouvert dans le campus est le vrai terminal du moteur.
+    await outil.getByLabel(/Saisie de commande/).fill('ip a');
+    await outil.getByRole('button', { name: /Executer la commande/ }).click();
+    await expect(outil.getByRole('log')).toContainText('10.20.');
+
+    // Et l on referme sans avoir change d ecran.
+    await page.keyboard.press('Escape');
+    await expect(outil).toBeHidden();
+    expect(page.url()).toContain('#/campus');
+  });
+});

@@ -48,7 +48,6 @@ export class CampusCameraController {
   private position: Vec3;
   private yaw = 0;
   private pitch = -0.05;
-  // Vue tactique a l arrivee : elle repond immediatement a « ou suis-je ».
   // Le campus s ouvre a hauteur d homme : un plan ne fait pas un lieu.
   private mode: CameraMode = 'first-person';
   private colliders: readonly Collider[] = [];

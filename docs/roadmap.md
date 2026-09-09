@@ -103,10 +103,10 @@ L audit est tenu dans `docs/audit-ux-v0.3.md`, captures a l appui.
 | Campus V2 : architecture et amenagement | fait : pieces distinctes, meublees, ouvertes sur l exterieur     |
 | Eclairage                               | fait : jour dominant, appoint chaud, rebond de sol               |
 | Compaction du rendu                     | fait : cinq cent quinze noeuds ramenes a cent soixante-quinze    |
-| Interaction contextuelle                | **non fait** : utiliser un poste, ouvrir une baie, examiner      |
+| Interaction contextuelle                | fait : approche et touche E, poste et baie reellement branches   |
 | Couche de vie : personnages, animations | **non fait**                                                     |
 | Audio par zone                          | **non fait** : le moteur existe, le campus ne l appelle pas      |
-| Travail sur place sans quitter la 3D    | **non fait**                                                     |
+| Travail sur place sans quitter la 3D    | fait : « S y rendre », outil ouvert par-dessus le lieu           |
 | Chaine d assets externes sous licence   | **non fait** : le mobilier est procedural, voir la dette         |
 
 ---

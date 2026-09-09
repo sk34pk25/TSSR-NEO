@@ -24,12 +24,17 @@ export type GeometryKind = 'box' | 'plane' | 'cylinder' | 'tube' | 'sphere';
 
 export interface InteractiveSpec {
   /** Nature de l element, pour que l interface sache quoi proposer. */
-  kind: 'zone' | 'asset' | 'port' | 'cable' | 'door' | 'sign';
+  kind: 'zone' | 'asset' | 'port' | 'cable' | 'door' | 'sign' | 'workstation' | 'rack';
   /** Identifiant de l objet metier correspondant (zone, equipement, port...). */
   targetId: string;
   label: string;
   /** Description lue par les technologies d assistance. */
   description?: string;
+  /**
+   * Verbe propose quand le joueur s en approche : « Utiliser », « Ouvrir ».
+   * Sans lui, l invite ne saurait pas quoi annoncer.
+   */
+  verbe?: string;
 }
 
 export interface Scene3DNode {
@@ -88,6 +93,46 @@ export interface Scene3D {
   colliders: Collider[];
   /** Ancres de l habillage pedagogique, projetees en DOM par l interface. */
   anchors: { id: string; label: string; position: Vec3; targetId?: string }[];
+}
+
+
+/**
+ * Element manipulable le plus pertinent depuis un point de vue.
+ *
+ * Un objet ne devient proposable que si le joueur en est proche et qu il le
+ * regarde : sans le second critere, l invite changerait sans arret de cible
+ * dans une piece meublee.
+ */
+export function interactionLaPlusProche(
+  nodes: readonly Scene3DNode[],
+  oeil: Vec3,
+  regard: Vec3,
+  portee = 2.6,
+): Scene3DNode | undefined {
+  const norme = Math.hypot(regard[0], regard[2]) || 1;
+  const dirX = regard[0] / norme;
+  const dirZ = regard[2] / norme;
+
+  let meilleur: { node: Scene3DNode; score: number } | undefined;
+  for (const node of nodes) {
+    const interaction = node.interactive;
+    if (!interaction) continue;
+    if (interaction.kind !== 'workstation' && interaction.kind !== 'rack') continue;
+    if (node.visible === false) continue;
+
+    const dx = node.position[0] - oeil[0];
+    const dz = node.position[2] - oeil[2];
+    const distance = Math.hypot(dx, dz);
+    if (distance > portee || distance < 0.05) continue;
+
+    // Produit scalaire : 1 signifie droit devant, 0 sur le cote.
+    const alignement = (dx / distance) * dirX + (dz / distance) * dirZ;
+    if (alignement < 0.55) continue;
+
+    const score = alignement - distance / portee;
+    if (!meilleur || score > meilleur.score) meilleur = { node, score };
+  }
+  return meilleur?.node;
 }
 
 export type CameraMode = 'first-person' | 'third-person' | 'inspection' | 'tactical';

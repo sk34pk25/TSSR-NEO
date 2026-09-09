@@ -3,8 +3,10 @@ import {
   buildCampusScene,
   CAMPUS_ZONES,
   compacter,
+  interactionLaPlusProche,
   MATERIALS,
   zoneById,
+  zoneEntryPoint,
   zoneViewpoint,
   type MaterialSpec,
   type Scene3DNode,
@@ -175,8 +177,16 @@ describe('cout de rendu', () => {
   });
 
   it('preserve ce qui doit rester designable', () => {
-    const interactifs = scene.nodes.filter((node) => node.interactive);
-    expect(interactifs).toHaveLength(CAMPUS_ZONES.length * 3);
+    // Chaque zone garde son sol, sa porte et sa signaletique designables,
+    // auxquels s ajoutent les objets manipulables poses sur le mobilier.
+    for (const zone of CAMPUS_ZONES) {
+      for (const suffixe of ['floor', 'door', 'sign']) {
+        expect(
+          scene.nodes.some((node) => node.id === `${zone.id}-${suffixe}`),
+          `${zone.id}-${suffixe}`,
+        ).toBe(true);
+      }
+    }
     // Les plafonds sont escamotes par la vue d ensemble, donc jamais fusionnes.
     for (const zone of CAMPUS_ZONES) {
       expect(scene.nodes.some((node) => node.id === `${zone.id}-ceiling`)).toBe(true);
@@ -228,5 +238,64 @@ describe('cout de rendu', () => {
     expect([matrices[12], matrices[13], matrices[14]]).toEqual([1, 2, 3]);
     expect([matrices[0], matrices[5], matrices[10]]).toEqual([4, 5, 6]);
     expect([matrices[28], matrices[29], matrices[30]]).toEqual([-7, 8, 9]);
+  });
+});
+
+
+describe('interaction contextuelle', () => {
+  const manipulables = scene.nodes.filter(
+    (node) => node.interactive?.kind === 'workstation' || node.interactive?.kind === 'rack',
+  );
+
+  it('pose des objets manipulables dans les pieces ou cela a un sens', () => {
+    expect(manipulables.length).toBeGreaterThanOrEqual(6);
+    // Chaque objet manipulable annonce le verbe qui sera propose au joueur.
+    for (const node of manipulables) {
+      expect(node.interactive?.verbe, node.id).toBeTruthy();
+    }
+    for (const zoneId of ['offices', 'network-room', 'datacenter', 'training-lab']) {
+      expect(
+        manipulables.some((node) => node.interactive?.targetId === zoneId),
+        zoneId,
+      ).toBe(true);
+    }
+  });
+
+  it('ne propose que ce qui est proche et regarde', () => {
+    const cible = manipulables[0];
+    expect(cible).toBeDefined();
+    const position = cible?.position as Vec3;
+    const oeil: Vec3 = [position[0], 1.65, position[2] + 1.4];
+    // De face et a portee : propose.
+    expect(interactionLaPlusProche(scene.nodes, oeil, [0, 0, -1])?.id).toBe(cible?.id);
+    // Dos tourne : rien, meme au meme endroit.
+    expect(interactionLaPlusProche(scene.nodes, oeil, [0, 0, 1])).toBeUndefined();
+    // Trop loin : rien, meme en le regardant.
+    const recule: Vec3 = [position[0], 1.65, position[2] + 6];
+    expect(interactionLaPlusProche(scene.nodes, recule, [0, 0, -1])).toBeUndefined();
+  });
+
+  it('ne propose jamais une porte ni un panneau', () => {
+    const portes = scene.nodes.filter((node) => node.interactive?.kind === 'door');
+    const porte = portes[0];
+    expect(porte).toBeDefined();
+    const position = porte?.position as Vec3;
+    const devant: Vec3 = [position[0], 1.65, position[2] + 1];
+    // Une porte s ouvre au clic ; la proposer aussi a la touche brouillerait le geste.
+    const propose = interactionLaPlusProche(scene.nodes, devant, [0, 0, -1]);
+    expect(propose?.interactive?.kind).not.toBe('door');
+    expect(propose?.interactive?.kind).not.toBe('sign');
+  });
+
+  it('depose le visiteur dans la piece, tourne vers son fond', () => {
+    for (const zone of CAMPUS_ZONES) {
+      const entree = zoneEntryPoint(zone);
+      const versCouloir = zone.doorSide === 'south' ? 1 : -1;
+      // Le point d entree est a l interieur de l emprise de la piece.
+      expect(Math.abs(entree.position[2] - zone.center[2]), zone.id).toBeLessThan(zone.size[1] / 2);
+      // Un lacet nul regarde vers les Z croissants : on doit viser le fond.
+      const regardZ = Math.cos(entree.yaw);
+      expect(Math.sign(regardZ), zone.id).toBe(-versCouloir);
+    }
   });
 });

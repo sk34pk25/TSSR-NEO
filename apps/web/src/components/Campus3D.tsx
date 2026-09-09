@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CampusInteraction } from './CampusInteraction.tsx';
 import {
   CAMPUS_SPAWN,
   CAMPUS_SPAWN_YAW,
@@ -6,9 +7,12 @@ import {
   CampusCameraController,
   buildCampusScene,
   inputFromKeys,
+  interactionLaPlusProche,
   zoneById,
+  zoneEntryPoint,
   zoneViewpoint,
   type CameraMode,
+  type InteractiveSpec,
   type PickHit,
   type QualityProfile,
   type RenderStats,
@@ -140,6 +144,11 @@ export function Campus3D({
   const [mode, setMode] = useState<CameraMode>('first-person');
   const [focused, setFocused] = useState<PickHit | undefined>(undefined);
   const modeRef = useRef<CameraMode>('first-person');
+  /** Objet a portee et dans l axe du regard : c est lui que « E » declenche. */
+  const [aPortee, setAPortee] = useState<InteractiveSpec | undefined>(undefined);
+  const aPorteeRef = useRef<InteractiveSpec | undefined>(undefined);
+  const [ouvert, setOuvert] = useState<InteractiveSpec | undefined>(undefined);
+  const ouvertRef = useRef(false);
   const [stats, setStats] = useState<RenderStats>({
     fps: 0,
     frameMs: 0,
@@ -209,6 +218,29 @@ export function Campus3D({
         renderer.setCamera(reduceMotion ? { ...camera, transitionMs: 0 } : camera);
 
         setLabels(etiquettesVisibles(renderer, scene, camera, canvasRef.current, modeRef.current));
+
+        /*
+         * Approche : on ne propose un objet que si le joueur est pres et le
+         * regarde. La detection se fait ici plutot qu au survol, parce qu on
+         * se deplace au clavier et que la souris n a pas a intervenir.
+         */
+        const cible =
+          modeRef.current === 'first-person'
+            ? interactionLaPlusProche(
+                scene.nodes,
+                camera.position,
+                [
+                  camera.target[0] - camera.position[0],
+                  0,
+                  camera.target[2] - camera.position[2],
+                ],
+              )
+            : undefined;
+        if (cible?.interactive?.targetId !== aPorteeRef.current?.targetId ||
+            cible?.interactive?.kind !== aPorteeRef.current?.kind) {
+          aPorteeRef.current = cible?.interactive;
+          setAPortee(cible?.interactive);
+        }
         setStats(renderer.stats());
       }
       last = now;
@@ -224,6 +256,22 @@ export function Campus3D({
     const onDown = (event: KeyboardEvent): void => {
       const target = event.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+
+      // Un outil ouvert capte Echap ; le reste du clavier lui appartient.
+      if (ouvertRef.current) {
+        if (event.key === 'Escape') {
+          ouvertRef.current = false;
+          setOuvert(undefined);
+        }
+        return;
+      }
+      if (event.code === 'KeyE' && aPorteeRef.current) {
+        event.preventDefault();
+        ouvertRef.current = true;
+        setOuvert(aPorteeRef.current);
+        pressedRef.current.clear();
+        return;
+      }
       pressedRef.current.add(event.code);
       if (
         ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyZ', 'KeyQ', 'ArrowUp', 'ArrowDown'].includes(
@@ -280,6 +328,23 @@ export function Campus3D({
       onEnterZone(zoneId);
     },
     [onEnterZone],
+  );
+
+  /*
+   * Se rendre sur place, plutot que d ouvrir l ecran correspondant.
+   * Les deux restent proposes : l immersion ne doit pas couter l acces rapide.
+   */
+  const seRendreDans = useCallback(
+    (zoneId: string) => {
+      const zone = zoneById(zoneId);
+      if (!zone) return;
+      const entree = zoneEntryPoint(zone);
+      controllerRef.current.teleport(entree.position, entree.yaw);
+      controllerRef.current.setMode('first-person');
+      modeRef.current = 'first-person';
+      setMode('first-person');
+    },
+    [],
   );
 
   return (
@@ -361,13 +426,30 @@ export function Campus3D({
               ))}
             </div>
 
-            {focused?.interactive ? (
+            {aPortee ? (
+              <div className="campus3d__invite" role="status">
+                <kbd>E</kbd>
+                <span>
+                  {aPortee.verbe ?? 'Utiliser'} — {aPortee.label}
+                </span>
+              </div>
+            ) : focused?.interactive ? (
               <div className="campus3d__focus" role="status">
                 <strong>{focused.interactive.label}</strong>
                 {focused.interactive.description !== undefined ? (
                   <span className="neo-muted"> — {focused.interactive.description}</span>
                 ) : null}
               </div>
+            ) : null}
+
+            {ouvert ? (
+              <CampusInteraction
+                interaction={ouvert}
+                onFermer={() => {
+                  ouvertRef.current = false;
+                  setOuvert(undefined);
+                }}
+              />
             ) : null}
 
             <div className="campus3d__hud">
@@ -393,10 +475,13 @@ export function Campus3D({
               ) : null}
             </div>
 
-            <p className="campus3d__help neo-dim">
-              Deplacement : Z Q S D ou les fleches. Maintenir le bouton pour regarder autour.
-              Cliquer une porte pour entrer.
-            </p>
+            {/* Le rappel des commandes s efface des qu un outil occupe la place. */}
+            {ouvert ? null : (
+              <p className="campus3d__help neo-dim">
+                Deplacement : Z Q S D ou les fleches. Maintenir le bouton pour regarder autour.
+                E pour utiliser ce qu on a devant soi. Cliquer une porte pour entrer.
+              </p>
+            )}
           </>
         ) : null}
       </div>
@@ -408,9 +493,12 @@ export function Campus3D({
        */}
       <nav className="campus3d__wayfinding" aria-label="Zones du campus">
         <h2 className="campus3d__wayfinding-titre">Ou aller</h2>
+        <p className="campus3d__wayfinding-aide neo-dim">
+          Choisir une zone ouvre son ecran. « S y rendre » vous depose sur place, dans le campus.
+        </p>
         <ul className="campus3d__zones">
           {CAMPUS_ZONES.map((zone) => (
-            <li key={zone.id}>
+            <li key={zone.id} className="campus3d__zone-entree">
               <button
                 type="button"
                 className="campus3d__zone"
@@ -432,6 +520,14 @@ export function Campus3D({
                   <strong>{zone.name}</strong>
                   <span className="neo-muted">{zone.purpose}</span>
                 </span>
+              </button>
+              <button
+                type="button"
+                className="campus3d__aller"
+                onClick={() => seRendreDans(zone.id)}
+              >
+                S y rendre
+                <span className="neo-visually-hidden"> dans la zone {zone.name}</span>
               </button>
             </li>
           ))}

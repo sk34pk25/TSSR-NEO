@@ -757,6 +757,127 @@ function amenagement(zone: CampusZone): Piece {
   }
 }
 
+
+/**
+ * Points d interaction poses sur le mobilier.
+ *
+ * Le mobilier est instancie, donc un objet parmi dix ne peut pas etre designe
+ * individuellement. On emet donc, pour les seuls objets manipulables, un noeud
+ * dedie qui epouse une piece de l objet : l ecran d un poste, la porte d une
+ * baie. Il est visible, il fait partie du meuble, et il est designable.
+ */
+function pointsDInteraction(zone: CampusZone): Scene3DNode[] {
+  const nodes: Scene3DNode[] = [];
+  const [cx, , cz] = zone.center;
+  const [largeur, profondeur] = zone.size;
+  const versCouloir = zone.doorSide === 'south' ? 1 : -1;
+  const fond = cz - versCouloir * (profondeur / 2 - 1.4);
+  const gauche = cx - largeur / 2;
+
+  /** Ecran d un poste de travail, designable et utilisable. */
+  const poste = (id: string, position: Vec3, yaw: number, libelle: string): void => {
+    const c = Math.cos(yaw);
+    const sn = Math.sin(yaw);
+    const decalage: Vec3 = [-0.05, 1.06, -0.22];
+    nodes.push({
+      id,
+      kind: 'box',
+      position: [
+        position[0] + decalage[0] * c + decalage[2] * sn,
+        decalage[1],
+        position[2] - decalage[0] * sn + decalage[2] * c,
+      ],
+      rotation: [0, yaw, 0],
+      size: [0.58, 0.36, 0.03],
+      material: MATERIALS.ecranAllume,
+      static: true,
+      interactive: {
+        kind: 'workstation',
+        targetId: zone.id,
+        label: libelle,
+        description: 'Ouvre un terminal sur une machine reelle de l infrastructure simulee.',
+        verbe: 'Utiliser',
+      },
+    });
+  };
+
+  /** Porte d une baie, designable et ouvrable. */
+  const baie = (id: string, position: Vec3, libelle: string): void => {
+    nodes.push({
+      id,
+      kind: 'box',
+      position: [position[0], 1.05, position[2] + 0.52],
+      size: [0.64, 1.96, 0.04],
+      material: MATERIALS.vitrageInterieur,
+      static: true,
+      interactive: {
+        kind: 'rack',
+        targetId: zone.id,
+        label: libelle,
+        description: 'Montre les equipements montes, leurs ports et leurs temoins reels.',
+        verbe: 'Ouvrir',
+      },
+    });
+  };
+
+  switch (zone.id) {
+    case 'offices':
+      // Rangee la plus proche de la porte : on la rencontre en entrant.
+      poste(
+        `${zone.id}-poste-interactif`,
+        [gauche + 1.9, 0, fond + versCouloir * 3.7],
+        Math.PI,
+        'Poste utilisateur',
+      );
+      poste(
+        `${zone.id}-poste-interactif-b`,
+        [gauche + 4.3, 0, fond + versCouloir * 3.7],
+        Math.PI,
+        'Poste utilisateur',
+      );
+      break;
+    case 'command-center':
+      poste(
+        `${zone.id}-poste-interactif`,
+        [gauche + 1.8, 0, cz + versCouloir * 1.6],
+        zone.doorSide === 'south' ? 0 : Math.PI,
+        'Console de supervision',
+      );
+      break;
+    case 'training-lab':
+      poste(
+        `${zone.id}-poste-interactif`,
+        [gauche + 2, 0, fond + versCouloir * 4.4],
+        Math.PI / 2,
+        'Poste de formation',
+      );
+      poste(
+        `${zone.id}-poste-interactif-b`,
+        [cx + largeur / 2 - 2, 0, fond + versCouloir * 4.4],
+        -Math.PI / 2,
+        'Poste de formation',
+      );
+      baie(`${zone.id}-baie-interactive`, [cx + 2.6, 0, fond + versCouloir * 0.9], 'Baie du laboratoire');
+      break;
+    case 'network-room':
+      baie(`${zone.id}-baie-interactive`, [gauche + 1.4, 0, fond + versCouloir * 0.9], 'Baie de brassage');
+      break;
+    case 'datacenter':
+      baie(`${zone.id}-baie-interactive`, [gauche + 2, 0, fond + versCouloir * 1.2], 'Baie de production');
+      break;
+    case 'lab-builder':
+      baie(
+        `${zone.id}-baie-interactive`,
+        [cx + largeur / 2 - 1.2, 0, fond + versCouloir * 1.1],
+        'Baie du laboratoire libre',
+      );
+      break;
+    default:
+      break;
+  }
+  return nodes;
+}
+
 /** Couloir de distribution, avec son sol, son plafond et son mobilier d attente. */
 function couloir(minX: number, maxX: number): Piece {
   const largeur = maxX - minX;
@@ -910,7 +1031,7 @@ export function buildCampusScene(options: CampusOptions = {}): Scene3D {
   for (const zone of CAMPUS_ZONES) {
     const coque = enveloppe(zone);
     const meubles = amenagement(zone);
-    nodes.push(...coque.nodes, ...meubles.nodes);
+    nodes.push(...coque.nodes, ...meubles.nodes, ...pointsDInteraction(zone));
     colliders.push(...coque.colliders, ...meubles.colliders);
 
     anchors.push({
@@ -994,6 +1115,23 @@ export const CAMPUS_SPAWN_YAW = Math.PI / 2;
 
 export function zoneById(id: string): CampusZone | undefined {
   return CAMPUS_ZONES.find((zone) => zone.id === id);
+}
+
+/**
+ * Point d entree dans une piece : juste au-dela du seuil, tourne vers le fond.
+ *
+ * Franchir une porte faisait quitter la 3D pour un ecran classique. On peut
+ * desormais aussi entrer pour de bon, et se retrouver dans la piece, face a ce
+ * qu elle contient.
+ */
+export function zoneEntryPoint(zone: CampusZone): { position: Vec3; yaw: number } {
+  const versCouloir = zone.doorSide === 'south' ? 1 : -1;
+  const zPorte = zone.center[2] + versCouloir * (zone.size[1] / 2);
+  return {
+    position: [zone.center[0], 1.65, zPorte - versCouloir * 1.2],
+    // Un lacet nul regarde vers les Z croissants, cote controleur de camera.
+    yaw: versCouloir > 0 ? Math.PI : 0,
+  };
 }
 
 /**
