@@ -7,3 +7,4 @@ export * from './forward.ts';
 export * from './services.ts';
 export * from './engine.ts';
 export * from './builder.ts';
+export * from './switch-cli.ts';

@@ -25,8 +25,10 @@ export const workspacePackages: Record<string, string> = {
   '@tssr/sim-backup': 'simulation/backup/src/index.ts',
   '@tssr/sim-deployment': 'simulation/deployment/src/index.ts',
   '@tssr/sim-remote': 'simulation/remote-operations/src/index.ts',
+  '@tssr/sim-world': 'simulation/world/src/index.ts',
   '@tssr/nova': 'nova/src/index.ts',
   '@tssr/knowledge': 'knowledge/src/index.ts',
+  '@tssr/module-training-lab': 'modules/neo-training-lab/src/index.ts',
 };
 
 export const workspaceAliases: Record<string, string> = Object.fromEntries(

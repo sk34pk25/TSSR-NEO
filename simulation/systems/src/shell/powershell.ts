@@ -304,12 +304,41 @@ export const POWERSHELL_COMMANDS: CommandSpec[] = [
   {
     name: 'Get-NetIPConfiguration',
     summary: 'affiche la configuration IP',
-    usage: 'Get-NetIPConfiguration',
+    usage: 'Get-NetIPConfiguration | ipconfig [/all] [/renew] [/release]',
     aliases: ['ipconfig'],
     run: (args, ctx) => {
       const node = ctx.systems.node();
       if (!node) return failure('Get-NetIPConfiguration : noeud reseau introuvable.');
-      const all = args.some((a) => a.toLowerCase() === '/all' || a.toLowerCase() === '-detailed');
+      const lowered = args.map((a) => a.toLowerCase());
+      // ipconfig /renew et /release agissent reellement sur le bail DHCP.
+      if (lowered.includes('/renew') || lowered.includes('-renew')) {
+        if (!isPrivileged(ctx.system, ctx.session.user)) {
+          return failure('Renouvellement DHCP : privileges administrateur requis.');
+        }
+        const iface = node.interfaces[0];
+        if (iface === undefined) return failure('Aucune carte reseau disponible.');
+        const lease = ctx.network.renewDhcp(node.id, iface.name);
+        if (lease.success && lease.offer) {
+          return output(
+            `Configuration IP renouvelee sur ${iface.name} :\n   Adresse IPv4 . . . . . . . : ${lease.offer.address}/${lease.offer.prefix}` +
+              (lease.offer.gateway === undefined ? '' : `\n   Passerelle par defaut . . . : ${lease.offer.gateway}`),
+          );
+        }
+        return failure(
+          `Le serveur DHCP n a pas repondu : ${lease.failure?.detail ?? 'cause inconnue'}` +
+            (lease.apipa === undefined ? '' : `\n   Adresse d auto-configuration : ${lease.apipa}`),
+        );
+      }
+      if (lowered.includes('/release') || lowered.includes('-release')) {
+        if (!isPrivileged(ctx.system, ctx.session.user)) {
+          return failure('Liberation DHCP : privileges administrateur requis.');
+        }
+        const iface = node.interfaces[0];
+        if (iface === undefined) return failure('Aucune carte reseau disponible.');
+        ctx.network.clearInterfaceAddresses(node.id, iface.name);
+        return output(`Bail libere sur ${iface.name}.`);
+      }
+      const all = lowered.includes('/all') || lowered.includes('-detailed');
       const routes = effectiveRoutes(node);
       const gateway = routes.find((r) => r.destination === '0.0.0.0/0')?.via;
       const lines: string[] = [];
