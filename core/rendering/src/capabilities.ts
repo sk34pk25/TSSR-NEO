@@ -72,6 +72,14 @@ export interface QualityProfile {
   postProcessing: boolean;
   /** Distance de rendu relative, 0..1. */
   drawDistance: number;
+  /**
+   * Nombre total d instances autorisees dans une scene.
+   *
+   * Une instance ne coute pas un appel de rendu : mille chaises identiques
+   * tiennent dans un seul. Le cout reel est en triangles, et une boite en
+   * compte douze. Les anciens plafonds supposaient l inverse et rendaient
+   * impossible un batiment reellement meuble.
+   */
   maxInstances: number;
   textureScale: number;
   ambientParticles: boolean;
@@ -85,7 +93,7 @@ export const QUALITY_PROFILES: Record<Exclude<GraphicsQuality, 'auto'>, QualityP
     shadows: false,
     postProcessing: false,
     drawDistance: 0.5,
-    maxInstances: 200,
+    maxInstances: 1500,
     textureScale: 0.5,
     ambientParticles: false,
     targetFps: 30,
@@ -96,7 +104,7 @@ export const QUALITY_PROFILES: Record<Exclude<GraphicsQuality, 'auto'>, QualityP
     shadows: true,
     postProcessing: false,
     drawDistance: 0.75,
-    maxInstances: 600,
+    maxInstances: 4000,
     textureScale: 0.75,
     ambientParticles: false,
     targetFps: 60,
@@ -107,7 +115,7 @@ export const QUALITY_PROFILES: Record<Exclude<GraphicsQuality, 'auto'>, QualityP
     shadows: true,
     postProcessing: true,
     drawDistance: 1,
-    maxInstances: 1200,
+    maxInstances: 8000,
     textureScale: 1,
     ambientParticles: true,
     targetFps: 60,
@@ -118,7 +126,7 @@ export const QUALITY_PROFILES: Record<Exclude<GraphicsQuality, 'auto'>, QualityP
     shadows: true,
     postProcessing: true,
     drawDistance: 1,
-    maxInstances: 2400,
+    maxInstances: 16000,
     textureScale: 1,
     ambientParticles: true,
     targetFps: 60,

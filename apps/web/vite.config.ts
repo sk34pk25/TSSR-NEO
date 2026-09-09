@@ -37,5 +37,10 @@ export default defineConfig({
       },
     },
   },
-  server: { port: 5173, strictPort: false },
+  server: {
+    // Le port peut etre impose par l environnement : rien ici n exige un port
+    // fixe, ni rappel d authentification, ni webhook, ni origine declaree.
+    port: Number(process.env.PORT) || 5173,
+    strictPort: false,
+  },
 });

@@ -3,9 +3,10 @@ import { Rng } from '@tssr/events';
 import { buildReviewSession, checkAnswer, type ReviewChallenge } from '@tssr/knowledge';
 import { planReviewSession } from '@tssr/progression';
 import { useSession } from '../state/hooks.ts';
+import type { EmbeddableViewProps } from './embeddable.ts';
 
 /** NEO Review : sessions courtes guidees par la repetition espacee. */
-export function ReviewView(): JSX.Element {
+export function ReviewView({ embedded = false }: EmbeddableViewProps = {}): JSX.Element {
   const session = useSession();
   const [minutes, setMinutes] = useState(10);
   const [challenges, setChallenges] = useState<ReviewChallenge[]>([]);
@@ -35,11 +36,15 @@ export function ReviewView(): JSX.Element {
 
   return (
     <div>
-      <h1>NEO Review</h1>
-      <p className="neo-muted" style={{ maxWidth: '70ch' }}>
-        Une session courte pour ancrer ce qui a ete travaille. Les questions sont derivees des
-        fiches reelles des modules charges, jamais generees au hasard.
-      </p>
+      {embedded ? null : (
+        <>
+          <h1>NEO Review</h1>
+          <p className="neo-muted" style={{ maxWidth: '70ch' }}>
+            Une session courte pour ancrer ce qui a ete travaille. Les questions sont derivees des
+            fiches reelles des modules charges, jamais generees au hasard.
+          </p>
+        </>
+      )}
 
       {challenges.length === 0 ? (
         <div className="neo-card">

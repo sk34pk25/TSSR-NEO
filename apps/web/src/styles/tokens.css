@@ -23,7 +23,13 @@
   /* Texte */
   --neo-text: #e6edf3;
   --neo-text-muted: #8b98a6;
-  --neo-text-dim: #5f6d7b;
+  /*
+   * Le ton le plus discret sert surtout a du texte de 11 a 12 pixels : il doit
+   * donc tenir le seuil de 4,5 pour 1. L ancienne valeur plafonnait a 3,57 et
+   * ne passait inapercue que parce qu un filtre d arriere-plan empechait l outil
+   * d accessibilite de calculer le fond.
+   */
+  --neo-text-dim: #7b8896;
 
   /* Accent et etats : couleur uniquement quand elle porte du sens */
   --neo-accent: #3fd0ff;

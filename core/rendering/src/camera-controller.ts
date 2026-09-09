@@ -39,7 +39,8 @@ const PITCH_LIMIT = Math.PI / 2 - 0.08;
 const FOV: Record<CameraMode, number> = {
   'first-person': 72,
   'third-person': 62,
-  inspection: 45,
+  // Champ large : on inspecte une piece entiere, pas un objet isole.
+  inspection: 66,
   tactical: 55,
 };
 
@@ -47,8 +48,8 @@ export class CampusCameraController {
   private position: Vec3;
   private yaw = 0;
   private pitch = -0.05;
-  // Vue tactique a l arrivee : elle repond immediatement a « ou suis-je ».
-  private mode: CameraMode = 'tactical';
+  // Le campus s ouvre a hauteur d homme : un plan ne fait pas un lieu.
+  private mode: CameraMode = 'first-person';
   private colliders: readonly Collider[] = [];
   /** Cible d inspection : mise a jour uniquement en mode inspection. */
   private inspectTarget: { position: Vec3; target: Vec3 } | undefined;

@@ -20,6 +20,18 @@ import {
  * Choix documente dans docs/adr/0002-choix-du-moteur-3d.md, apres mesure.
  * C est le seul fichier du depot qui importe une bibliotheque graphique.
  */
+/** Deux etats de camera decrivent-ils le meme cadrage ? */
+function memeCadrage(a: CameraState, b: CameraState): boolean {
+  const proche = (u: readonly number[], v: readonly number[]): boolean =>
+    u.every((valeur, index) => Math.abs(valeur - (v[index] ?? 0)) < 0.001);
+  return (
+    a.mode === b.mode &&
+    Math.abs(a.fov - b.fov) < 0.001 &&
+    proche(a.position, b.position) &&
+    proche(a.target, b.target)
+  );
+}
+
 export class ThreeRenderer implements Renderer3D {
   private renderer: THREE.WebGLRenderer | undefined;
   private canvas: HTMLCanvasElement | undefined;
@@ -141,9 +153,10 @@ export class ThreeRenderer implements Renderer3D {
     for (const light of description.lights) {
       const color = new THREE.Color(light.color[0], light.color[1], light.color[2]);
       if (light.kind === 'hemisphere') {
-        this.scene.add(
-          new THREE.HemisphereLight(color, new THREE.Color(0.05, 0.06, 0.08), light.intensity),
-        );
+        const sol = light.groundColor
+          ? new THREE.Color(light.groundColor[0], light.groundColor[1], light.groundColor[2])
+          : new THREE.Color(0.05, 0.06, 0.08);
+        this.scene.add(new THREE.HemisphereLight(color, sol, light.intensity));
       } else if (light.kind === 'directional') {
         const directional = new THREE.DirectionalLight(color, light.intensity);
         if (light.position) directional.position.set(...light.position);
@@ -284,6 +297,17 @@ export class ThreeRenderer implements Renderer3D {
 
   setCamera(state: CameraState): void {
     const duration = state.transitionMs ?? 0;
+    /*
+     * La camera est reglee a chaque image. Relancer la transition a chaque
+     * appel la faisait repartir sans cesse de la position courante pour une
+     * duree pleine : elle approchait sa cible sans jamais l atteindre, et un
+     * cadrage de piece demandait plusieurs secondes au lieu de sept dixiemes.
+     * Une transition ne demarre donc que si la destination a reellement change.
+     */
+    if (duration > 0 && this.transition && memeCadrage(this.transition.to, state)) {
+      this.target = state;
+      return;
+    }
     if (duration > 0) {
       this.transition = {
         from: {

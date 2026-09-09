@@ -10,6 +10,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const ECRANS = [
   { route: 'accueil', titre: /Apprendre le metier/ },
+  { route: 'apprendre', titre: /^Apprendre$/ },
   { route: 'campus', titre: /Campus NEO Systems/ },
   { route: 'connaissances', titre: /NEO Knowledge/ },
   { route: 'revision', titre: /NEO Review/ },
@@ -39,8 +40,21 @@ async function ouvrir(page: Page, route: string): Promise<void> {
   // L application est prete quand sa navigation est rendue : analyser un DOM
   // en cours d hydratation produirait des resultats differents a chaque passage.
   await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+  await passerLaPriseEnMain(page);
   if (route === 'campus') await attendreCampus(page);
   await stabiliser(page);
+}
+
+/**
+ * La prise en main s affiche au tout premier passage et recouvre la page.
+ * On la ferme comme le ferait un utilisateur, plutot que de truquer l etat.
+ */
+async function passerLaPriseEnMain(page: Page): Promise<void> {
+  const dialogue = page.getByRole('dialog', { name: 'Prise en main de TSSR NEO' });
+  if (await dialogue.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Passer' }).click();
+    await dialogue.waitFor({ state: 'hidden' });
+  }
 }
 
 /**
@@ -51,12 +65,26 @@ async function attendreCampus(page: Page): Promise<void> {
   await page
     .locator('.campus3d__hud, .campus3d__veil')
     .first()
-    .waitFor({ state: 'visible', timeout: 20_000 })
+    .waitFor({ state: 'visible', timeout: 30_000 })
     .catch(() => undefined);
   await page
     .locator('.campus3d__veil', { hasText: 'Chargement du moteur' })
-    .waitFor({ state: 'hidden', timeout: 20_000 })
+    .waitFor({ state: 'hidden', timeout: 30_000 })
     .catch(() => undefined);
+  /*
+   * Le moteur est monte, mais la camera termine encore sa transition et les
+   * etiquettes se placent d apres la projection courante. On attend que leur
+   * nombre cesse de bouger : analyser une image en cours de composition
+   * donnerait un resultat different a chaque passage.
+   */
+  let precedent = -1;
+  let stable = 0;
+  for (let essai = 0; essai < 40 && stable < 4; essai += 1) {
+    const compte = await page.locator('.campus3d__label').count();
+    stable = compte === precedent ? stable + 1 : 0;
+    precedent = compte;
+    await page.waitForTimeout(150);
+  }
 }
 
 test.describe('fumee', () => {
@@ -111,9 +139,7 @@ test.describe('parcours de mission', () => {
     test.slow();
     await ouvrir(page, 'accueil');
 
-    await page
-      .getByRole('button', { name: /Entrer dans NEO Systems|Reprendre la session/ })
-      .click();
+    await page.getByRole('button', { name: /^(Commencer|Reprendre)$/ }).click();
     await page.waitForURL(/#\/mission/);
     await stabiliser(page);
 
@@ -158,6 +184,8 @@ test.describe('parcours de mission', () => {
 test.describe('accessibilite', () => {
   for (const ecran of ECRANS) {
     test(`aucune violation serieuse sur ${ecran.route}`, async ({ page }) => {
+      // Le campus monte le moteur graphique : en rendu logiciel il est lent.
+      if (ecran.route === 'campus') test.slow();
       await ouvrir(page, ecran.route);
       const resultats = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -175,6 +203,10 @@ test.describe('accessibilite', () => {
 
   test('la navigation au clavier atteint le contenu puis les onglets', async ({ page }) => {
     await ouvrir(page, 'accueil');
+    // Repartir d une page fraiche : fermer la prise en main deplace le focus,
+    // et ce test verifie precisement le tout premier arret d un chargement.
+    await page.reload();
+    await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
     await page.keyboard.press('Tab');
     // Le tout premier arret est le lien d evitement.
     await expect(page.locator('a.neo-skip-link')).toBeFocused();
@@ -193,6 +225,7 @@ test.describe('accessibilite', () => {
 
 test.describe('visuel', () => {
   test('captures des ecrans principaux', async ({ page }, info) => {
+    test.slow();
     for (const ecran of ECRANS) {
       await ouvrir(page, ecran.route);
       await expect(page).toHaveScreenshot(`${info.project.name}-${ecran.route}.png`, {
@@ -213,5 +246,117 @@ test.describe('visuel', () => {
     );
     expect(debordement).toBe(false);
     await expect(page).toHaveScreenshot('texte-agrandi-reglages.png');
+  });
+});
+
+
+test.describe('architecture de l information', () => {
+  test('la navigation principale se limite a quatre destinations', async ({ page }) => {
+    await ouvrir(page, 'accueil');
+    const nav = page.getByRole('navigation', { name: 'Navigation principale' });
+    await expect(nav.getByRole('link')).toHaveText([
+      'Accueil',
+      'Apprendre',
+      'Laboratoire',
+      'Campus',
+    ]);
+  });
+
+  test('aucune destination principale n est vide au premier contact', async ({ page }) => {
+    // Une entree de navigation qui n annonce que son propre vide est une impasse.
+    for (const route of ['accueil', 'apprendre', 'campus']) {
+      await ouvrir(page, route);
+      await expect(page.getByText(/Aucune mission en cours|Aucune competence suivie/)).toHaveCount(
+        0,
+      );
+    }
+  });
+
+  test('les mesures de rendu restent cachees hors mode developpeur', async ({ page }) => {
+    await ouvrir(page, 'campus');
+    await expect(page.getByText(/img\/s/)).toHaveCount(0);
+  });
+});
+
+
+test.describe('prise en main', () => {
+  test('elle accueille au premier passage, puis ne revient pas', async ({ page }) => {
+    await page.goto('./#/accueil');
+    await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+
+    const dialogue = page.getByRole('dialog', { name: 'Prise en main de TSSR NEO' });
+    await expect(dialogue).toBeVisible();
+
+    // Les quatre etapes s enchainent et se terminent sur une action.
+    for (const attendu of [
+      /Vous entrez chez NEO Systems/,
+      /Rien ici n est une mise en scene/,
+      /Quatre endroits/,
+      /Demander de l aide/,
+    ]) {
+      await expect(dialogue.getByRole('heading')).toHaveText(attendu);
+      await dialogue.getByRole('button', { name: /Suivant|Commencer/ }).click();
+    }
+    await expect(dialogue).toBeHidden();
+
+    // Elle ne reapparait pas au rechargement : la preference est persistee.
+    await page.reload();
+    await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
+  test('elle se saute au clavier et rend le focus a la page', async ({ page }) => {
+    await page.goto('./#/accueil');
+    await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+});
+
+
+test.describe('travailler sur place', () => {
+  test('se rendre dans une piece, utiliser un poste, sans quitter le campus', async ({ page }) => {
+    test.slow();
+    await ouvrir(page, 'campus');
+
+    // Le panneau d orientation propose deux acces : l ecran, ou le lieu.
+    await page.getByRole('button', { name: /S y rendre dans la zone Bureaux/ }).click();
+    await page.waitForTimeout(1500);
+    // On est bien reste dans le campus : la route n a pas change.
+    expect(page.url()).toContain('#/campus');
+
+    // On avance en cherchant des yeux, comme dans n importe quel lieu.
+    const invite = page.locator('.campus3d__invite');
+    for (let pas = 0; pas < 8 && (await invite.count()) === 0; pas += 1) {
+      await page.keyboard.down('KeyW');
+      await page.waitForTimeout(260);
+      await page.keyboard.up('KeyW');
+      for (let vue = 0; vue < 8 && (await invite.count()) === 0; vue += 1) {
+        await page.keyboard.down('ArrowRight');
+        await page.waitForTimeout(120);
+        await page.keyboard.up('ArrowRight');
+        await page.waitForTimeout(120);
+      }
+    }
+    await expect(invite).toContainText(/Utiliser|Ouvrir/);
+
+    await page.keyboard.press('KeyE');
+    const outil = page.getByRole('dialog', { name: /Poste|Baie|Console/ });
+    await expect(outil).toBeVisible();
+
+    // Sans infrastructure, l outil le dit au lieu d afficher un decor vide.
+    await expect(outil.getByText('Aucune infrastructure chargee')).toBeVisible();
+    await outil.getByRole('button', { name: 'Demarrer le laboratoire libre' }).click();
+
+    // Le terminal ouvert dans le campus est le vrai terminal du moteur.
+    await outil.getByLabel(/Saisie de commande/).fill('ip a');
+    await outil.getByRole('button', { name: /Executer la commande/ }).click();
+    await expect(outil.getByRole('log')).toContainText('10.20.');
+
+    // Et l on referme sans avoir change d ecran.
+    await page.keyboard.press('Escape');
+    await expect(outil).toBeHidden();
+    expect(page.url()).toContain('#/campus');
   });
 });

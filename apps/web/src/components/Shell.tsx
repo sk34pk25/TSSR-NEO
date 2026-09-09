@@ -11,13 +11,20 @@ import {
   type RouteName,
 } from '../state/hooks.ts';
 
-const NAV: { name: RouteName; label: string }[] = [
-  { name: 'campus', label: 'Campus' },
-  { name: 'mission', label: 'Mission' },
-  { name: 'laboratoire', label: 'Laboratoire' },
-  { name: 'connaissances', label: 'Connaissances' },
-  { name: 'revision', label: 'Revision' },
-  { name: 'progression', label: 'Progression' },
+/*
+ * Quatre concepts, et seulement quatre.
+ *
+ * La barre exposait six entrees dont quatre designaient un etat interne du
+ * produit plutot qu un lieu : « Mission » n avait de contenu qu une fois une
+ * mission lancee, « Revision » qu une fois une competence travaillee. Deux
+ * destinations sur six etaient donc des impasses au premier clic. Ne restent
+ * ici que des endroits ou l on peut toujours aller.
+ */
+const NAV: { name: RouteName; label: string; hint: string }[] = [
+  { name: 'accueil', label: 'Accueil', hint: 'ou vous en etes, et la suite' },
+  { name: 'apprendre', label: 'Apprendre', hint: 'cours, fiches, revisions' },
+  { name: 'laboratoire', label: 'Laboratoire', hint: 'manipuler sans objectif impose' },
+  { name: 'campus', label: 'Campus', hint: 'les locaux de NEO Systems' },
 ];
 
 export interface CommandEntry {
@@ -116,16 +123,27 @@ function CommandCenter({
   );
 }
 
+const CONTENU_CLASSE: Record<'page' | 'large' | 'lieu', string> = {
+  page: 'shell__content',
+  large: 'shell__content shell__content--wide',
+  lieu: 'shell__content shell__content--place',
+};
+
 interface AppShellProps {
   children: ReactNode;
-  wide?: boolean;
+  /**
+   * `page` : un document lisible, largeur mesuree.
+   * `large` : un plan de travail dense, toute la largeur.
+   * `lieu` : un environnement, toute la surface, sans defilement de page.
+   */
+  variant?: 'page' | 'large' | 'lieu';
 }
 
 /**
  * Coquille applicative.
  * Elle repond en permanence a : ou suis-je, que dois-je faire, pourquoi.
  */
-export function AppShell({ children, wide = false }: AppShellProps): JSX.Element {
+export function AppShell({ children, variant = 'page' }: AppShellProps): JSX.Element {
   const session = useSession();
   const route = useRoute();
   const [commandOpen, setCommandOpen] = useState(false);
@@ -137,6 +155,14 @@ export function AppShell({ children, wide = false }: AppShellProps): JSX.Element
   useHotkey({ key: 'k', ctrlOrMeta: true }, openCommand);
 
   const revision = useSessionRevision();
+  /* Le libelle suit l etat reel du deroulement, jamais un drapeau d interface. */
+  const missionEnCours = useSimValue(revision, () => {
+    const runner = session.runner;
+    const statut = runner?.state.status;
+    if (!runner || (statut !== 'active' && statut !== 'briefing')) return undefined;
+    const titre = runner.summary().title;
+    return typeof titre === 'string' ? titre : 'Mission en cours';
+  });
   const entries: CommandEntry[] = useSimValue(revision, () => {
     const items: CommandEntry[] = NAV.map((item) => ({
       id: `nav-${item.name}`,
@@ -144,7 +170,35 @@ export function AppShell({ children, wide = false }: AppShellProps): JSX.Element
       hint: 'navigation',
       run: () => navigate(item.name),
     }));
+    /*
+     * Ce qui a quitte la barre reste atteignable en une frappe : reduire la
+     * navigation visible ne doit jamais reduire ce qu on peut atteindre.
+     */
     items.push(
+      {
+        id: 'nav-cours',
+        label: 'Catalogue des cours',
+        hint: 'apprendre',
+        run: () => navigate('apprendre', 'cours'),
+      },
+      {
+        id: 'nav-fiches',
+        label: 'Fiches de connaissances',
+        hint: 'apprendre',
+        run: () => navigate('apprendre', 'fiches'),
+      },
+      {
+        id: 'nav-reviser',
+        label: 'Session de revision',
+        hint: 'apprendre',
+        run: () => navigate('apprendre', 'reviser'),
+      },
+      {
+        id: 'nav-progression',
+        label: 'Ma progression',
+        hint: 'apprendre',
+        run: () => navigate('apprendre', 'progression'),
+      },
       {
         id: 'nav-reglages',
         label: 'Ouvrir les reglages',
@@ -214,10 +268,26 @@ export function AppShell({ children, wide = false }: AppShellProps): JSX.Element
               key={item.name}
               href={`#/${item.name}`}
               aria-current={route.name === item.name ? 'page' : undefined}
+              title={item.hint}
             >
               {item.label}
             </a>
           ))}
+          {/*
+           * Une mission n est pas un lieu : elle n apparait que lorsqu elle
+           * existe reellement, plutot que d occuper en permanence une place
+           * dans la barre pour y annoncer qu il n y a rien.
+           */}
+          {missionEnCours !== undefined ? (
+            <a
+              className="shell__nav-live"
+              href="#/mission"
+              aria-current={route.name === 'mission' ? 'page' : undefined}
+            >
+              <span className="shell__nav-dot" aria-hidden="true" />
+              {missionEnCours}
+            </a>
+          ) : null}
         </nav>
         <button type="button" className="neo-btn neo-btn--ghost neo-btn--sm" onClick={openCommand}>
           Rechercher
@@ -248,10 +318,14 @@ export function AppShell({ children, wide = false }: AppShellProps): JSX.Element
           </button>
         </div>
       ) : null}
-      <main id="contenu" className="shell__main neo-scroll">
-        <div className={wide ? 'shell__content shell__content--wide' : 'shell__content'}>
-          {children}
-        </div>
+      <main
+        id="contenu"
+        tabIndex={-1}
+        className={
+          variant === 'lieu' ? 'shell__main shell__main--place' : 'shell__main neo-scroll'
+        }
+      >
+        <div className={CONTENU_CLASSE[variant]}>{children}</div>
       </main>
       {commandOpen ? (
         <CommandCenter entries={entries} onClose={() => setCommandOpen(false)} />

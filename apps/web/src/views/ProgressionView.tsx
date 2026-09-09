@@ -1,9 +1,10 @@
 import { xpForLevel } from '@tssr/progression';
 import { Meter } from '../components/Meter.tsx';
 import { navigate, useSession } from '../state/hooks.ts';
+import type { EmbeddableViewProps } from './embeddable.ts';
 
 /** Progression du joueur : competences, missions et badges pedagogiques. */
-export function ProgressionView(): JSX.Element {
+export function ProgressionView({ embedded = false }: EmbeddableViewProps = {}): JSX.Element {
   const session = useSession();
   const progress = session.progress;
   const currentFloor = xpForLevel(progress.level);
@@ -12,7 +13,7 @@ export function ProgressionView(): JSX.Element {
 
   return (
     <div>
-      <h1>Progression</h1>
+      {embedded ? null : <h1>Progression</h1>}
       <div className="neo-card">
         <div className="neo-row" style={{ justifyContent: 'space-between' }}>
           <div>

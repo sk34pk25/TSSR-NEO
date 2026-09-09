@@ -76,6 +76,35 @@ const CUES: Record<CueName, CueSpec> = {
   notification: { notes: [659.25, 987.77], duration: 0.12, type: 'sine', bus: 'sfx', gain: 0.32 },
 };
 
+/**
+ * Caractere d un lit sonore.
+ *
+ * Un local technique, un hall et une salle de documentation ne sonnent pas
+ * pareil, et c est ce qui rend un lieu credible autant que ce qu on y voit. Les
+ * profils decrivent une intention, jamais un fichier : le lit est synthetise.
+ */
+export interface AmbienceProfile {
+  /** Coupure du filtre passe-bas, en hertz. Plus haut, plus siffant. */
+  cutoff: number;
+  /** Niveau du lit, entre 0 et 1. */
+  gain: number;
+}
+
+export type AmbienceName = 'neutre' | 'hall' | 'bureau' | 'technique' | 'calme' | 'atelier';
+
+export const AMBIENCES: Record<AmbienceName, AmbienceProfile> = {
+  neutre: { cutoff: 620, gain: 0.25 },
+  // Un hall carrele porte loin et reste grave.
+  hall: { cutoff: 420, gain: 0.22 },
+  // Un plateau de bureaux : rumeur sourde, presque rien.
+  bureau: { cutoff: 520, gain: 0.16 },
+  // Une salle machine est bruyante et aigue : ce sont les ventilateurs.
+  technique: { cutoff: 2100, gain: 0.42 },
+  // Une salle de documentation doit s entendre comme silencieuse.
+  calme: { cutoff: 340, gain: 0.09 },
+  atelier: { cutoff: 900, gain: 0.24 },
+};
+
 export interface AudioEngineOptions {
   levels?: Partial<AudioLevels>;
   /** Contexte injectable, pour les tests et pour les environnements sans son. */
@@ -95,6 +124,9 @@ export class AudioEngine {
   private status: AudioStatus = 'inactif';
   private muted = false;
   private ambienceSource: { stop: () => void } | undefined;
+  private ambienceFilter: BiquadFilterNode | undefined;
+  private ambienceGain: GainNode | undefined;
+  private ambienceName: AmbienceName = 'neutre';
   private readonly createContext: () => AudioContext | undefined;
   private listeners = new Set<(status: AudioStatus) => void>();
 
@@ -234,10 +266,15 @@ export class AudioEngine {
    * Ambiance de salle technique : souffle de ventilation genere par filtrage
    * de bruit. Elle donne une presence sans jamais couvrir la parole.
    */
-  startAmbience(): boolean {
+  startAmbience(ambience: AmbienceName = 'neutre'): boolean {
     const context = this.context;
     const bus = this.buses.get('ambience');
-    if (!context || !bus || this.ambienceSource) return false;
+    if (!context || !bus) return false;
+    if (this.ambienceSource) {
+      // Deja en cours : on change de caractere sans recreer la source.
+      this.setAmbience(ambience);
+      return false;
+    }
 
     const seconds = 4;
     const buffer = context.createBuffer(1, context.sampleRate * seconds, context.sampleRate);
@@ -253,20 +290,49 @@ export class AudioEngine {
     const source = context.createBufferSource();
     source.buffer = buffer;
     source.loop = true;
+    const profil = AMBIENCES[ambience];
     const filter = context.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 620;
+    filter.frequency.value = profil.cutoff;
     const gain = context.createGain();
-    gain.gain.value = 0.25;
+    gain.gain.value = profil.gain;
     source.connect(filter);
     filter.connect(gain);
     gain.connect(bus);
     source.start();
+    this.ambienceFilter = filter;
+    this.ambienceGain = gain;
+    this.ambienceName = ambience;
     this.ambienceSource = { stop: () => source.stop() };
     return true;
   }
 
+  /**
+   * Change le caractere du lit sonore en cours.
+   *
+   * La transition est progressive : une coupure nette entre deux pieces
+   * s entend comme un defaut, alors qu un lieu change de son quand on avance.
+   */
+  setAmbience(ambience: AmbienceName): void {
+    if (this.ambienceName === ambience) return;
+    this.ambienceName = ambience;
+    const context = this.context;
+    const profil = AMBIENCES[ambience];
+    if (!context || !this.ambienceFilter || !this.ambienceGain) return;
+    const maintenant = context.currentTime;
+    this.ambienceFilter.frequency.setTargetAtTime(profil.cutoff, maintenant, 0.6);
+    this.ambienceGain.gain.setTargetAtTime(profil.gain, maintenant, 0.6);
+  }
+
+  /** Caractere actuellement en place, pour l afficher ou le verifier. */
+  currentAmbience(): AmbienceName {
+    return this.ambienceName;
+  }
+
   stopAmbience(): void {
+    this.ambienceFilter = undefined;
+    this.ambienceGain = undefined;
+    this.ambienceName = 'neutre';
     try {
       this.ambienceSource?.stop();
     } catch {

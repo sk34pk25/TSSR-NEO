@@ -50,6 +50,26 @@
   background: var(--neo-accent-dim);
 }
 
+/* Entree contextuelle : elle n existe que pendant une mission, et se voit. */
+.shell__nav-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: var(--neo-space-3);
+  max-width: 26ch;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border: 1px solid var(--neo-accent-dim);
+}
+.shell__nav-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--neo-ok, var(--neo-accent));
+}
+
 .shell__main {
   flex: 1;
   min-height: 0;
@@ -399,16 +419,15 @@
 
 /* ----------------------------------------------------------- campus 3D */
 .campus3d {
-  display: flex;
-  flex-direction: column;
-  gap: var(--neo-space-4);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 0;
+  height: 100%;
+  min-height: 0;
 }
 .campus3d__stage {
   position: relative;
-  height: min(62vh, 560px);
-  min-height: 320px;
-  border: 1px solid var(--neo-border);
-  border-radius: var(--neo-radius-lg);
+  min-height: 0;
   overflow: hidden;
   background: var(--neo-bg-0);
 }
@@ -486,6 +505,16 @@
   font-family: var(--neo-font-mono);
   font-size: var(--neo-fs-xs);
 }
+/* Repere permanent : la piece ou l on se tient, en clair. */
+.campus3d__lieu {
+  margin-left: auto;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--neo-bg-2);
+  color: var(--neo-text-muted);
+  font-size: var(--neo-fs-xs);
+  letter-spacing: 0.04em;
+}
 .campus3d__help {
   position: absolute;
   left: 50%;
@@ -496,23 +525,108 @@
   text-align: center;
   max-width: 92%;
 }
+/* Panneau d orientation, a la maniere d une signaletique de hall. */
+.campus3d__wayfinding {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--neo-space-4) var(--neo-space-3);
+  border-left: 1px solid var(--neo-border);
+  background: var(--neo-bg-1);
+}
+.campus3d__wayfinding-titre {
+  margin: 0 0 var(--neo-space-3) var(--neo-space-2);
+  font-size: var(--neo-fs-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--neo-text-muted);
+}
 .campus3d__zones {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: var(--neo-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 .campus3d__zone {
-  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--neo-space-3);
+  width: 100%;
+  padding: 8px var(--neo-space-3);
+  border: 0;
+  border-radius: var(--neo-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
-  padding-left: var(--neo-space-5);
+  transition: background var(--neo-transition);
+}
+.campus3d__zone:hover,
+.campus3d__zone:focus-visible {
+  background: var(--neo-bg-3);
+}
+
+.campus3d__wayfinding-aide {
+  margin: -6px 0 var(--neo-space-3) var(--neo-space-2);
+  font-size: var(--neo-fs-xs);
+  line-height: 1.4;
+}
+
+/* Deux acces par zone : ouvrir l ecran, ou s y rendre dans le campus. */
+.campus3d__zone-entree {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.campus3d__aller {
+  margin: 0 0 4px calc(var(--neo-space-3) + 18px);
+  padding: 2px 8px;
+  border: 1px solid var(--neo-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--neo-text-muted);
+  font: inherit;
+  font-size: var(--neo-fs-xs);
+  cursor: pointer;
+}
+.campus3d__aller:hover,
+.campus3d__aller:focus-visible {
+  color: var(--neo-accent);
+  border-color: var(--neo-border-accent);
+}
+.campus3d__zone-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.campus3d__zone-texte .neo-muted {
+  font-size: var(--neo-fs-xs);
+  line-height: 1.35;
 }
 .campus3d__chip {
-  position: absolute;
-  left: var(--neo-space-3);
-  top: var(--neo-space-4);
+  flex: none;
   width: 8px;
   height: 8px;
+  margin-top: 6px;
   border-radius: 3px;
+}
+
+/* En dessous de la tablette, la signaletique passe sous la vue. */
+@media (max-width: 900px) {
+  .campus3d {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(280px, 1fr) auto;
+  }
+  .campus3d__wayfinding {
+    border-left: 0;
+    border-top: 1px solid var(--neo-border);
+    max-height: 40vh;
+  }
 }
 
 /* ------------------------------------------------------- vue materielle 3D */
@@ -541,5 +655,338 @@
   .hardware3d__panel {
     border-left: 0;
     border-top: 1px solid var(--neo-border);
+  }
+}
+
+/* La coquille laisse le campus prendre toute la hauteur, sans defilement parasite. */
+.shell__main--place {
+  overflow: hidden;
+}
+.shell__content--place {
+  max-width: none;
+  padding: 0;
+  height: 100%;
+}
+
+
+/* --------------------------------------------- navigation sur petit ecran */
+/*
+ * Quatre destinations tiennent exactement dans une barre inferieure, la ou six
+ * debordaient de l en-tete et repoussaient la recherche hors de l ecran. La
+ * reduction de l architecture rend cette disposition possible ; elle place
+ * aussi la navigation sous le pouce.
+ */
+@media (max-width: 700px) {
+  .shell__top {
+    gap: var(--neo-space-3);
+    padding: 8px var(--neo-space-4);
+    /*
+     * Un filtre d arriere-plan cree un bloc conteneur : la barre inferieure
+     * resterait alors ancree a l en-tete au lieu de la fenetre.
+     */
+    backdrop-filter: none;
+    background: var(--neo-bg-1);
+  }
+  .shell__top .shell__nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    gap: 0;
+    flex-wrap: nowrap;
+    padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--neo-border);
+    background: var(--neo-bg-1);
+  }
+  .shell__nav a {
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+    padding: 10px 4px;
+    font-size: var(--neo-fs-xs);
+  }
+  .shell__nav-live {
+    /* Hors de la barre du pouce : elle porte les quatre lieux, rien de plus. */
+    position: fixed;
+    left: var(--neo-space-4);
+    right: var(--neo-space-4);
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    margin-left: 0;
+    max-width: none;
+    justify-content: center;
+    background: var(--neo-bg-2);
+  }
+  /* La barre inferieure ne doit jamais masquer la fin du contenu. */
+  .shell__main {
+    padding-bottom: 60px;
+  }
+  .campus3d__wayfinding {
+    padding-bottom: var(--neo-space-6);
+  }
+}
+
+
+/* --------------------------------------------------------------- accueil */
+.accueil {
+  display: flex;
+  flex-direction: column;
+  gap: var(--neo-space-5);
+  max-width: 1080px;
+}
+
+/*
+ * La proposition du moment. Un seul bloc, une seule action mise en avant, et la
+ * raison juste au-dessus du bouton : c est la raison qui rend l action evidente.
+ */
+.accueil__suite {
+  padding: var(--neo-space-6);
+  border: 1px solid var(--neo-border-strong);
+  border-radius: var(--neo-radius-lg);
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--neo-accent-dim), transparent 62%),
+    var(--neo-surface-raised);
+}
+.accueil__salutation {
+  margin: 0;
+  font-size: var(--neo-fs-sm);
+  color: var(--neo-text-muted);
+}
+.accueil__titre {
+  margin: 6px 0 0;
+  font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.1rem);
+  line-height: 1.15;
+}
+.accueil__raison {
+  margin: 8px 0 0;
+  max-width: 62ch;
+  color: var(--neo-text-muted);
+}
+
+/* Trois portes secondaires, de meme poids entre elles et moindre que la premiere. */
+.accueil__reperes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--neo-space-3);
+}
+.repere {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--neo-space-4);
+  border: 1px solid var(--neo-border);
+  border-radius: var(--neo-radius);
+  background: var(--neo-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--neo-transition),
+    background var(--neo-transition);
+}
+.repere:hover,
+.repere:focus-visible {
+  border-color: var(--neo-border-accent);
+  background: var(--neo-bg-3);
+}
+.repere .neo-muted {
+  font-size: var(--neo-fs-sm);
+  line-height: 1.4;
+}
+
+.accueil__etat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--neo-space-3);
+  padding: var(--neo-space-5);
+  border: 1px solid var(--neo-border);
+  border-radius: var(--neo-radius-lg);
+  background: var(--neo-surface);
+}
+.accueil__etat h2 {
+  margin: 0;
+}
+.accueil__etat-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--neo-space-4);
+}
+.accueil__etat-grille div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.accueil__etat-grille span {
+  font-size: var(--neo-fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.accueil__etat-grille strong {
+  font-size: var(--neo-fs-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* --------------------------------------------------------- prise en main */
+.onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--neo-space-5);
+  background: rgba(6, 9, 13, 0.78);
+  backdrop-filter: blur(6px);
+}
+:root[data-reduce-complexity='true'] .onboarding {
+  backdrop-filter: none;
+  background: rgba(6, 9, 13, 0.94);
+}
+.onboarding__dialogue {
+  width: min(620px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--neo-space-6);
+  border: 1px solid var(--neo-border-strong);
+  border-radius: var(--neo-radius-lg);
+  background:
+    radial-gradient(110% 130% at 0% 0%, var(--neo-accent-dim), transparent 60%),
+    var(--neo-surface-raised);
+}
+.onboarding__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--neo-space-4);
+  font-size: var(--neo-fs-xs);
+}
+.onboarding__titre {
+  margin: var(--neo-space-4) 0 0;
+  font-size: var(--neo-fs-xl);
+  line-height: 1.2;
+}
+.onboarding__corps {
+  margin: var(--neo-space-3) 0 0;
+  color: var(--neo-text-muted);
+  line-height: 1.6;
+}
+.onboarding__detail {
+  display: grid;
+  gap: 6px;
+  margin: var(--neo-space-4) 0 0;
+}
+.onboarding__detail > div {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: var(--neo-space-3);
+  align-items: baseline;
+}
+.onboarding__detail dt {
+  font-weight: 650;
+  color: var(--neo-accent);
+}
+.onboarding__detail dd {
+  margin: 0;
+  font-size: var(--neo-fs-sm);
+}
+.onboarding__jalons {
+  display: flex;
+  gap: 6px;
+  margin-top: var(--neo-space-5);
+}
+.onboarding__jalons span {
+  height: 3px;
+  flex: 1;
+  border-radius: 999px;
+  background: var(--neo-border);
+}
+.onboarding__jalons span[data-atteint='true'] {
+  background: var(--neo-accent);
+}
+.onboarding__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--neo-space-4);
+  margin-top: var(--neo-space-4);
+}
+@media (max-width: 560px) {
+  .onboarding__dialogue {
+    padding: var(--neo-space-5);
+  }
+  .onboarding__detail > div {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+
+/* ------------------------------------------- interaction dans le campus */
+/* Invite d approche : discrete, centree, et elle disparait des qu on s eloigne. */
+.campus3d__invite {
+  position: absolute;
+  left: 50%;
+  bottom: 74px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--neo-border-strong);
+  background: rgba(13, 17, 23, 0.86);
+  font-size: var(--neo-fs-sm);
+}
+.campus3d__invite kbd {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 5px;
+  border: 1px solid var(--neo-border-accent);
+  background: var(--neo-accent-dim);
+  color: var(--neo-accent);
+  font-family: var(--neo-font-mono);
+  font-size: var(--neo-fs-xs);
+}
+
+/*
+ * L outil s ouvre par-dessus le lieu, sans le quitter : on voit encore la piece
+ * autour, ce qui evite la rupture d un changement d ecran.
+ */
+.interaction {
+  position: absolute;
+  inset: auto 0 0 0;
+  max-height: 76%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--neo-border-strong);
+  border-radius: var(--neo-radius-lg) var(--neo-radius-lg) 0 0;
+  background: var(--neo-surface-raised);
+  box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.35);
+}
+.interaction__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--neo-space-4);
+  padding: 10px var(--neo-space-4);
+  border-bottom: 1px solid var(--neo-border);
+}
+.interaction__corps {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--neo-space-4);
+}
+@media (max-width: 700px) {
+  .interaction {
+    max-height: 88%;
+  }
+  .campus3d__invite {
+    bottom: 96px;
   }
 }

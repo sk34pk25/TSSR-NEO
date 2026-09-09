@@ -87,6 +87,30 @@ Contrainte permanente : la plateforme reste entierement jouable sans compte.
 
 ---
 
+## Phase 6 bis — Experience produit et refonte 3D _(en cours, V0.3)_
+
+Declenchee par un constat du proprietaire sur la production : site insuffisamment
+intuitif, campus vide, 3D froide, experience trop proche d un tableau de bord.
+L audit est tenu dans `docs/audit-ux-v0.3.md`, captures a l appui.
+
+| Jalon                                   | Etat                                                            |
+| --------------------------------------- | ---------------------------------------------------------------- |
+| Audit UX et visuel, captures de base    | fait : neuf ecrans, deux formats, traversee en vue subjective    |
+| Architecture de l information           | fait : quatre lieux, mission contextuelle, catalogue deplace     |
+| Prise en main au premier passage        | fait : quatre etapes, rejouables depuis les reglages             |
+| Refonte de l accueil                    | fait : une seule suite proposee, deduite de l etat reel          |
+| Bibliotheque de materiaux et kit modulaire | fait : quarante materiaux, mobilier instancie                 |
+| Campus V2 : architecture et amenagement | fait : pieces distinctes, meublees, ouvertes sur l exterieur     |
+| Eclairage                               | fait : jour dominant, appoint chaud, rebond de sol               |
+| Compaction du rendu                     | fait : cinq cent quinze noeuds ramenes a cent soixante-quinze    |
+| Interaction contextuelle                | fait : approche et touche E, poste et baie reellement branches   |
+| Couche de vie : personnages, animations | **non fait**                                                     |
+| Audio par zone                          | fait : six lits sonores, transition progressive, apres accord    |
+| Travail sur place sans quitter la 3D    | fait : « S y rendre », outil ouvert par-dessus le lieu           |
+| Chaine d assets externes sous licence   | **non fait** : le mobilier est procedural, voir la dette         |
+
+---
+
 ## Phase 7 — Contenu et outillage pedagogique
 
 Modules de cours supplementaires, editeur de laboratoire complet, journee de travail simulee,
@@ -103,6 +127,8 @@ mode examen configurable, mode classe, collaboration multi-roles, audio, interna
 | Aucun service de synchronisation             | pas de suivi multi-appareils                              | phase 6, des qu un service existe       |
 | Journal d evenements borne a 5000 entrees    | perte d evenements non significatifs sur longue session   | acceptable, les significatifs restent   |
 | Cache npm local au depot                     | contournement d un cache global appartenant a root        | corriger la cause sur la machine        |
+| Mobilier entierement procedural              | moins de variete qu une bibliotheque d assets modelises   | chaine d assets CC0 si le besoin se confirme |
+| Campus sans personnages ni son               | l espace reste habite par le decor seul                   | couche de vie, phase 6 bis              |
 
 ## Definition de fin
 

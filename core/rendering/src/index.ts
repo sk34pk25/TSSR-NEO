@@ -2,6 +2,8 @@ export * from './capabilities.ts';
 export * from './scene.ts';
 export * from './topology-renderer.ts';
 export * from './scene3d.ts';
+export * from './materials.ts';
+export * from './kit.ts';
 export * from './campus.ts';
 export * from './hardware-scene.ts';
 export * from './camera-controller.ts';

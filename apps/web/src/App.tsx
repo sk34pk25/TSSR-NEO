@@ -1,10 +1,13 @@
 import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
+import { Onboarding } from './components/Onboarding.tsx';
 import { AppShell } from './components/Shell.tsx';
+import { AboutView } from './views/AboutView.tsx';
 import { CampusView } from './views/CampusView.tsx';
 import { DiagnosticsView } from './views/DiagnosticsView.tsx';
 import { HomeView } from './views/HomeView.tsx';
 import { KnowledgeView } from './views/KnowledgeView.tsx';
 import { LabView } from './views/LabView.tsx';
+import { LearnView } from './views/LearnView.tsx';
 import { MissionView } from './views/MissionView.tsx';
 import { ProgressionView } from './views/ProgressionView.tsx';
 import { ReviewView } from './views/ReviewView.tsx';
@@ -62,6 +65,10 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 function CurrentView(): JSX.Element {
   const route = useRoute();
   switch (route.name) {
+    case 'a-propos':
+      return <AboutView />;
+    case 'apprendre':
+      return <LearnView />;
     case 'campus':
       return <CampusView />;
     case 'mission':
@@ -92,7 +99,13 @@ function CurrentView(): JSX.Element {
 export function App(): JSX.Element {
   const session = useSession();
   const route = useRoute();
-  const wide = route.name === 'mission' || route.name === 'laboratoire';
+  // Le campus est un lieu ; la mission et le laboratoire sont des plans de travail.
+  const variant =
+    route.name === 'campus'
+      ? 'lieu'
+      : route.name === 'mission' || route.name === 'laboratoire'
+        ? 'large'
+        : 'page';
 
   useEffect(() => {
     void session.boot();
@@ -112,10 +125,16 @@ export function App(): JSX.Element {
   }
 
   return (
-    <AppShell wide={wide}>
-      <ErrorBoundary>
-        <CurrentView />
-      </ErrorBoundary>
-    </AppShell>
+    <>
+      <AppShell variant={variant}>
+        <ErrorBoundary>
+          <CurrentView />
+        </ErrorBoundary>
+      </AppShell>
+      {/* La prise en main precede tout le reste, une seule fois. */}
+      {session.progress.preferences.onboardingSeen ? null : (
+        <Onboarding onTerminer={() => void session.updatePreferences({ onboardingSeen: true })} />
+      )}
+    </>
   );
 }

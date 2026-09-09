@@ -26,7 +26,12 @@ import {
   type QualityProfile,
   type RenderCapabilities,
 } from '@tssr/rendering';
-import { AudioEngine, EVENT_CUES, type AudioStatus } from '@tssr/audio';
+import {
+  AudioEngine,
+  EVENT_CUES,
+  type AmbienceName,
+  type AudioStatus,
+} from '@tssr/audio';
 import {
   PolicyEngine,
   claimAdmin,
@@ -193,6 +198,17 @@ export class AppSession {
    * Doit etre appele depuis un geste utilisateur : les navigateurs refusent
    * de produire du son autrement, et nous le signalons plutot que de le masquer.
    */
+  /**
+   * Adapte le lit sonore au lieu ou se trouve le visiteur.
+   *
+   * Sans effet tant que l audio n a pas ete active : un navigateur n autorise
+   * le son qu apres un geste explicite, et il ne faut surtout pas en fabriquer un.
+   */
+  setCampusAmbience(ambience: AmbienceName): void {
+    if (this.audioStatus !== 'actif') return;
+    this.audio.setAmbience(ambience);
+  }
+
   async enableAudio(): Promise<AudioStatus> {
     const status = await this.audio.resume();
     this.audio.setLevels(this.progress.preferences.audio);

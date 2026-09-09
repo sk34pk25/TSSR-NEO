@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { CompetencyDomain, KnowledgeEntry } from '@tssr/contracts';
 import { useRoute, useSession } from '../state/hooks.ts';
+import type { EmbeddableViewProps } from './embeddable.ts';
 
 const DOMAIN_LABEL: Partial<Record<CompetencyDomain, string>> = {
   network: 'Reseau',
@@ -25,7 +26,7 @@ function text(value: unknown): string {
 }
 
 /** Base de connaissances NEO : recherche locale, disponible hors ligne. */
-export function KnowledgeView(): JSX.Element {
+export function KnowledgeView({ embedded = false }: EmbeddableViewProps = {}): JSX.Element {
   const session = useSession();
   const route = useRoute();
   const [query, setQuery] = useState('');
@@ -50,11 +51,15 @@ export function KnowledgeView(): JSX.Element {
 
   return (
     <div>
-      <h1>NEO Knowledge</h1>
-      <p className="neo-muted" style={{ maxWidth: '72ch' }}>
-        Fiches redigees pour TSSR NEO. La recherche est locale et tolerante aux fautes de frappe :
-        elle reste disponible sans connexion pour les modules telecharges.
-      </p>
+      {embedded ? null : (
+        <>
+          <h1>NEO Knowledge</h1>
+          <p className="neo-muted" style={{ maxWidth: '72ch' }}>
+            Fiches redigees pour TSSR NEO. La recherche est locale et tolerante aux fautes de
+            frappe : elle reste disponible sans connexion pour les modules telecharges.
+          </p>
+        </>
+      )}
 
       {recommendations.length > 0 ? (
         <div className="banner">
