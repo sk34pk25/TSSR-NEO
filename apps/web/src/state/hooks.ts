@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { session } from './session.ts';
 
 let sessionVersion = 0;
@@ -27,12 +27,17 @@ export function useSession(): typeof session {
  * Le monde simule est volontairement mutable : c est ce qui garantit que la 3D,
  * le terminal, les tickets et l evaluation observent strictement le meme objet.
  * L identite des objets ne change donc jamais, et React ne peut pas detecter
- * seul qu il faut recalculer. Le numero de revision joue ce role, une seule fois
- * et de facon explicite, plutot que d etre repete a chaque appel.
+ * seul qu il faut recalculer. Le numero de revision joue ce role.
+ *
+ * On memorise dans une reference plutot qu avec `useMemo` : le calcul depend
+ * d une valeur exterieure a React, ce que la memorisation standard n exprime pas.
  */
 export function useSimValue<T>(revision: number, compute: () => T): T {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  return useMemo(compute, [revision]);
+  const cache = useRef<{ revision: number; value: T } | undefined>(undefined);
+  if (cache.current === undefined || cache.current.revision !== revision) {
+    cache.current = { revision, value: compute() };
+  }
+  return cache.current.value;
 }
 
 export type RouteName =
@@ -54,24 +59,25 @@ export interface Route {
   param: string | undefined;
 }
 
+const KNOWN_ROUTES: RouteName[] = [
+  'accueil',
+  'campus',
+  'mission',
+  'connaissances',
+  'laboratoire',
+  'supervision',
+  'tickets',
+  'revision',
+  'progression',
+  'formateur',
+  'reglages',
+  'diagnostics',
+];
+
 function parseHash(hash: string): Route {
   const clean = hash.replace(/^#\/?/, '');
   const [name, param] = clean.split('/');
-  const known: RouteName[] = [
-    'accueil',
-    'campus',
-    'mission',
-    'connaissances',
-    'laboratoire',
-    'supervision',
-    'tickets',
-    'revision',
-    'progression',
-    'formateur',
-    'reglages',
-    'diagnostics',
-  ];
-  const resolved = known.includes(name as RouteName) ? (name as RouteName) : 'accueil';
+  const resolved = KNOWN_ROUTES.includes(name as RouteName) ? (name as RouteName) : 'accueil';
   return { name: resolved, param: param === '' ? undefined : param };
 }
 

@@ -29,8 +29,8 @@ export function MissionView(): JSX.Element {
   const [version, setVersion] = useState(0);
   const [centerTab, setCenterTab] = useState<CenterTab>('terminal');
   const [sideTab, setSideTab] = useState<SideTab>('nova');
-  const [machineId, setMachineId] = useState<string>('');
-  const [switchId, setSwitchId] = useState<string>('');
+  const [machineChoice, setMachineChoice] = useState<string>('');
+  const [switchChoice, setSwitchChoice] = useState<string>('');
   const [debrief, setDebrief] = useState<ReturnType<typeof scoreLabel> | undefined>(undefined);
 
   const world = session.world;
@@ -43,10 +43,13 @@ export function MissionView(): JSX.Element {
       world?.state.network.nodes.filter((n) => n.kind === 'switch' || n.kind === 'router') ?? [],
   );
 
-  useEffect(() => {
-    if (machineId === '' && machines[0]) setMachineId(machines[0].id);
-    if (switchId === '' && switches[0]) setSwitchId(switches[0].id);
-  }, [machines, switches, machineId, switchId]);
+  /*
+   * La cible courante est **derivee** : tant que rien n est choisi, c est le
+   * premier element disponible. Synchroniser cela par un effet provoquerait un
+   * rendu en cascade et un ecran vide au premier passage.
+   */
+  const machineId = machineChoice !== '' ? machineChoice : (machines[0]?.id ?? '');
+  const switchId = switchChoice !== '' ? switchChoice : (switches[0]?.id ?? '');
 
   const terminal = useMemo(() => {
     if (!world || machineId === '') return undefined;
@@ -250,7 +253,7 @@ export function MissionView(): JSX.Element {
                 className="neo-select"
                 style={{ width: 'auto' }}
                 value={machineId}
-                onChange={(event) => setMachineId(event.target.value)}
+                onChange={(event) => setMachineChoice(event.target.value)}
                 aria-label="Machine cible du terminal"
               >
                 {machines.map((machine) => (
@@ -264,7 +267,7 @@ export function MissionView(): JSX.Element {
                 className="neo-select"
                 style={{ width: 'auto' }}
                 value={switchId}
-                onChange={(event) => setSwitchId(event.target.value)}
+                onChange={(event) => setSwitchChoice(event.target.value)}
                 aria-label="Equipement cible de la console"
               >
                 {switches.map((node) => (
