@@ -3,6 +3,7 @@ import type { EventBus } from '@tssr/events';
 import type { NetworkEngine } from './engine.ts';
 import { effectiveRoutes } from './routing.ts';
 import { floodDomain } from './l2.ts';
+import { describeSpanningTree } from './spanning-tree.ts';
 
 export interface ConsoleResult {
   output: string;
@@ -81,6 +82,8 @@ export class SwitchConsole {
       '  show mac address-table             adresses MAC vues par port',
       '  show ip interface brief            adressage des interfaces',
       '  show ip route                      table de routage',
+      '  show spanning-tree                 pont racine et ports en blocage',
+      '  show ipv6 interface                adressage IPv6 des interfaces',
       '  show running-config                configuration courante',
       '  configure terminal                 passe en mode configuration',
       '  vlan <id> / name <texte>           declare un VLAN',
@@ -215,6 +218,24 @@ export class SwitchConsole {
           .join('\n'),
       );
     }
+    if (topic.startsWith('spanning')) {
+      return ok(describeSpanningTree(this.engine.topology));
+    }
+    if (topic.startsWith('ipv6')) {
+      const rows = [`${pad('Interface', 14)}${pad('Adresse IPv6', 32)}Origine`];
+      for (const iface of node.interfaces) {
+        if (iface.addressesV6.length === 0) {
+          rows.push(`${pad(iface.name, 14)}${pad('aucune', 32)}-`);
+          continue;
+        }
+        for (const address of iface.addressesV6) {
+          rows.push(
+            `${pad(iface.name, 14)}${pad(`${address.address}/${address.prefix}`, 32)}${address.source}`,
+          );
+        }
+      }
+      return ok(rows.join('\n'));
+    }
     if (topic.startsWith('running') || topic.startsWith('run')) {
       return ok(this.runningConfig(node));
     }
@@ -276,6 +297,24 @@ export class SwitchConsole {
       return ok('');
     }
 
+    if (head === 'spanning-tree') {
+      const enable = (tokens[1] ?? '').toLowerCase() !== 'disable';
+      node.spanningTree = { enabled: enable, priority: node.spanningTree?.priority ?? 32768 };
+      return ok(
+        enable
+          ? 'Arbre recouvrant active : les boucles seront neutralisees.'
+          : 'Arbre recouvrant desactive : les boucles ne sont plus protegees.',
+      );
+    }
+    if (head === 'no' && (tokens[1] ?? '').toLowerCase() === 'spanning-tree') {
+      node.spanningTree = { enabled: false, priority: node.spanningTree?.priority ?? 32768 };
+      return ok('Arbre recouvrant desactive.');
+    }
+    if (head === 'router' && (tokens[1] ?? '').toLowerCase() === 'dynamic') {
+      node.dynamicRouting = { enabled: true, protocol: 'distance-vector' };
+      const result = this.engine.converge();
+      return ok(`Routage dynamique active. Convergence en ${result.iterations} echange(s).`);
+    }
     if (head === 'interface' || head === 'int') {
       const name = tokens[1];
       if (name === undefined) return ko('% nom d interface manquant');

@@ -1,4 +1,5 @@
 import type {
+  DhcpPool,
   DnsZone,
   NetworkNode,
   NetworkTopology,
@@ -284,7 +285,8 @@ export interface DhcpOffer {
   poolId: string;
 }
 
-export type DhcpFailure = 'no-server' | 'pool-exhausted' | 'link-down' | 'no-pool-for-subnet';
+export type DhcpFailure =
+  'no-server' | 'pool-exhausted' | 'link-down' | 'no-pool-for-subnet' | 'relay-unreachable';
 
 export interface DhcpResult {
   success: boolean;
@@ -292,6 +294,136 @@ export interface DhcpResult {
   /** Adresse d auto-configuration attribuee faute de serveur : symptome tres parlant. */
   apipa?: string;
   failure?: { reason: DhcpFailure; detail: string };
+  /** Routeur ayant relaye la demande, lorsque le serveur est dans un autre VLAN. */
+  relayedBy?: { nodeId: string; interfaceId: string };
+}
+
+/**
+ * Allocation d une adresse dans une etendue.
+ * Reservation par adresse physique d abord, puis reconduction du bail existant,
+ * puis premiere adresse libre : c est l ordre reel d un serveur.
+ */
+function allocate(
+  topology: NetworkTopology,
+  server: NetworkNode,
+  pool: DhcpPool,
+  mac: string,
+  relay?: { nodeId: string; interfaceId: string },
+): DhcpResult | undefined {
+  const { prefix } = parseCidr(pool.subnet);
+  const used = new Set<string>();
+  for (const node of topology.nodes) {
+    for (const iface of node.interfaces) {
+      for (const addr of iface.addresses) used.add(addr.address);
+    }
+  }
+  for (const lease of topology.dhcpLeases) {
+    if (lease.mac !== mac) used.add(lease.address);
+  }
+
+  const common = {
+    prefix,
+    ...(pool.gateway === undefined ? {} : { gateway: pool.gateway }),
+    dnsServers: pool.dnsServers,
+    leaseSeconds: pool.leaseSeconds,
+    serverNodeId: server.id,
+    poolId: pool.id,
+  };
+  const wrap = (address: string): DhcpResult => ({
+    success: true,
+    offer: { address, ...common },
+    ...(relay === undefined ? {} : { relayedBy: relay }),
+  });
+
+  const reservation = pool.reservations.find((r) => r.mac === mac);
+  if (reservation) return wrap(reservation.address);
+
+  const existing = topology.dhcpLeases.find((l) => l.mac === mac && l.poolId === pool.id);
+  if (existing && !used.has(existing.address)) return wrap(existing.address);
+
+  const start = ipToInt(pool.rangeStart);
+  const end = ipToInt(pool.rangeEnd);
+  for (let candidate = start; candidate <= end; candidate += 1) {
+    const address = intToIp(candidate);
+    if (used.has(address)) continue;
+    return wrap(address);
+  }
+
+  return {
+    success: false,
+    apipa: apipaFor(mac),
+    failure: {
+      reason: 'pool-exhausted',
+      detail: `la plage ${pool.rangeStart}-${pool.rangeEnd} est saturee`,
+    },
+  };
+}
+
+/**
+ * Relais DHCP.
+ *
+ * Une demande est une diffusion : elle ne sort pas du VLAN. Un routeur portant
+ * une adresse d assistance la reprend et l envoie en unicast au serveur, en
+ * indiquant le reseau d origine. C est ce reseau, et non celui du serveur, qui
+ * determine l etendue utilisee.
+ */
+function tryRelay(
+  topology: NetworkTopology,
+  index: TopologyIndex,
+  flood: ReturnType<typeof floodDomain>,
+  mac: string,
+): DhcpResult | undefined {
+  for (const endpoint of flood.endpoints) {
+    const ref = index.interfaceRef(endpoint.interfaceId);
+    if (!ref || !index.isForwarder(ref.node) || !ref.node.powered) continue;
+    const relay = ref.iface.dhcpRelay;
+    if (!relay || relay.enabled === false || relay.helperAddresses.length === 0) continue;
+
+    // Le reseau d origine est celui de l interface du relais.
+    const origin = ref.iface.addresses[0];
+    if (!origin) continue;
+
+    for (const helper of relay.helperAddresses) {
+      const transport = forwardPacket(topology, ref.node.id, helper, {
+        protocol: 'udp',
+        destinationPort: 67,
+      });
+      if (!transport.delivered) continue;
+
+      const server = index.ownersOf(helper)[0]?.node;
+      if (!server) continue;
+      const service = server.services.find((entry) => entry.kind === 'dhcp');
+      if (!service || !serviceAvailable(server, service)) continue;
+
+      const pool = server.dhcpPools.find((entry) => inCidr(origin.address, entry.subnet));
+      if (!pool) {
+        return {
+          success: false,
+          apipa: apipaFor(mac),
+          failure: {
+            reason: 'no-pool-for-subnet',
+            detail: `le serveur ${server.hostname} n a aucune etendue pour le reseau ${origin.address}/${origin.prefix}`,
+          },
+          relayedBy: { nodeId: ref.node.id, interfaceId: ref.iface.id },
+        };
+      }
+      return allocate(topology, server, pool, mac, {
+        nodeId: ref.node.id,
+        interfaceId: ref.iface.id,
+      });
+    }
+
+    return {
+      success: false,
+      apipa: apipaFor(mac),
+      failure: {
+        reason: 'relay-unreachable',
+        detail: `le relais ${ref.node.hostname} ne joint aucun serveur declare (${relay.helperAddresses.join(', ')})`,
+      },
+      relayedBy: { nodeId: ref.node.id, interfaceId: ref.iface.id },
+    };
+  }
+  return undefined;
 }
 
 function apipaFor(mac: string): string {
@@ -306,6 +438,7 @@ export function requestDhcpLease(
   topology: NetworkTopology,
   nodeId: string,
   interfaceId: string,
+  blockedInterfaceIds?: ReadonlySet<string>,
 ): DhcpResult {
   const index = new TopologyIndex(topology);
   const clientRef = index.interfaceRef(interfaceId);
@@ -314,7 +447,7 @@ export function requestDhcpLease(
   }
   const mac = clientRef.iface.mac;
 
-  const flood = floodDomain(index, { nodeId, interfaceId });
+  const flood = floodDomain(index, { nodeId, interfaceId }, blockedInterfaceIds);
   if (flood.endpoints.length === 0) {
     return {
       success: false,
@@ -336,12 +469,16 @@ export function requestDhcpLease(
     .sort((a, b) => (a.ref?.node.id ?? '').localeCompare(b.ref?.node.id ?? ''));
 
   if (candidates.length === 0) {
+    // Aucun serveur dans ce VLAN : un relais peut encore porter la demande.
+    const relayed = tryRelay(topology, index, flood, mac);
+    if (relayed) return relayed;
     return {
       success: false,
       apipa: apipaFor(mac),
       failure: {
         reason: 'no-server',
-        detail: 'aucun serveur DHCP n a repondu dans ce domaine de diffusion',
+        detail:
+          'aucun serveur DHCP n a repondu dans ce domaine de diffusion, et aucun relais n est configure',
       },
     };
   }
@@ -355,78 +492,13 @@ export function requestDhcpLease(
       serverIface.addresses.some((a) => inCidr(a.address, p.subnet)),
     );
     if (!pool) continue;
-
-    const reservation = pool.reservations.find((r) => r.mac === mac);
-    const { prefix } = parseCidr(pool.subnet);
-    const used = new Set<string>();
-    for (const node of topology.nodes) {
-      for (const iface of node.interfaces) {
-        for (const addr of iface.addresses) used.add(addr.address);
-      }
-    }
-    for (const lease of topology.dhcpLeases) {
-      if (lease.mac !== mac) used.add(lease.address);
-    }
-
-    if (reservation) {
-      return {
-        success: true,
-        offer: {
-          address: reservation.address,
-          prefix,
-          ...(pool.gateway === undefined ? {} : { gateway: pool.gateway }),
-          dnsServers: pool.dnsServers,
-          leaseSeconds: pool.leaseSeconds,
-          serverNodeId: server.id,
-          poolId: pool.id,
-        },
-      };
-    }
-
-    const existing = topology.dhcpLeases.find((l) => l.mac === mac && l.poolId === pool.id);
-    if (existing && !used.has(existing.address)) {
-      return {
-        success: true,
-        offer: {
-          address: existing.address,
-          prefix,
-          ...(pool.gateway === undefined ? {} : { gateway: pool.gateway }),
-          dnsServers: pool.dnsServers,
-          leaseSeconds: pool.leaseSeconds,
-          serverNodeId: server.id,
-          poolId: pool.id,
-        },
-      };
-    }
-
-    const start = ipToInt(pool.rangeStart);
-    const end = ipToInt(pool.rangeEnd);
-    for (let candidateInt = start; candidateInt <= end; candidateInt += 1) {
-      const address = intToIp(candidateInt);
-      if (used.has(address)) continue;
-      return {
-        success: true,
-        offer: {
-          address,
-          prefix,
-          ...(pool.gateway === undefined ? {} : { gateway: pool.gateway }),
-          dnsServers: pool.dnsServers,
-          leaseSeconds: pool.leaseSeconds,
-          serverNodeId: server.id,
-          poolId: pool.id,
-        },
-      };
-    }
-
-    return {
-      success: false,
-      apipa: apipaFor(mac),
-      failure: {
-        reason: 'pool-exhausted',
-        detail: `la plage ${pool.rangeStart}-${pool.rangeEnd} est saturee`,
-      },
-    };
+    const offer = allocate(topology, server, pool, mac);
+    if (offer) return offer;
   }
+
+  // Aucun serveur direct : on cherche un relais dans le domaine de diffusion.
+  const relayed = tryRelay(topology, index, flood, mac);
+  if (relayed) return relayed;
 
   return {
     success: false,

@@ -23,6 +23,13 @@ import {
 } from './services.ts';
 import { effectiveRoutes, type EffectiveRoute } from './routing.ts';
 import { networkOf } from './ip.ts';
+import {
+  computeSpanningTree,
+  describeSpanningTree,
+  type SpanningTreeResult,
+} from './spanning-tree.ts';
+import { applyDynamicRoutes, type ConvergenceResult } from './dynamic-routing.ts';
+import { applySlaac, ensureLinkLocal, reachIpv6, type Ipv6ReachResult } from './ipv6.ts';
 
 export interface PingReply {
   seq: number;
@@ -81,6 +88,49 @@ export class NetworkEngine {
 
   index(): TopologyIndex {
     return new TopologyIndex(this.state);
+  }
+
+  /**
+   * Ports neutralises par l arbre recouvrant.
+   * Recalcule a la demande : il ne peut donc jamais diverger de la topologie.
+   */
+  blockedPorts(): ReadonlySet<string> {
+    return computeSpanningTree(this.state).blockedInterfaceIds;
+  }
+
+  spanningTree(): SpanningTreeResult {
+    return computeSpanningTree(this.state);
+  }
+
+  spanningTreeReport(): string {
+    return describeSpanningTree(this.state);
+  }
+
+  /** Fait converger les tables dynamiques et les applique a la topologie. */
+  converge(): ConvergenceResult {
+    const result = applyDynamicRoutes(this.state, { blockedInterfaceIds: this.blockedPorts() });
+    this.emit(
+      'network.routing.converged',
+      { iterations: result.iterations, converged: result.converged },
+      `Routage dynamique : convergence en ${result.iterations} echange(s)`,
+    );
+    return result;
+  }
+
+  /** Prepare la double pile : adresses de lien-local puis auto-configuration. */
+  enableIpv6(): { linkLocal: number; slaac: number } {
+    const linkLocal = ensureLinkLocal(this.state);
+    const slaac = applySlaac(this.state, this.blockedPorts());
+    this.emit(
+      'network.ipv6.configured',
+      { linkLocal, slaac },
+      `IPv6 : ${slaac} adresse(s) auto-configurees`,
+    );
+    return { linkLocal, slaac };
+  }
+
+  reachV6(fromNodeId: string, address: string): Ipv6ReachResult {
+    return reachIpv6(this.state, fromNodeId, address, this.blockedPorts());
   }
 
   node(idOrHostname: string): NetworkNode | undefined {
@@ -423,7 +473,7 @@ export class NetworkEngine {
     if (!found) {
       return { success: false, failure: { reason: 'no-server', detail: 'interface introuvable' } };
     }
-    const result = requestDhcpLease(this.state, found.node.id, found.iface.id);
+    const result = requestDhcpLease(this.state, found.node.id, found.iface.id, this.blockedPorts());
     if (result.success && result.offer) {
       const offer = result.offer;
       found.iface.addresses = [{ address: offer.address, prefix: offer.prefix, source: 'dhcp' }];
@@ -438,10 +488,18 @@ export class NetworkEngine {
       });
       if (offer.gateway !== undefined) this.setDefaultGateway(found.node.id, offer.gateway);
       if (offer.dnsServers.length > 0) found.node.dnsClients = [...offer.dnsServers];
+      const relay = result.relayedBy;
       this.emit(
         'network.dhcp.lease',
-        { nodeId: found.node.id, address: offer.address, serverNodeId: offer.serverNodeId },
-        `${found.node.hostname} obtient ${offer.address} par DHCP`,
+        {
+          nodeId: found.node.id,
+          address: offer.address,
+          serverNodeId: offer.serverNodeId,
+          ...(relay === undefined ? {} : { relayedBy: relay.nodeId }),
+        },
+        relay === undefined
+          ? `${found.node.hostname} obtient ${offer.address} par DHCP`
+          : `${found.node.hostname} obtient ${offer.address} par DHCP, relaye par ${this.node(relay.nodeId)?.hostname ?? relay.nodeId}`,
       );
     } else if (result.apipa !== undefined) {
       found.iface.addresses = [{ address: result.apipa, prefix: 16, source: 'apipa' }];

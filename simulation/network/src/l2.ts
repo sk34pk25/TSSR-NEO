@@ -16,6 +16,7 @@ export interface L2Block {
 
 export type L2BlockReason =
   | 'port-disabled'
+  | 'spanning-tree-blocked'
   | 'node-powered-off'
   | 'link-disconnected'
   | 'no-link'
@@ -87,6 +88,8 @@ function switchPortVlan(
 export function floodDomain(
   index: TopologyIndex,
   from: { nodeId: string; interfaceId: string },
+  /** Ports neutralises par l arbre recouvrant, s il est actif. */
+  blockedInterfaceIds: ReadonlySet<string> = EMPTY_BLOCKED,
 ): L2FloodResult {
   const result: L2FloodResult = { endpoints: [], blocked: [], path: [], loopDetected: false };
   const source = index.interfaceRef(from.interfaceId);
@@ -105,6 +108,7 @@ export function floodDomain(
 
   const visited = new Set<string>();
   const queue: Hop[] = [{ nodeId: from.nodeId, interfaceId: egress.interfaceId, tag: egress.tag }];
+  const blocked = blockedInterfaceIds;
 
   while (queue.length > 0) {
     const hop = queue.shift() as Hop;
@@ -122,6 +126,15 @@ export function floodDomain(
       continue;
     }
     const target = peer.ref;
+    // Un port en blocage recoit le signal mais ne transmet aucune trame.
+    if (blocked.has(hop.interfaceId) || blocked.has(target.iface.id)) {
+      result.blocked.push({
+        nodeId: target.node.id,
+        interfaceId: target.iface.id,
+        reason: 'spanning-tree-blocked',
+      });
+      continue;
+    }
     const targetKey = `${target.iface.id}|${hop.tag ?? 'u'}`;
     if (visited.has(targetKey)) {
       result.loopDetected = true;
@@ -149,7 +162,7 @@ export function floodDomain(
     result.path.push({ nodeId: target.node.id, interfaceId: target.iface.id });
 
     if (index.isSwitching(target.node)) {
-      forwardThroughSwitch(target.node, target.iface, hop.tag, result, queue);
+      forwardThroughSwitch(target.node, target.iface, hop.tag, result, queue, blocked);
     } else {
       deliverToEndpoint(index, target.node, target.iface, hop.tag, result);
     }
@@ -158,12 +171,15 @@ export function floodDomain(
   return result;
 }
 
+const EMPTY_BLOCKED: ReadonlySet<string> = new Set<string>();
+
 function forwardThroughSwitch(
   node: NetworkNode,
   ingress: NetworkInterface,
   tag: number | null,
   result: L2FloodResult,
   queue: Hop[],
+  blocked: ReadonlySet<string>,
 ): void {
   const resolved = switchPortVlan(ingress, tag);
   if ('block' in resolved) {
@@ -188,6 +204,7 @@ function forwardThroughSwitch(
 
   for (const iface of node.interfaces) {
     if (iface.id === ingress.id || !iface.enabled) continue;
+    if (blocked.has(iface.id)) continue;
     if (iface.mode === 'routed') {
       // Interface virtuelle de VLAN (SVI) : elle recoit le trafic de son VLAN.
       if (iface.vlan === vlan) {
@@ -266,8 +283,9 @@ export function arpResolve(
   index: TopologyIndex,
   from: { nodeId: string; interfaceId: string },
   targetIp: string,
+  blockedInterfaceIds?: ReadonlySet<string>,
 ): ArpResult {
-  const flood = floodDomain(index, from);
+  const flood = floodDomain(index, from, blockedInterfaceIds);
   for (const endpoint of flood.endpoints) {
     const ref = index.interfaceRef(endpoint.interfaceId);
     if (!ref) continue;

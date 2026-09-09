@@ -32,6 +32,24 @@ export const zIpv4Address = z.object({
 
 export const zInterfaceMode = z.enum(['access', 'trunk', 'routed']);
 
+export const zIPv6 = z
+  .string()
+  .regex(/^[0-9a-fA-F:]{2,45}$/, 'adresse IPv6 invalide')
+  .refine((value) => value.includes(':'), 'adresse IPv6 invalide');
+
+export const zIpv6Address = z.object({
+  address: zIPv6,
+  prefix: z.number().int().min(0).max(128),
+  /** Origine : configuration manuelle, auto-configuration ou lien-local. */
+  source: z.enum(['static', 'slaac', 'dhcpv6', 'link-local']).default('static'),
+});
+
+/** Relais DHCP : equivalent de l adresse d assistance sur une interface routee. */
+export const zDhcpRelay = z.object({
+  helperAddresses: z.array(zIPv4).default([]),
+  enabled: z.boolean().default(true),
+});
+
 export const zNetworkInterface = z.object({
   id: zId,
   name: z.string().min(1).max(32),
@@ -49,9 +67,13 @@ export const zNetworkInterface = z.object({
   /** Sous-interface logique rattachee a un VLAN (router-on-a-stick). */
   vlan: zVlanId.optional(),
   parentInterfaceId: zId.optional(),
+  /** Adressage IPv6, en double pile avec IPv4. */
+  addressesV6: z.array(zIpv6Address).default([]),
+  /** Relais des diffusions DHCP vers un serveur situe dans un autre VLAN. */
+  dhcpRelay: zDhcpRelay.optional(),
 });
 
-export const zRouteOrigin = z.enum(['connected', 'static', 'default', 'dhcp']);
+export const zRouteOrigin = z.enum(['connected', 'static', 'default', 'dhcp', 'dynamic']);
 
 export const zRoute = z.object({
   destination: zCidrV4,
@@ -183,6 +205,26 @@ export const zNetworkNode = z.object({
     .optional(),
   systemId: zId.optional(),
   tags: z.array(z.string().max(32)).default([]),
+  /**
+   * Protocole d arbre recouvrant.
+   * Desactive par defaut : un scenario peut ainsi montrer d abord la tempete
+   * de diffusion, puis la resoudre en l activant.
+   */
+  spanningTree: z
+    .object({
+      enabled: z.boolean().default(false),
+      priority: z.number().int().min(0).max(65535).default(32768),
+    })
+    .optional(),
+  /** Routage dynamique : abstraction pedagogique a vecteur de distance. */
+  dynamicRouting: z
+    .object({
+      enabled: z.boolean().default(false),
+      protocol: z.literal('distance-vector').default('distance-vector'),
+    })
+    .optional(),
+  /** Resolveurs DNS IPv6 configures sur le client. */
+  dnsClientsV6: z.array(zIPv6).default([]),
 });
 
 export const zLinkEndpoint = z.object({ nodeId: zId, interfaceId: zId });
@@ -223,6 +265,8 @@ export const zNetworkTopology = z.object({
 
 export type NodeKind = z.infer<typeof zNodeKind>;
 export type Ipv4Address = z.infer<typeof zIpv4Address>;
+export type Ipv6Address = z.infer<typeof zIpv6Address>;
+export type DhcpRelay = z.infer<typeof zDhcpRelay>;
 export type NetworkInterface = z.infer<typeof zNetworkInterface>;
 export type Route = z.infer<typeof zRoute>;
 export type DhcpPool = z.infer<typeof zDhcpPool>;

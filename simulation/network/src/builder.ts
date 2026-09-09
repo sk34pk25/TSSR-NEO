@@ -37,6 +37,10 @@ export interface IfaceSpec {
   parent?: string;
   enabled?: boolean;
   speedMbps?: number;
+  /** Adresse IPv6 en notation prefixe, par exemple "2001:db8:10::1/64". */
+  ipv6?: string;
+  /** Adresses d assistance DHCP, pour relayer vers un autre VLAN. */
+  dhcpRelay?: string[];
 }
 
 export interface ServiceSpec {
@@ -67,6 +71,12 @@ export interface NodeSpec {
   /** Nombre de ports a generer sur un commutateur (Gi0/1..Gi0/n). */
   ports?: number;
   tags?: string[];
+  dnsV6?: string[];
+  /** Active l arbre recouvrant sur ce commutateur. */
+  spanningTree?: boolean;
+  stpPriority?: number;
+  /** Active le routage dynamique sur ce routeur. */
+  dynamicRouting?: boolean;
 }
 
 function buildInterface(nodeId: string, spec: IfaceSpec): NetworkInterface {
@@ -99,6 +109,19 @@ function buildInterface(nodeId: string, spec: IfaceSpec): NetworkInterface {
       : {
           parentInterfaceId: `${nodeId}-${spec.parent.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
         }),
+    addressesV6:
+      spec.ipv6 === undefined
+        ? []
+        : [
+            {
+              address: spec.ipv6.split('/')[0] as string,
+              prefix: Number(spec.ipv6.split('/')[1] ?? '64'),
+              source: 'static' as const,
+            },
+          ],
+    ...(spec.dhcpRelay === undefined
+      ? {}
+      : { dhcpRelay: { helperAddresses: spec.dhcpRelay, enabled: true } }),
   };
 }
 
@@ -157,7 +180,16 @@ export class TopologyBuilder {
       firewallRules: spec.firewallRules ?? [],
       natRules: [],
       dnsClients: spec.dns ?? [],
+      dnsClientsV6: spec.dnsV6 ?? [],
       tags: spec.tags ?? [],
+      ...(spec.spanningTree === undefined
+        ? {}
+        : { spanningTree: { enabled: spec.spanningTree, priority: spec.stpPriority ?? 32768 } }),
+      ...(spec.dynamicRouting === undefined
+        ? {}
+        : {
+            dynamicRouting: { enabled: spec.dynamicRouting, protocol: 'distance-vector' as const },
+          }),
     };
 
     if (spec.gateway !== undefined) {

@@ -8,3 +8,6 @@ export * from './services.ts';
 export * from './engine.ts';
 export * from './builder.ts';
 export * from './switch-cli.ts';
+export * from './spanning-tree.ts';
+export * from './dynamic-routing.ts';
+export * from './ipv6.ts';
