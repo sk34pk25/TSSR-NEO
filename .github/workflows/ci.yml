@@ -110,7 +110,7 @@ jobs:
     steps:
       - name: Deployer
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   fumee-production:
     name: Fumee sur la production
