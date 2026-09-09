@@ -16,18 +16,17 @@ budgets de performance respectes avec 56 % de marge.
 
 ---
 
-## Phase 2 — Publication _(en cours, bloquee sur une action humaine)_
+## Phase 2 — Publication _(terminee)_
 
-| Tache                                               | Dependance                 | Etat       |
-| --------------------------------------------------- | -------------------------- | ---------- |
-| Authentification GitHub                             | **action humaine requise** | bloquee    |
-| Depot distant et branche protegee                   | authentification           | en attente |
-| GitHub Pages via le workflow existant               | depot distant              | en attente |
-| Verification de la production et du mode hors ligne | publication                | en attente |
+| Tache                                  | Etat                                                |
+| -------------------------------------- | --------------------------------------------------- |
+| Depot distant `sk34pk25/TSSR-NEO`      | cree et pousse, historique complet                  |
+| Integration continue                   | verte des la premiere execution                     |
+| GitHub Pages                           | actif, source « GitHub Actions »                    |
+| Verification production et sous-chemin | douze routes, ressources, manifeste, service worker |
+| Precache et lancement hors ligne       | corrige et verifie sur l URL reelle                 |
 
-Risque : le chemin de base doit correspondre au sous-repertoire GitHub Pages.
-Attenuation : `TSSR_BASE_PATH` est deja pris en compte par la construction, le manifeste,
-le service worker et le routage par fragment.
+URL de production : https://sk34pk25.github.io/TSSR-NEO/
 
 ---
 

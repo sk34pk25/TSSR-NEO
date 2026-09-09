@@ -15,8 +15,10 @@
 Fondations construites et verifiees de bout en bout. L application est fonctionnelle en local :
 un parcours complet de diagnostic, de reparation et de documentation a ete execute dans un navigateur reel.
 
-Aucun deploiement n a encore ete effectue : le depot n a pas de remote configure et aucune
-authentification GitHub n est disponible dans cette session.
+**Production en ligne :** https://sk34pk25.github.io/TSSR-NEO/
+
+Le depot public est `sk34pk25/TSSR-NEO`. Le pipeline d integration continue passe toutes ses portes
+et publie automatiquement sur GitHub Pages depuis `main`.
 
 ---
 
@@ -138,15 +140,27 @@ Aucune bibliotheque 3D n est actuellement embarquee : voir `docs/adr/0002-choix-
 
 ## Etat du deploiement
 
-| Element              | Etat                                                      |
-| -------------------- | --------------------------------------------------------- |
-| Depot Git local      | initialise, plusieurs commits                             |
-| Remote GitHub        | **absent** — necessite une authentification humaine       |
-| GitHub Pages         | non configure                                             |
-| Integration continue | workflow present dans `.github/workflows`, jamais execute |
-| URL de production    | aucune                                                    |
+| Element              | Etat                                                                     |
+| -------------------- | ------------------------------------------------------------------------ |
+| Depot GitHub         | `sk34pk25/TSSR-NEO`, public (Pages exige un depot public en offre libre) |
+| Branche principale   | `main`, historique complet pousse, tag `core-0.1.0-baseline`             |
+| Integration continue | verte des la premiere execution, toutes portes passees                   |
+| GitHub Pages         | actif, source « GitHub Actions »                                         |
+| URL de production    | https://sk34pk25.github.io/TSSR-NEO/                                     |
+| Sous-chemin          | verifie : routes, ressources, manifeste et service worker                |
 
----
+### Verification sur l URL de production
+
+- les douze routes se rendent sans erreur sous le sous-chemin `/TSSR-NEO/` ;
+- le service worker s enregistre et s active, portee `/TSSR-NEO/` ;
+- les douze ressources livrees sont precachees des le **premier** chargement ;
+- toutes les ressources referencees par la coquille sont servables depuis le cache seul :
+  un lancement hors ligne aboutit ;
+- la version de cache est derivee du contenu et invalide automatiquement l ancienne.
+
+**Anomalie trouvee et corrigee sur production :** les ressources n etaient mises en cache qu au
+second chargement, ce qui aurait fait echouer un tout premier lancement hors ligne. Un greffon de
+construction injecte desormais la liste reelle des fichiers livres dans le service worker.
 
 ## Limitations reelles connues
 
