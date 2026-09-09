@@ -1,4 +1,5 @@
 import { xpForLevel } from '@tssr/progression';
+import { Meter } from '../components/Meter.tsx';
 import { navigate, useSession } from '../state/hooks.ts';
 
 /** Progression du joueur : competences, missions et badges pedagogiques. */
@@ -22,13 +23,11 @@ export function ProgressionView(): JSX.Element {
           </div>
           <span className="neo-tag neo-tag--accent">{progress.xp} XP</span>
         </div>
-        <div
-          className="meter"
-          style={{ marginTop: 'var(--neo-space-3)' }}
-          aria-label="Progression vers le niveau suivant"
-        >
-          <div className="meter__fill" style={{ width: `${ratio * 100}%` }} />
-        </div>
+        <Meter
+          value={ratio}
+          label="Progression vers le niveau suivant"
+          valueText={`niveau ${progress.level}, ${nextFloor - progress.xp} experience avant le niveau suivant`}
+        />
         <p className="neo-dim" style={{ fontSize: 'var(--neo-fs-xs)', marginTop: 6 }}>
           {nextFloor - progress.xp} XP avant le niveau {progress.level + 1}. Les niveaux et badges
           sont pedagogiques : TSSR NEO ne delivre aucune certification.
@@ -57,12 +56,11 @@ export function ProgressionView(): JSX.Element {
                 <tr key={competency.competencyId}>
                   <td>{competency.competencyId}</td>
                   <td>
-                    <div className="meter" style={{ width: 120 }}>
-                      <div
-                        className="meter__fill"
-                        style={{ width: `${competency.mastery * 100}%` }}
-                      />
-                    </div>
+                    <Meter
+                      value={competency.mastery}
+                      label={`Maitrise de ${competency.competencyId}`}
+                      width={120}
+                    />
                     <span className="neo-dim" style={{ fontSize: 'var(--neo-fs-xs)' }}>
                       {Math.round(competency.mastery * 100)} %
                     </span>

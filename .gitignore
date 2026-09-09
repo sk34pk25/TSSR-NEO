@@ -11,3 +11,9 @@ coverage/
 /reports/
 *.tsbuildinfo
 .npm-cache/
+
+# Rapports d assurance qualite de bout en bout
+/reports/
+/playwright-report/
+/test-results/
+/.npm-ci-cache/

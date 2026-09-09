@@ -15,6 +15,9 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  TSSR_PROD_URL: https://sk34pk25.github.io/TSSR-NEO/
+
 jobs:
   verifier:
     name: Verification
@@ -39,7 +42,7 @@ jobs:
       - name: Frontieres architecturales
         run: npm run check:arch
 
-      - name: Tests
+      - name: Tests unitaires, d integration et d interface
         run: npm run test
 
       - name: Construction de production
@@ -57,10 +60,45 @@ jobs:
         with:
           path: apps/web/dist
 
+  bout-en-bout:
+    name: Qualite de bout en bout
+    needs: verifier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installer les dependances
+        run: npm ci --cache .npm-ci-cache
+
+      - name: Installer le navigateur de test
+        run: npx playwright install --with-deps chromium
+
+      - name: Construction de production
+        run: npm run build
+
+      # Les captures visuelles dependent du systeme de rendu : elles sont
+      # verifiees localement et ne peuvent pas servir de porte ici sans
+      # produire de faux echecs. Fumee et accessibilite, elles, sont fiables.
+      - name: Fumee et accessibilite, toutes tailles et reglages
+        run: npm run test:e2e:ci
+
+      - name: Conserver le rapport
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-bout-en-bout
+          path: reports/
+          retention-days: 7
+
   publier:
     name: Publication sur GitHub Pages
     # La publication n a lieu que si toutes les portes de qualite sont passees.
-    needs: verifier
+    needs: [verifier, bout-en-bout]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
@@ -73,3 +111,27 @@ jobs:
       - name: Deployer
         id: deployment
         uses: actions/deploy-pages@v4
+
+  fumee-production:
+    name: Fumee sur la production
+    needs: publier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installer les dependances
+        run: npm ci --cache .npm-ci-cache
+
+      - name: Installer le navigateur de test
+        run: npx playwright install --with-deps chromium
+
+      # Verification sur l URL reellement publiee, pas sur une construction locale.
+      - name: Verifier l application publiee
+        run: npm run test:prod
+        env:
+          TSSR_TEST_URL: ${{ env.TSSR_PROD_URL }}

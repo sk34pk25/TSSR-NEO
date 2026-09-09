@@ -3,6 +3,7 @@ import type { Ticket } from '@tssr/contracts';
 import type { MissionRunner } from '@tssr/mission-engine';
 import type { Nova, NovaMessage } from '@tssr/nova';
 import type { SimulationWorld } from '@tssr/sim-world';
+import { Meter } from './Meter.tsx';
 import { useSimValue } from '../state/hooks.ts';
 
 interface ObjectivesPanelProps {
@@ -24,12 +25,11 @@ export function ObjectivesPanel({ runner, version }: ObjectivesPanelProps): JSX.
         </span>
       </div>
       <div className="neo-panel__body">
-        <div className="meter" aria-hidden="true">
-          <div
-            className="meter__fill"
-            style={{ width: `${(done / Math.max(1, objectives.length)) * 100}%` }}
-          />
-        </div>
+        <Meter
+          value={done / Math.max(1, objectives.length)}
+          label="Objectifs atteints"
+          valueText={`${done} objectif(s) sur ${objectives.length}`}
+        />
         <div style={{ marginTop: 'var(--neo-space-3)' }}>
           {objectives.map((objective) => (
             <div

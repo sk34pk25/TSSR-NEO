@@ -13,7 +13,11 @@ export default defineConfig({
       'knowledge/**/*.test.ts',
       'modules/**/*.test.ts',
       'tests/**/*.test.ts',
+      'tests/**/*.test.tsx',
     ],
+    // Les tests d interface ont besoin d un DOM ; les moteurs n en veulent pas.
+    environmentMatchGlobs: [['tests/ui/**', 'jsdom']],
+    setupFiles: ['tests/ui/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'json-summary'],

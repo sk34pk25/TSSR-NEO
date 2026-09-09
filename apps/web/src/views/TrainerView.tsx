@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ClassroomStore, analyseCohort, type Cohort, type CohortReport } from '@tssr/classroom';
 import { createProfile } from '@tssr/progression';
+import { Meter } from '../components/Meter.tsx';
 import { navigate, useSession } from '../state/hooks.ts';
 
 /**
@@ -246,12 +247,11 @@ export function TrainerView(): JSX.Element {
                   <td>{point.label}</td>
                   <td className="neo-muted">{point.reason}</td>
                   <td>
-                    <div className="meter" style={{ width: 110 }}>
-                      <div
-                        className="meter__fill"
-                        style={{ width: `${Math.min(100, point.severity * 200)}%` }}
-                      />
-                    </div>
+                    <Meter
+                      value={Math.min(1, point.severity * 2)}
+                      label={`Severite du point faible ${point.label}`}
+                      width={110}
+                    />
                   </td>
                 </tr>
               ))}

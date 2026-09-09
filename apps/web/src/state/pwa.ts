@@ -44,8 +44,15 @@ export async function registerServiceWorker(base: string): Promise<void> {
 
     // Un rechargement unique apres bascule evite la boucle de rechargement.
     let reloading = false;
+    /*
+     * Rechargement apres bascule de controle, uniquement s il y avait deja un
+     * service worker aux commandes. Lors de la toute premiere visite, la prise
+     * de controle initiale ne doit pas recharger la page sous les yeux de
+     * l utilisateur.
+     */
+    const avaitUnControleur = navigator.serviceWorker.controller !== null;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (reloading) return;
+      if (!avaitUnControleur || reloading) return;
       reloading = true;
       window.location.reload();
     });
