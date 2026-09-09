@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Logo } from './Logo.tsx';
+import { applyUpdate, onUpdateAvailable } from '../state/pwa.ts';
 import {
   navigate,
   useHotkey,
@@ -128,6 +129,9 @@ export function AppShell({ children, wide = false }: AppShellProps): JSX.Element
   const session = useSession();
   const route = useRoute();
   const [commandOpen, setCommandOpen] = useState(false);
+  const [updateReady, setUpdateReady] = useState(false);
+
+  useEffect(() => onUpdateAvailable(setUpdateReady), []);
 
   const openCommand = useCallback(() => setCommandOpen(true), []);
   useHotkey({ key: 'k', ctrlOrMeta: true }, openCommand);
@@ -225,6 +229,25 @@ export function AppShell({ children, wide = false }: AppShellProps): JSX.Element
           Reglages
         </a>
       </header>
+      {updateReady ? (
+        <div className="update-bar" role="status">
+          <span>Une nouvelle version de TSSR NEO est prete.</span>
+          <button
+            type="button"
+            className="neo-btn neo-btn--sm neo-btn--primary"
+            onClick={applyUpdate}
+          >
+            Recharger maintenant
+          </button>
+          <button
+            type="button"
+            className="neo-btn neo-btn--sm neo-btn--ghost"
+            onClick={() => setUpdateReady(false)}
+          >
+            Plus tard
+          </button>
+        </div>
+      ) : null}
       <main id="contenu" className="shell__main neo-scroll">
         <div className={wide ? 'shell__content shell__content--wide' : 'shell__content'}>
           {children}

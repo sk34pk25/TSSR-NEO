@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CORE_VERSION } from '../state/session.ts';
 import { useSession } from '../state/hooks.ts';
+import { recoverFromCorruptedCache, serviceWorkerStatus } from '../state/pwa.ts';
 
 declare const __TSSR_BUILD__: string;
 /**
@@ -10,21 +11,16 @@ declare const __TSSR_BUILD__: string;
 export function DiagnosticsView(): JSX.Element {
   const session = useSession();
   const [storage, setStorage] = useState<Record<string, number>>({});
-  const [swState, setSwState] = useState('non evalue');
+  const [sw, setSw] = useState<{
+    state: string;
+    scope: string | undefined;
+    caches: string[];
+    precached: number;
+  }>({ state: 'non evalue', scope: undefined, caches: [], precached: 0 });
 
   useEffect(() => {
     void session.storageReport().then((report) => setStorage(report.byStore));
-    if ('serviceWorker' in navigator) {
-      void navigator.serviceWorker.getRegistration().then((registration) => {
-        setSwState(
-          registration === undefined
-            ? 'non enregistre'
-            : (registration.active?.state ?? 'en cours'),
-        );
-      });
-    } else {
-      setSwState('non supporte par ce navigateur');
-    }
+    void serviceWorkerStatus().then(setSw);
   }, [session]);
 
   const capabilities = session.capabilities;
@@ -89,7 +85,13 @@ export function DiagnosticsView(): JSX.Element {
           <dt>Support</dt>
           <dd>{session.storageMode}</dd>
           <dt>Service worker</dt>
-          <dd>{swState}</dd>
+          <dd>{sw.state}</dd>
+          <dt>Portee du service worker</dt>
+          <dd>{sw.scope ?? 'aucune'}</dd>
+          <dt>Ressources en cache</dt>
+          <dd>{sw.precached}</dd>
+          <dt>Versions de cache</dt>
+          <dd>{sw.caches.join(', ') || 'aucune'}</dd>
           <dt>Derniere sauvegarde</dt>
           <dd>
             {session.lastSavedAt === undefined
@@ -117,6 +119,20 @@ export function DiagnosticsView(): JSX.Element {
             ))}
           </tbody>
         </table>
+
+        <div className="neo-row" style={{ marginTop: 'var(--neo-space-4)' }}>
+          <button
+            type="button"
+            className="neo-btn neo-btn--sm neo-btn--danger"
+            onClick={() => void recoverFromCorruptedCache()}
+          >
+            Vider le cache et recharger
+          </button>
+          <span className="neo-dim" style={{ fontSize: 'var(--neo-fs-xs)' }}>
+            Recuperation apres cache corrompu. La progression est stockee separement et n est pas
+            affectee.
+          </span>
+        </div>
       </section>
 
       <section className="neo-card">

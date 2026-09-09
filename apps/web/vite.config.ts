@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { workspaceAliases } from '../../config/aliases.ts';
+import { serviceWorkerPrecache } from './plugins/sw-precache.ts';
 
 // Chemin de base : compatible avec un sous-repertoire GitHub Pages
 // (defini par la variable TSSR_BASE_PATH lors de la construction).
@@ -8,7 +9,7 @@ const base = process.env.TSSR_BASE_PATH ?? '/';
 
 export default defineConfig({
   base,
-  plugins: [react()],
+  plugins: [react(), serviceWorkerPrecache({ base })],
   resolve: { alias: workspaceAliases },
   define: {
     __TSSR_BASE_PATH__: JSON.stringify(base),
