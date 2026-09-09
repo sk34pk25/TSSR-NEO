@@ -24,11 +24,22 @@ Une etape en echec bloque la publication.
 ## Prerequis humain
 
 La creation du depot distant et l activation de GitHub Pages necessitent une authentification
-GitHub. C est la seule etape qui ne peut pas etre automatisee depuis cette session.
+GitHub. C est la seule etape qui ne peut pas etre automatisee.
+
+Sur la machine actuelle, l interface en ligne de commande GitHub n est pas installee.
+Deux chemins possibles :
 
 ```bash
+# Option 1 : installer et utiliser l interface GitHub
+brew install gh
 gh auth login
 gh repo create TSSR-NEO --private --source . --push
+```
+
+```bash
+# Option 2 : depot cree manuellement sur github.com, puis
+git remote add origin https://github.com/<compte>/TSSR-NEO.git
+git push -u origin main
 ```
 
 Puis, dans les reglages du depot, activer Pages avec la source « GitHub Actions ».

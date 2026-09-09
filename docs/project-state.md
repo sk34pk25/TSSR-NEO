@@ -93,6 +93,23 @@ mission a solutions multiples, deux variantes parametriques, quatre competences,
 Non couvert par des tests automatises a ce jour : composants React, service worker, accessibilite,
 captures visuelles. Voir la feuille de route.
 
+### Verification manuelle en navigateur
+
+Effectuee sur le serveur de developpement, dans un navigateur reel :
+
+- parcours complet de la mission de demonstration, du diagnostic a la documentation du ticket,
+  avec six objectifs sur six valides et un debrief multidimensionnel ;
+- le terminal refuse bien une commande non implementee et affiche l adressage reel ;
+- la console d equipement revele l ecart de VLAN et le corrige sur la topologie ;
+- les douze ecrans se rendent sans erreur, y compris les replis honnetes lorsqu aucune
+  infrastructure n est chargee ;
+- aucun debordement horizontal en disposition etroite, la mise en page passe en une colonne.
+
+**Non verifiable dans cet environnement :** l enregistrement du service worker echoue dans le
+navigateur integre de l outil de developpement, qui bloque la recuperation du script. Le fichier est
+pourtant servi correctement en `text/javascript`. Le fonctionnement hors ligne doit donc etre
+confirme sur un navigateur classique ou apres publication.
+
 ---
 
 ## Performance
