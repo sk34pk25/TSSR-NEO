@@ -1,0 +1,35 @@
+{
+  "name": "@tssr/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173"
+  },
+  "dependencies": {
+    "@tssr/contracts": "*",
+    "@tssr/events": "*",
+    "@tssr/evaluation": "*",
+    "@tssr/knowledge": "*",
+    "@tssr/mission-engine": "*",
+    "@tssr/nova": "*",
+    "@tssr/progression": "*",
+    "@tssr/rendering": "*",
+    "@tssr/sim-hardware": "*",
+    "@tssr/sim-itsm": "*",
+    "@tssr/sim-monitoring": "*",
+    "@tssr/sim-network": "*",
+    "@tssr/sim-systems": "*",
+    "@tssr/storage": "*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "vite": "^5.4.10"
+  }
+}

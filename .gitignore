@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.vite/
+*.local
+.DS_Store
+.env
+.env.*
+!.env.example
+/apps/web/dev-dist/
+/reports/
+*.tsbuildinfo
+.npm-cache/
