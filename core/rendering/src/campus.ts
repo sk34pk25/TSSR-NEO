@@ -1117,6 +1117,21 @@ export function zoneById(id: string): CampusZone | undefined {
   return CAMPUS_ZONES.find((zone) => zone.id === id);
 }
 
+
+/**
+ * Zone occupee par un point donne, ou `undefined` dans le couloir.
+ *
+ * Sert a savoir ou se trouve reellement le visiteur, pour adapter ce qu il
+ * entend. Le calcul est purement geometrique : le rendu n a pas a le connaitre.
+ */
+export function zoneAt(position: Vec3): CampusZone | undefined {
+  return CAMPUS_ZONES.find(
+    (zone) =>
+      Math.abs(position[0] - zone.center[0]) <= zone.size[0] / 2 &&
+      Math.abs(position[2] - zone.center[2]) <= zone.size[1] / 2,
+  );
+}
+
 /**
  * Point d entree dans une piece : juste au-dela du seuil, tourne vers le fond.
  *

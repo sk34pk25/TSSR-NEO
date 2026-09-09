@@ -60,7 +60,7 @@ DSL d assertions : 28 types de verifications executables, composables par `all` 
 | `rendering`      | detection de capacites, profils de qualite, vue reseau, scene 3D et campus                                         |
 | `permissions`    | politique serialisable, refus prioritaire, portee par proprietaire et par groupe, prise de controle a usage unique |
 | `sync`           | file persistante, idempotence, tentatives espacees, fusion de conflit sans perte, fournisseur HTTP reel            |
-| `audio`          | quatre bus sur Web Audio, sons synthetises, ambiance, degradation propre                                           |
+| `audio`          | quatre bus sur Web Audio, sons synthetises, six lits d ambiance transitables, degradation propre                   |
 | `classroom`      | cohorte locale, analyses de competences et de missions, points faibles classes                                     |
 | `rendering`      | abstraction Scene3D, implementation Three.js chargee paresseusement, campus, materiel, controleur de camera        |
 | `rendering` (V2) | bibliotheque de materiaux, kit modulaire instancie, compaction des boites de meme materiau                        |
@@ -94,7 +94,7 @@ mission a solutions multiples, deux variantes parametriques, quatre competences,
 
 ## Tests
 
-**161 tests unitaires et d interface**, plus les verifications de bout en bout
+**164 tests unitaires et d interface**, plus les verifications de bout en bout
 sur cinq configurations, tous au vert.
 
 | Fichier                              | Portee                                                                          |
@@ -208,8 +208,9 @@ construction injecte desormais la liste reelle des fichiers livres dans le servi
    multilingues, l interface est uniquement en francais.
 10. **Aucun vrai cours pedagogique.** Le NEO Training Lab reste le seul module
     visible ; il valide le Core, il ne l enseigne pas.
-11. **Le campus n a ni personnages, ni sons, ni animations.** Le moteur audio
-    existe et fonctionne, mais le campus ne l appelle pas encore.
+11. **Le campus n a ni personnages ni animations.** Le son, lui, suit desormais
+    la piece ou se trouve le visiteur ; il reste inactif tant que l utilisateur
+    ne l a pas explicitement autorise, comme l exige tout navigateur.
 12. **L interaction sur place couvre deux gestes seulement** : utiliser un poste
     et consulter une baie. Examiner un cable et parler a quelqu un n existent pas.
 13. **Le mobilier est entierement procedural**, construit a partir de
@@ -225,8 +226,7 @@ Aucun document source prive n a ete fourni, utilise ou publie.
 
 Poursuivre la phase 6 bis, dans cet ordre :
 
-1. **couche de vie** : presence humaine, mouvement, sons par zone, en branchant
-   le moteur audio existant, qui fonctionne mais n est pas appele par le campus ;
+1. **couche de vie** : presence humaine et mouvement, le son etant deja branche ;
 2. **elargir l interaction sur place** : examiner un cable, manipuler le
    brassage, dialoguer avec un personnage ;
 3. **conduire une intervention entiere depuis le campus**, la piece courante

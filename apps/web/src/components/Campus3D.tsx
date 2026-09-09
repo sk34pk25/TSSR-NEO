@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { AmbienceName } from '@tssr/audio';
 import { CampusInteraction } from './CampusInteraction.tsx';
 import {
   CAMPUS_SPAWN,
@@ -8,6 +9,7 @@ import {
   buildCampusScene,
   inputFromKeys,
   interactionLaPlusProche,
+  zoneAt,
   zoneById,
   zoneEntryPoint,
   zoneViewpoint,
@@ -25,6 +27,8 @@ interface Campus3DProps {
   reduceMotion: boolean;
   /** Les mesures de rendu ne s affichent qu en mode developpeur. */
   developerMode?: boolean;
+  /** Appele quand le visiteur change de piece, pour adapter le lit sonore. */
+  onAmbiance?: (ambience: AmbienceName) => void;
   highlightZoneIds?: readonly string[];
   onEnterZone: (zoneId: string) => void;
 }
@@ -41,6 +45,22 @@ const MODES: { mode: CameraMode; label: string; hint: string }[] = [
   { mode: 'first-person', label: 'Sur place', hint: 'a hauteur des yeux, deplacement libre' },
   { mode: 'tactical', label: 'Plan du site', hint: 'vue d ensemble, plafonds escamotes' },
 ];
+
+/**
+ * Ce qu on entend selon l endroit ou l on se trouve.
+ *
+ * Le moteur audio existait et fonctionnait, mais le campus ne l appelait pas :
+ * on traversait un batiment entierement muet. La correspondance vit ici, dans
+ * l application, parce qu elle relie deux domaines qui n ont pas a se connaitre.
+ */
+const AMBIANCE_SONORE: Record<string, AmbienceName> = {
+  accueil: 'hall',
+  bureau: 'bureau',
+  etude: 'calme',
+  detente: 'bureau',
+  technique: 'technique',
+  atelier: 'atelier',
+};
 
 interface Etiquette {
   id: string;
@@ -127,6 +147,7 @@ export function Campus3D({
   profile,
   reduceMotion,
   developerMode = false,
+  onAmbiance = () => undefined,
   highlightZoneIds,
   onEnterZone,
 }: Campus3DProps): JSX.Element {
@@ -148,6 +169,14 @@ export function Campus3D({
   const [aPortee, setAPortee] = useState<InteractiveSpec | undefined>(undefined);
   const aPorteeRef = useRef<InteractiveSpec | undefined>(undefined);
   const [ouvert, setOuvert] = useState<InteractiveSpec | undefined>(undefined);
+  const zoneOccupeeRef = useRef<string | undefined>(undefined);
+  /*
+   * La boucle de rendu ne doit jamais redemarrer parce qu un rappel a change
+   * d identite : elle detruirait et recreerait l animation a chaque rendu.
+   */
+  const onAmbianceRef = useRef(onAmbiance);
+  onAmbianceRef.current = onAmbiance;
+  const [zoneOccupee, setZoneOccupee] = useState<string | undefined>(undefined);
   const ouvertRef = useRef(false);
   const [stats, setStats] = useState<RenderStats>({
     fps: 0,
@@ -240,6 +269,18 @@ export function Campus3D({
             cible?.interactive?.kind !== aPorteeRef.current?.kind) {
           aPorteeRef.current = cible?.interactive;
           setAPortee(cible?.interactive);
+        }
+
+        // Le lieu ou l on se trouve decide de ce qu on entend.
+        const zoneCourante = zoneAt(camera.position);
+        if (zoneCourante?.id !== zoneOccupeeRef.current) {
+          zoneOccupeeRef.current = zoneCourante?.id;
+          setZoneOccupee(zoneCourante?.name);
+          onAmbianceRef.current(
+            zoneCourante === undefined
+              ? 'neutre'
+              : (AMBIANCE_SONORE[zoneCourante.ambiance] ?? 'neutre'),
+          );
         }
         setStats(renderer.stats());
       }
@@ -467,6 +508,14 @@ export function Campus3D({
                   </button>
                 ))}
               </div>
+              {/*
+                * Ou l on se trouve, en toutes lettres. C est le repere qui
+                * manquait : le campus ne se lisait qu a travers des etiquettes
+                * flottantes qui se chevauchaient au loin.
+                */}
+              <span className="campus3d__lieu">
+                {zoneOccupee ?? 'Couloir de distribution'}
+              </span>
               {developerMode ? (
                 <span className="neo-dim campus3d__stats">
                   {stats.fps} img/s · {stats.drawCalls} appels ·{' '}

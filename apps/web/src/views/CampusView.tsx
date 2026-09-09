@@ -32,6 +32,7 @@ export function CampusView(): JSX.Element {
           profile={session.profile}
           reduceMotion={session.progress.preferences.accessibility.reduceMotion}
           developerMode={session.progress.preferences.developerMode}
+          onAmbiance={(ambience) => session.setCampusAmbience(ambience)}
           highlightZoneIds={session.runner === undefined ? [] : ['training-lab']}
           onEnterZone={(zoneId) => {
             const zone = zoneById(zoneId);

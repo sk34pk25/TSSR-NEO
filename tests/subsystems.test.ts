@@ -16,7 +16,7 @@ import {
   makeOperation,
   mergeProgress,
 } from '@tssr/sync';
-import { AudioEngine, DEFAULT_LEVELS, EVENT_CUES } from '@tssr/audio';
+import { AMBIENCES, AudioEngine, DEFAULT_LEVELS, EVENT_CUES } from '@tssr/audio';
 import { MemoryStorageAdapter } from '@tssr/storage';
 import { ClassroomStore, analyseCohort, createCohort } from '@tssr/classroom';
 import { missionPosteSansReseau, trainingLabCompetencies } from '@tssr/module-training-lab';
@@ -282,6 +282,81 @@ describe('audio', () => {
 
     engine.setMuted(false);
     expect(gains[0]?.value).toBe(0.5);
+    await engine.dispose();
+  });
+
+  it('adapte le lit sonore au lieu, sans recreer la source', async () => {
+    /*
+     * Contexte minimal : on ne verifie pas ce qui est entendu, mais que le
+     * moteur change bien de caractere au lieu de couper puis relancer.
+     */
+    const filtres: { frequency: { value: number; setTargetAtTime: (v: number) => void } }[] = [];
+    const gains: { gain: { value: number; setTargetAtTime: (v: number) => void } }[] = [];
+    let sourcesDemarrees = 0;
+    const context = {
+      state: 'running',
+      currentTime: 0,
+      sampleRate: 8000,
+      destination: {},
+      createGain: () => {
+        const node = {
+          gain: {
+            value: 1,
+            setTargetAtTime(valeur: number) {
+              node.gain.value = valeur;
+            },
+          },
+          connect: () => undefined,
+        };
+        gains.push(node);
+        return node;
+      },
+      createBuffer: (_c: number, longueur: number) => ({
+        getChannelData: () => new Float32Array(longueur),
+      }),
+      createBufferSource: () => ({
+        buffer: undefined,
+        loop: false,
+        connect: () => undefined,
+        start: () => {
+          sourcesDemarrees += 1;
+        },
+        stop: () => undefined,
+      }),
+      createBiquadFilter: () => {
+        const node = {
+          type: 'lowpass',
+          frequency: {
+            value: 0,
+            setTargetAtTime(valeur: number) {
+              node.frequency.value = valeur;
+            },
+          },
+          connect: () => undefined,
+        };
+        filtres.push(node);
+        return node;
+      },
+      resume: async () => undefined,
+      close: async () => undefined,
+    };
+    const engine = new AudioEngine({
+      createContext: () => context as unknown as AudioContext,
+    });
+    expect(await engine.resume()).toBe('actif');
+
+    expect(engine.startAmbience('hall')).toBe(true);
+    expect(sourcesDemarrees).toBe(1);
+    expect(engine.currentAmbience()).toBe('hall');
+    expect(filtres[0]?.frequency.value).toBe(AMBIENCES.hall.cutoff);
+
+    // Passer dans un local technique : plus fort et plus aigu, meme source.
+    engine.setAmbience('technique');
+    expect(sourcesDemarrees).toBe(1);
+    expect(engine.currentAmbience()).toBe('technique');
+    expect(filtres[0]?.frequency.value).toBe(AMBIENCES.technique.cutoff);
+    expect(AMBIENCES.technique.gain).toBeGreaterThan(AMBIENCES.calme.gain);
+
     await engine.dispose();
   });
 

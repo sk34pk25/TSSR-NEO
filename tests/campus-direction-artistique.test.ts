@@ -5,9 +5,11 @@ import {
   compacter,
   interactionLaPlusProche,
   MATERIALS,
+  zoneAt,
   zoneById,
   zoneEntryPoint,
   zoneViewpoint,
+  type Ambiance,
   type MaterialSpec,
   type Scene3DNode,
   type Vec3,
@@ -297,5 +299,24 @@ describe('interaction contextuelle', () => {
       const regardZ = Math.cos(entree.yaw);
       expect(Math.sign(regardZ), zone.id).toBe(-versCouloir);
     }
+  });
+});
+
+describe('reperage sonore et spatial', () => {
+  it('sait dans quelle piece se trouve un point donne', () => {
+    for (const zone of CAMPUS_ZONES) {
+      expect(zoneAt(zone.center)?.id, zone.id).toBe(zone.id);
+    }
+    // Le couloir n appartient a aucune piece : on n y entend rien de particulier.
+    expect(zoneAt([0, 1.65, 0])).toBeUndefined();
+  });
+
+  it('associe une ambiance a chaque piece', () => {
+    const connues: Ambiance[] = ['accueil', 'bureau', 'technique', 'atelier', 'detente', 'etude'];
+    for (const zone of CAMPUS_ZONES) {
+      expect(connues, zone.id).toContain(zone.ambiance);
+    }
+    // Plusieurs ambiances differentes, sinon tout le batiment sonnerait pareil.
+    expect(new Set(CAMPUS_ZONES.map((zone) => zone.ambiance)).size).toBeGreaterThanOrEqual(4);
   });
 });

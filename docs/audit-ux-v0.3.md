@@ -310,7 +310,9 @@ captures : elle dit seulement ce qui a ete traite, et par quel moyen.
 | Transition de camera qui n aboutissait jamais        | corrige | une transition ne redemarre plus a chaque image                 |
 | Contraste insuffisant sur le ton le plus discret     | corrige | valeur relevee a 5,2 pour 1                                     |
 | Aucune interaction contextuelle                      | corrige | approche et touche E : poste utilisable, baie consultable       |
-| Aucun personnage, aucun son, aucune animation        | ouvert  | couche de vie et audio par zone, non traitees a ce jour         |
+| Aucun son dans le campus                             | corrige | lit sonore par zone, transition progressive, apres accord       |
+| Aucun personnage, aucune animation                   | ouvert  | couche de vie : presence humaine et mouvement                   |
+| Aucun repere spatial sans etiquette                  | corrige | la piece ou l on se tient est nommee en permanence              |
 | Entrer dans une zone quitte systematiquement la 3D   | corrige | « S y rendre » depose sur place ; l outil s ouvre par-dessus    |
 
 Les criteres visuels minimaux sont desormais verifies automatiquement par

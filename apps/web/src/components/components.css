@@ -505,6 +505,16 @@
   font-family: var(--neo-font-mono);
   font-size: var(--neo-fs-xs);
 }
+/* Repere permanent : la piece ou l on se tient, en clair. */
+.campus3d__lieu {
+  margin-left: auto;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--neo-bg-2);
+  color: var(--neo-text-muted);
+  font-size: var(--neo-fs-xs);
+  letter-spacing: 0.04em;
+}
 .campus3d__help {
   position: absolute;
   left: 50%;
