@@ -58,6 +58,14 @@ export interface Scene3DNode {
 export interface LightSpec {
   kind: 'hemisphere' | 'directional' | 'point';
   color: Vec3;
+  /**
+   * Couleur renvoyee par le sol, pour une lumiere hemispherique.
+   *
+   * C est elle qui eclaire toutes les faces tournees vers le bas. Sa valeur
+   * etait figee a un gris quasi noir, ce qui rendait chaque plafond noir quelle
+   * que soit la couleur qu on lui donnait.
+   */
+  groundColor?: Vec3;
   intensity: number;
   position?: Vec3;
   direction?: Vec3;

@@ -38,6 +38,80 @@ const MODES: { mode: CameraMode; label: string; hint: string }[] = [
   { mode: 'tactical', label: 'Plan du site', hint: 'vue d ensemble, plafonds escamotes' },
 ];
 
+interface Etiquette {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  targetId?: string;
+}
+
+/** Distance au-dela de laquelle une etiquette n aide plus, elle encombre. */
+const PORTEE_ETIQUETTE = 26;
+/** Ecart minimal entre deux etiquettes, en pixels. */
+const ECART_MINIMAL = 34;
+
+/**
+ * Etiquettes reellement lisibles.
+ *
+ * Toutes les ancres du campus etaient projetees a chaque image : au bout du
+ * couloir, sept etiquettes se superposaient au centre exact du champ de vision
+ * en un amas illisible. On ne garde desormais que les zones proches, et on
+ * ecarte celles qui se chevauchent, la plus proche gagnant.
+ */
+function etiquettesVisibles(
+  renderer: Renderer3D,
+  scene: Scene3D,
+  camera: { position: readonly [number, number, number] },
+  canvas: HTMLCanvasElement | null,
+  mode: CameraMode,
+): Etiquette[] {
+  const cadre = canvas?.getBoundingClientRect();
+  const largeur = cadre?.width ?? 0;
+  const hauteur = cadre?.height ?? 0;
+  // Le plan d ensemble sert justement a tout nommer : la portee y est levee.
+  const portee = mode === 'tactical' ? Number.POSITIVE_INFINITY : PORTEE_ETIQUETTE;
+
+  const candidats = scene.anchors
+    .map((anchor) => {
+      const dx = anchor.position[0] - camera.position[0];
+      const dz = anchor.position[2] - camera.position[2];
+      return {
+        anchor,
+        point: renderer.project(anchor.position),
+        distance: Math.hypot(dx, dz),
+      };
+    })
+    .filter(
+      (entree) =>
+        entree.point.visible &&
+        entree.distance <= portee &&
+        entree.point.x > 70 &&
+        entree.point.x < largeur - 70 &&
+        entree.point.y > 10 &&
+        entree.point.y < hauteur - 10,
+    )
+    .sort((a, b) => a.distance - b.distance);
+
+  const retenues: Etiquette[] = [];
+  for (const candidat of candidats) {
+    const x = Math.round(candidat.point.x);
+    const y = Math.round(candidat.point.y);
+    const chevauche = retenues.some(
+      (autre) => Math.abs(autre.x - x) < 150 && Math.abs(autre.y - y) < ECART_MINIMAL,
+    );
+    if (chevauche) continue;
+    retenues.push({
+      id: candidat.anchor.id,
+      label: candidat.anchor.label,
+      x,
+      y,
+      ...(candidat.anchor.targetId === undefined ? {} : { targetId: candidat.anchor.targetId }),
+    });
+  }
+  return retenues;
+}
+
 /**
  * Campus NEO Systems en trois dimensions.
  *
@@ -65,15 +139,14 @@ export function Campus3D({
   // Le premier contact doit etre un lieu, pas un plan.
   const [mode, setMode] = useState<CameraMode>('first-person');
   const [focused, setFocused] = useState<PickHit | undefined>(undefined);
+  const modeRef = useRef<CameraMode>('first-person');
   const [stats, setStats] = useState<RenderStats>({
     fps: 0,
     frameMs: 0,
     drawCalls: 0,
     triangles: 0,
   });
-  const [labels, setLabels] = useState<
-    { id: string; label: string; x: number; y: number; targetId?: string }[]
-  >([]);
+  const [labels, setLabels] = useState<Etiquette[]>([]);
 
   const scene: Scene3D = useMemo(
     () => buildCampusScene(highlightZoneIds === undefined ? {} : { highlightZoneIds }),
@@ -135,31 +208,7 @@ export function Campus3D({
         const camera = controllerRef.current.update(input, now - last);
         renderer.setCamera(reduceMotion ? { ...camera, transitionMs: 0 } : camera);
 
-        /*
-         * Une etiquette dont l ancre sort du cadre etait tout de meme dessinee,
-         * et se retrouvait tronquee contre le bord de la vue.
-         */
-        const cadre = canvasRef.current?.getBoundingClientRect();
-        const largeur = cadre?.width ?? 0;
-        const hauteur = cadre?.height ?? 0;
-        const projected = scene.anchors
-          .map((anchor) => ({ anchor, point: renderer.project(anchor.position) }))
-          .filter(
-            (entry) =>
-              entry.point.visible &&
-              entry.point.x > 60 &&
-              entry.point.x < largeur - 60 &&
-              entry.point.y > 8 &&
-              entry.point.y < hauteur - 8,
-          )
-          .map((entry) => ({
-            id: entry.anchor.id,
-            label: entry.anchor.label,
-            x: Math.round(entry.point.x),
-            y: Math.round(entry.point.y),
-            ...(entry.anchor.targetId === undefined ? {} : { targetId: entry.anchor.targetId }),
-          }));
-        setLabels(projected);
+        setLabels(etiquettesVisibles(renderer, scene, camera, canvasRef.current, modeRef.current));
         setStats(renderer.stats());
       }
       last = now;
@@ -206,6 +255,7 @@ export function Campus3D({
 
   const changeMode = useCallback((next: CameraMode) => {
     controllerRef.current.setMode(next);
+    modeRef.current = next;
     setMode(next);
   }, []);
 
@@ -279,6 +329,7 @@ export function Campus3D({
             const zone = zoneById(targetId);
             if (zone) {
               controllerRef.current.inspect(zoneViewpoint(zone));
+              modeRef.current = 'inspection';
               setMode('inspection');
             }
           }}
@@ -366,6 +417,7 @@ export function Campus3D({
                 onClick={() => enterZone(zone.id)}
                 onFocus={() => {
                   controllerRef.current.inspect(zoneViewpoint(zone));
+                  modeRef.current = 'inspection';
                   setMode('inspection');
                 }}
               >

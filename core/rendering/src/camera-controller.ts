@@ -39,7 +39,8 @@ const PITCH_LIMIT = Math.PI / 2 - 0.08;
 const FOV: Record<CameraMode, number> = {
   'first-person': 72,
   'third-person': 62,
-  inspection: 45,
+  // Champ large : on inspecte une piece entiere, pas un objet isole.
+  inspection: 66,
   tactical: 55,
 };
 

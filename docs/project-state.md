@@ -3,8 +3,8 @@
 > Ce document est la memoire du projet. Il ne contient **aucun secret**.
 > Il doit toujours etre verifie contre le depot reel avant d etre cru sur parole.
 
-**Derniere mise a jour :** 2026-09-09 (phase Core avancee)
-**Version du Core :** 0.2.0
+**Derniere mise a jour :** 2026-09-09 (refonte de l experience, V0.3)
+**Version du Core :** 0.3.0
 **Version des contrats :** 1
 **Version de l API Core exposee aux modules :** 1.0.0
 
@@ -63,6 +63,7 @@ DSL d assertions : 28 types de verifications executables, composables par `all` 
 | `audio`          | quatre bus sur Web Audio, sons synthetises, ambiance, degradation propre                                           |
 | `classroom`      | cohorte locale, analyses de competences et de missions, points faibles classes                                     |
 | `rendering`      | abstraction Scene3D, implementation Three.js chargee paresseusement, campus, materiel, controleur de camera        |
+| `rendering` (V2) | bibliotheque de materiaux, kit modulaire instancie, compaction des boites de meme materiau                        |
 
 ### Savoir
 
@@ -74,9 +75,15 @@ fiches du module, presence decroissante avec l experience, observations proactiv
 
 ### Application
 
-Accueil, campus, mission, laboratoire libre, connaissances, revision, progression, supervision,
-tickets, cockpit formateur, reglages, diagnostics. Centre de commande `Ctrl+K`. PWA installable avec
-service worker a cache versionne. Frontiere d erreur : aucun ecran blanc possible.
+Navigation ramenee a **quatre lieux** : Accueil, Apprendre, Laboratoire, Campus. Une cinquieme
+entree apparait le temps d une mission, parce qu elle a alors un contenu reel. « Apprendre »
+regroupe le catalogue, les fiches, les revisions et le releve de progression.
+
+Prise en main en quatre etapes au premier passage, rejouable depuis les reglages. Accueil qui
+propose une seule suite, deduite de l etat reel du profil et du deroulement en cours. Ecrans de
+supervision, tickets, cockpit formateur, reglages, diagnostics et « A propos » atteignables sans
+occuper la barre. Centre de commande `Ctrl+K`. Mode developpeur pour les mesures de rendu.
+PWA installable avec service worker a cache versionne. Frontiere d erreur : aucun ecran blanc.
 
 ### Module de demonstration
 
@@ -87,7 +94,7 @@ mission a solutions multiples, deux variantes parametriques, quatre competences,
 
 ## Tests
 
-**143 tests unitaires et d interface**, plus **76 verifications de bout en bout**
+**157 tests unitaires et d interface**, plus les verifications de bout en bout
 sur cinq configurations, tous au vert.
 
 | Fichier                              | Portee                                                                          |
@@ -98,6 +105,7 @@ sur cinq configurations, tous au vert.
 | `tests/mission-training-lab.test.ts` | contrats, variantes, deroulement, solutions alternatives, echec, score          |
 | `tests/core-services.test.ts`        | sauvegarde, reprise, progression, connaissances, NOVA                           |
 | `tests/hardware-3d.test.ts`          | campus, collisions, materiel derive de la simulation, brassage                  |
+| `tests/campus-direction-artistique.test.ts` | criteres visuels minimaux du campus et cout de rendu                    |
 | `tests/subsystems.test.ts`           | permissions, synchronisation, audio, cockpit formateur                          |
 | `tests/ui/components.test.tsx`       | panneaux React et accessibilite en environnement DOM                            |
 | `tests/e2e/parcours.spec.ts`         | fumee, parcours complet, accessibilite, captures visuelles                      |
@@ -200,6 +208,14 @@ construction injecte desormais la liste reelle des fichiers livres dans le servi
    multilingues, l interface est uniquement en francais.
 10. **Aucun vrai cours pedagogique.** Le NEO Training Lab reste le seul module
     visible ; il valide le Core, il ne l enseigne pas.
+11. **Le campus n a ni personnages, ni sons, ni animations.** Le moteur audio
+    existe et fonctionne, mais le campus ne l appelle pas encore.
+12. **Aucune interaction contextuelle dans le campus.** Seules les portes
+    reagissent : on ne peut pas encore utiliser un poste, ouvrir une baie ni
+    examiner un cable sur place.
+13. **Entrer dans une zone quitte la 3D** et bascule vers un ecran classique.
+14. **Le mobilier est entierement procedural**, construit a partir de
+    primitives. Aucune chaine d assets externes sous licence n est en place.
 
 ## Etat des documents prives
 
@@ -209,11 +225,19 @@ Aucun document source prive n a ete fourni, utilise ou publie.
 
 ## Prochaine action recommandee
 
-Le premier vrai cours pedagogique, attendu via le `TSSR NEO Course Builder Master Prompt`.
-Le Core est pret a le recevoir : contrats de module stables, moteur de mission
-eprouve, campus et materiel connectes a la simulation.
+Poursuivre la phase 6 bis, dans cet ordre :
 
-Sans dependance a cette livraison, deux chantiers peuvent avancer :
+1. **interaction contextuelle** dans le campus : utiliser un poste, ouvrir une
+   baie, examiner un cable, sans quitter la vue ;
+2. **couche de vie** : presence humaine, mouvement, sons par zone, en branchant
+   le moteur audio existant ;
+3. **travail sur place** : conduire une partie de l intervention dans le campus
+   plutot que de basculer systematiquement vers un ecran classique.
+
+Le premier vrai cours pedagogique reste attendu via le
+`TSSR NEO Course Builder Master Prompt`. Le Core est pret a le recevoir.
+
+Deux chantiers restent ouverts sans dependance :
 
 1. mesurer le banc d essai 3D sur du materiel modeste et sur mobile, afin de
    completer l ADR 0002 sur la degradation ;

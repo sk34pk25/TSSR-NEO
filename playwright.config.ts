@@ -23,7 +23,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  // Le campus monte un moteur graphique par travailleur : au-dela de deux,
+  // ils se disputent le meme rendu logiciel.
+  workers: 2,
   reporter: process.env.CI
     ? [['list'], ['html', { open: 'never', outputFolder: 'reports/e2e-html' }]]
     : 'list',
@@ -40,6 +42,14 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'off',
+    /*
+     * Sans ces options, le navigateur sans interface retombe sur un rendu
+     * purement logiciel : le campus y tourne a six images par seconde, et les
+     * verifications qui l ouvrent deviennent instables des que plusieurs
+     * travailleurs s executent en parallele. Ce n est pas la 3D qui est lente,
+     * c est l environnement de test qui n a pas de pilote graphique.
+     */
+    launchOptions: { args: ['--use-gl=angle', '--enable-unsafe-swiftshader'] },
   },
   projects: [
     {

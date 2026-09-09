@@ -65,12 +65,26 @@ async function attendreCampus(page: Page): Promise<void> {
   await page
     .locator('.campus3d__hud, .campus3d__veil')
     .first()
-    .waitFor({ state: 'visible', timeout: 20_000 })
+    .waitFor({ state: 'visible', timeout: 30_000 })
     .catch(() => undefined);
   await page
     .locator('.campus3d__veil', { hasText: 'Chargement du moteur' })
-    .waitFor({ state: 'hidden', timeout: 20_000 })
+    .waitFor({ state: 'hidden', timeout: 30_000 })
     .catch(() => undefined);
+  /*
+   * Le moteur est monte, mais la camera termine encore sa transition et les
+   * etiquettes se placent d apres la projection courante. On attend que leur
+   * nombre cesse de bouger : analyser une image en cours de composition
+   * donnerait un resultat different a chaque passage.
+   */
+  let precedent = -1;
+  let stable = 0;
+  for (let essai = 0; essai < 40 && stable < 4; essai += 1) {
+    const compte = await page.locator('.campus3d__label').count();
+    stable = compte === precedent ? stable + 1 : 0;
+    precedent = compte;
+    await page.waitForTimeout(150);
+  }
 }
 
 test.describe('fumee', () => {
@@ -170,6 +184,8 @@ test.describe('parcours de mission', () => {
 test.describe('accessibilite', () => {
   for (const ecran of ECRANS) {
     test(`aucune violation serieuse sur ${ecran.route}`, async ({ page }) => {
+      // Le campus monte le moteur graphique : en rendu logiciel il est lent.
+      if (ecran.route === 'campus') test.slow();
       await ouvrir(page, ecran.route);
       const resultats = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -209,6 +225,7 @@ test.describe('accessibilite', () => {
 
 test.describe('visuel', () => {
   test('captures des ecrans principaux', async ({ page }, info) => {
+    test.slow();
     for (const ecran of ECRANS) {
       await ouvrir(page, ecran.route);
       await expect(page).toHaveScreenshot(`${info.project.name}-${ecran.route}.png`, {

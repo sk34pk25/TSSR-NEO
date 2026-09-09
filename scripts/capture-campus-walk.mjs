@@ -12,17 +12,33 @@ const BASE = process.env.TSSR_TEST_URL ?? 'http://localhost:5173/';
 const OUT = process.env.OUT ?? 'docs/audit/captures/campus-subjectif';
 
 await mkdir(OUT, { recursive: true });
+
+/**
+ * La prise en main s affiche au premier passage, une fois l application prete.
+ * Cliquer avant qu elle soit rendue la laissait apparaitre en pleine capture.
+ */
+async function passerLaPriseEnMain(page) {
+  await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor({ timeout: 20000 });
+  const dialogue = page.getByRole('dialog', { name: 'Prise en main de TSSR NEO' });
+  if (await dialogue.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Passer' }).click();
+    await dialogue.waitFor({ state: 'hidden' });
+  }
+}
+
 const navigateur = await chromium.launch({ args: ['--use-gl=angle', '--enable-unsafe-swiftshader'] });
 const contexte = await navigateur.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await contexte.newPage();
 
 await page.goto(`${BASE}#/campus`, { waitUntil: 'domcontentloaded' });
+await passerLaPriseEnMain(page);
 await page.locator('.campus3d__hud').waitFor({ timeout: 30000 });
 await page.waitForTimeout(4000);
 
 const vue = page.locator('.campus3d__stage, .campus3d, canvas').first();
 await vue.scrollIntoViewIfNeeded();
-await page.getByRole('tab', { name: 'Subjective' }).click();
+// La vue subjective est desormais le mode par defaut.
+await page.getByRole('tab', { name: 'Sur place' }).click();
 await page.waitForTimeout(1500);
 
 async function capturer(nom) {

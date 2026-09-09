@@ -283,3 +283,39 @@ node scripts/capture-campus-walk.mjs    # traversee du campus en vue subjective
 Toute affirmation de progres en V0.3 devra etre comparee a ces images, et non a
 l etat des tests. Une integration continue verte ne dit rien de la qualite de
 l experience.
+
+
+---
+
+## 8. Suivi des corrections
+
+Cette section est tenue a jour au fil de la refonte. Elle ne remplace pas les
+captures : elle dit seulement ce qui a ete traite, et par quel moyen.
+
+| Defaut constate                                      | Etat    | Traitement                                                      |
+| ---------------------------------------------------- | ------- | --------------------------------------------------------------- |
+| Six entrees de navigation, dont deux impasses        | corrige | quatre lieux ; la mission n apparait que si elle existe          |
+| Catalogue de cours empile au-dessus du campus        | corrige | catalogue dans « Apprendre » ; le campus occupe la surface       |
+| Compteurs `img/s` exposes a un apprenant             | corrige | derriere un mode developpeur, dans les reglages                 |
+| Aucune prise en main                                 | corrige | quatre etapes au premier passage, rejouables                     |
+| Accueil : trois actions concurrentes, tableau de zeros | corrige | une seule suite proposee, deduite de l etat reel                |
+| Zero mobilier sur cent cinq noeuds                   | corrige | kit modulaire ; chaque piece meublee selon sa fonction          |
+| Palette entierement froide et sombre                 | corrige | bibliotheque de materiaux, tons chauds, valeurs claires         |
+| Aucune source de lumiere chaude                      | corrige | jour dominant, appoint chaud, un luminaire par piece            |
+| Plafonds noirs quelle que soit leur peinture         | corrige | rebond du sol reglable sur la lumiere hemispherique             |
+| Batiment ferme pose dans le vide                     | corrige | murs reellement perces, sol, ciel, voisinage, arbres            |
+| Neuf salles geometriquement identiques               | corrige | tailles, sols, murs d accent et amenagements distincts          |
+| Amas d etiquettes illisible au bout du couloir       | corrige | portee limitee et desencombrement, la plus proche l emporte     |
+| Vue d ensemble comme premier contact                 | corrige | vue subjective par defaut, deux cadrages au lieu de quatre      |
+| Transition de camera qui n aboutissait jamais        | corrige | une transition ne redemarre plus a chaque image                 |
+| Contraste insuffisant sur le ton le plus discret     | corrige | valeur relevee a 5,2 pour 1                                     |
+| Aucune interaction contextuelle                      | ouvert  | utiliser un poste, ouvrir une baie, examiner un cable           |
+| Aucun personnage, aucun son, aucune animation        | ouvert  | couche de vie et audio par zone                                 |
+| Entrer dans une zone quitte systematiquement la 3D   | ouvert  | travail sur place, sans changer d ecran                         |
+
+Les criteres visuels minimaux sont desormais verifies automatiquement par
+`tests/campus-direction-artistique.test.ts` : valeurs claires reellement
+presentes, tons chauds, sources chaudes, rebond de sol, ciel, mobilier dans
+chaque zone, sols distincts, baies vitrees et cout de rendu. Ces verifications
+ne jugent pas le resultat, elles empechent seulement le retour silencieux des
+defauts nommes ci-dessus.
