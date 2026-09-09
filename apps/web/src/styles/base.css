@@ -313,3 +313,43 @@ textarea {
 .neo-skip-link:focus {
   top: var(--neo-space-3);
 }
+
+/*
+ * Reserve au lecteur d ecran.
+ * Un ecran immersif garde un titre de page pour l accessibilite, sans l imposer
+ * a l oeil : le lieu se nomme deja lui-meme dans la vue.
+ */
+.neo-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Le campus occupe toute la hauteur disponible : c est un lieu, pas un encart. */
+.campus-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.campus-view > * {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Onglets de section : plus affirmes que les onglets d outil d une mission. */
+.tabs--section {
+  gap: 4px;
+}
+
+.tabs--section button {
+  font-size: var(--neo-fs-md);
+  padding: 8px 14px;
+}

@@ -248,6 +248,23 @@ export function SettingsView(): JSX.Element {
       </section>
 
       <section className="neo-card">
+        <h2 style={{ fontSize: 'var(--neo-fs-lg)' }}>Mode developpeur</h2>
+        <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
+          Affiche les mesures techniques par-dessus les vues 3D : images par seconde, appels de
+          rendu, nombre de triangles. Utile pour regler la qualite graphique sur une machine
+          donnee, sans interet pour l apprentissage.
+        </p>
+        <label className="neo-row" style={{ gap: 8 }}>
+          <input
+            type="checkbox"
+            checked={prefs.developerMode}
+            onChange={(event) => update({ developerMode: event.target.checked })}
+          />
+          Afficher les mesures techniques de rendu
+        </label>
+      </section>
+
+      <section className="neo-card">
         <h2 style={{ fontSize: 'var(--neo-fs-lg)' }}>Confidentialite et donnees</h2>
         <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
           Aucune publicite, aucun traqueur, aucune donnee personnelle collectee. La telemetrie

@@ -19,15 +19,23 @@ import {
 interface Campus3DProps {
   profile: QualityProfile;
   reduceMotion: boolean;
+  /** Les mesures de rendu ne s affichent qu en mode developpeur. */
+  developerMode?: boolean;
   highlightZoneIds?: readonly string[];
   onEnterZone: (zoneId: string) => void;
 }
 
+/*
+ * Deux choix, pas quatre.
+ *
+ * « Troisieme personne » et « Inspection » restent des modes du controleur,
+ * declenches par une interaction (cliquer un equipement cadre l element), mais
+ * ils ne sont pas des options a peser : proposer quatre cadrages a quelqu un qui
+ * cherche seulement a entrer dans une salle est une charge inutile.
+ */
 const MODES: { mode: CameraMode; label: string; hint: string }[] = [
-  { mode: 'first-person', label: 'Subjective', hint: 'a hauteur des yeux' },
-  { mode: 'third-person', label: 'Troisieme personne', hint: 'vue de suivi' },
-  { mode: 'inspection', label: 'Inspection', hint: 'cadre un element' },
-  { mode: 'tactical', label: 'Tactique', hint: 'plan d ensemble' },
+  { mode: 'first-person', label: 'Sur place', hint: 'a hauteur des yeux, deplacement libre' },
+  { mode: 'tactical', label: 'Plan du site', hint: 'vue d ensemble, plafonds escamotes' },
 ];
 
 /**
@@ -40,6 +48,7 @@ const MODES: { mode: CameraMode; label: string; hint: string }[] = [
 export function Campus3D({
   profile,
   reduceMotion,
+  developerMode = false,
   highlightZoneIds,
   onEnterZone,
 }: Campus3DProps): JSX.Element {
@@ -53,7 +62,8 @@ export function Campus3D({
   const draggingRef = useRef(false);
 
   const [status, setStatus] = useState<'chargement' | 'pret' | 'indisponible'>('chargement');
-  const [mode, setMode] = useState<CameraMode>('tactical');
+  // Le premier contact doit etre un lieu, pas un plan.
+  const [mode, setMode] = useState<CameraMode>('first-person');
   const [focused, setFocused] = useState<PickHit | undefined>(undefined);
   const [stats, setStats] = useState<RenderStats>({
     fps: 0,
@@ -125,9 +135,23 @@ export function Campus3D({
         const camera = controllerRef.current.update(input, now - last);
         renderer.setCamera(reduceMotion ? { ...camera, transitionMs: 0 } : camera);
 
+        /*
+         * Une etiquette dont l ancre sort du cadre etait tout de meme dessinee,
+         * et se retrouvait tronquee contre le bord de la vue.
+         */
+        const cadre = canvasRef.current?.getBoundingClientRect();
+        const largeur = cadre?.width ?? 0;
+        const hauteur = cadre?.height ?? 0;
         const projected = scene.anchors
           .map((anchor) => ({ anchor, point: renderer.project(anchor.position) }))
-          .filter((entry) => entry.point.visible)
+          .filter(
+            (entry) =>
+              entry.point.visible &&
+              entry.point.x > 60 &&
+              entry.point.x < largeur - 60 &&
+              entry.point.y > 8 &&
+              entry.point.y < hauteur - 8,
+          )
           .map((entry) => ({
             id: entry.anchor.id,
             label: entry.anchor.label,
@@ -310,10 +334,12 @@ export function Campus3D({
                   </button>
                 ))}
               </div>
-              <span className="neo-dim campus3d__stats">
-                {stats.fps} img/s · {stats.drawCalls} appels · {Math.round(stats.triangles / 1000)}k
-                triangles
-              </span>
+              {developerMode ? (
+                <span className="neo-dim campus3d__stats">
+                  {stats.fps} img/s · {stats.drawCalls} appels ·{' '}
+                  {Math.round(stats.triangles / 1000)}k triangles
+                </span>
+              ) : null}
             </div>
 
             <p className="campus3d__help neo-dim">
@@ -324,33 +350,40 @@ export function Campus3D({
         ) : null}
       </div>
 
-      {/* Equivalent accessible et navigable au clavier, toujours present. */}
-      <nav className="campus3d__zones" aria-label="Zones du campus">
-        {CAMPUS_ZONES.map((zone) => (
-          <button
-            key={zone.id}
-            type="button"
-            className="course-card campus3d__zone"
-            style={{ textAlign: 'left' }}
-            onClick={() => enterZone(zone.id)}
-            onFocus={() => {
-              controllerRef.current.inspect(zoneViewpoint(zone));
-              setMode('inspection');
-            }}
-          >
-            <span
-              className="campus3d__chip"
-              style={{
-                background: `rgb(${zone.accent.map((c) => Math.round(c * 255)).join(',')})`,
-              }}
-              aria-hidden="true"
-            />
-            <strong>{zone.name}</strong>
-            <span className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
-              {zone.purpose}
-            </span>
-          </button>
-        ))}
+      {/*
+       * Panneau d orientation. C est a la fois le reperage du visiteur et
+       * l equivalent accessible de la vue : toujours dans le document, toujours
+       * atteignable au clavier, jamais reduit a un lot de consolation.
+       */}
+      <nav className="campus3d__wayfinding" aria-label="Zones du campus">
+        <h2 className="campus3d__wayfinding-titre">Ou aller</h2>
+        <ul className="campus3d__zones">
+          {CAMPUS_ZONES.map((zone) => (
+            <li key={zone.id}>
+              <button
+                type="button"
+                className="campus3d__zone"
+                onClick={() => enterZone(zone.id)}
+                onFocus={() => {
+                  controllerRef.current.inspect(zoneViewpoint(zone));
+                  setMode('inspection');
+                }}
+              >
+                <span
+                  className="campus3d__chip"
+                  style={{
+                    background: `rgb(${zone.accent.map((c) => Math.round(c * 255)).join(',')})`,
+                  }}
+                  aria-hidden="true"
+                />
+                <span className="campus3d__zone-texte">
+                  <strong>{zone.name}</strong>
+                  <span className="neo-muted">{zone.purpose}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
       </nav>
     </div>
   );

@@ -50,6 +50,26 @@
   background: var(--neo-accent-dim);
 }
 
+/* Entree contextuelle : elle n existe que pendant une mission, et se voit. */
+.shell__nav-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: var(--neo-space-3);
+  max-width: 26ch;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border: 1px solid var(--neo-accent-dim);
+}
+.shell__nav-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--neo-ok, var(--neo-accent));
+}
+
 .shell__main {
   flex: 1;
   min-height: 0;
@@ -399,16 +419,15 @@
 
 /* ----------------------------------------------------------- campus 3D */
 .campus3d {
-  display: flex;
-  flex-direction: column;
-  gap: var(--neo-space-4);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 0;
+  height: 100%;
+  min-height: 0;
 }
 .campus3d__stage {
   position: relative;
-  height: min(62vh, 560px);
-  min-height: 320px;
-  border: 1px solid var(--neo-border);
-  border-radius: var(--neo-radius-lg);
+  min-height: 0;
   overflow: hidden;
   background: var(--neo-bg-0);
 }
@@ -496,23 +515,79 @@
   text-align: center;
   max-width: 92%;
 }
+/* Panneau d orientation, a la maniere d une signaletique de hall. */
+.campus3d__wayfinding {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--neo-space-4) var(--neo-space-3);
+  border-left: 1px solid var(--neo-border);
+  background: var(--neo-bg-1);
+}
+.campus3d__wayfinding-titre {
+  margin: 0 0 var(--neo-space-3) var(--neo-space-2);
+  font-size: var(--neo-fs-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--neo-text-muted);
+}
 .campus3d__zones {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: var(--neo-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 .campus3d__zone {
-  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--neo-space-3);
+  width: 100%;
+  padding: 8px var(--neo-space-3);
+  border: 0;
+  border-radius: var(--neo-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
-  padding-left: var(--neo-space-5);
+  transition: background var(--neo-transition);
+}
+.campus3d__zone:hover,
+.campus3d__zone:focus-visible {
+  background: var(--neo-bg-3);
+}
+.campus3d__zone-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.campus3d__zone-texte .neo-muted {
+  font-size: var(--neo-fs-xs);
+  line-height: 1.35;
 }
 .campus3d__chip {
-  position: absolute;
-  left: var(--neo-space-3);
-  top: var(--neo-space-4);
+  flex: none;
   width: 8px;
   height: 8px;
+  margin-top: 6px;
   border-radius: 3px;
+}
+
+/* En dessous de la tablette, la signaletique passe sous la vue. */
+@media (max-width: 900px) {
+  .campus3d {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(280px, 1fr) auto;
+  }
+  .campus3d__wayfinding {
+    border-left: 0;
+    border-top: 1px solid var(--neo-border);
+    max-height: 40vh;
+  }
 }
 
 /* ------------------------------------------------------- vue materielle 3D */
@@ -541,5 +616,73 @@
   .hardware3d__panel {
     border-left: 0;
     border-top: 1px solid var(--neo-border);
+  }
+}
+
+/* La coquille laisse le campus prendre toute la hauteur, sans defilement parasite. */
+.shell__main--place {
+  overflow: hidden;
+}
+.shell__content--place {
+  max-width: none;
+  padding: 0;
+  height: 100%;
+}
+
+
+/* --------------------------------------------- navigation sur petit ecran */
+/*
+ * Quatre destinations tiennent exactement dans une barre inferieure, la ou six
+ * debordaient de l en-tete et repoussaient la recherche hors de l ecran. La
+ * reduction de l architecture rend cette disposition possible ; elle place
+ * aussi la navigation sous le pouce.
+ */
+@media (max-width: 700px) {
+  .shell__top {
+    gap: var(--neo-space-3);
+    padding: 8px var(--neo-space-4);
+    /*
+     * Un filtre d arriere-plan cree un bloc conteneur : la barre inferieure
+     * resterait alors ancree a l en-tete au lieu de la fenetre.
+     */
+    backdrop-filter: none;
+    background: var(--neo-bg-1);
+  }
+  .shell__top .shell__nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    gap: 0;
+    flex-wrap: nowrap;
+    padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--neo-border);
+    background: var(--neo-bg-1);
+  }
+  .shell__nav a {
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+    padding: 10px 4px;
+    font-size: var(--neo-fs-xs);
+  }
+  .shell__nav-live {
+    /* Hors de la barre du pouce : elle porte les quatre lieux, rien de plus. */
+    position: fixed;
+    left: var(--neo-space-4);
+    right: var(--neo-space-4);
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    margin-left: 0;
+    max-width: none;
+    justify-content: center;
+    background: var(--neo-bg-2);
+  }
+  /* La barre inferieure ne doit jamais masquer la fin du contenu. */
+  .shell__main {
+    padding-bottom: 60px;
+  }
+  .campus3d__wayfinding {
+    padding-bottom: var(--neo-space-6);
   }
 }

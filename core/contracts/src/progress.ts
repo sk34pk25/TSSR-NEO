@@ -35,6 +35,13 @@ export const zPreferences = z.object({
   accessibility: zAccessibilityPrefs.default({}),
   novaVerbosity: z.enum(['minimal', 'normal', 'detailed']).default('normal'),
   telemetryConsent: z.boolean().default(false),
+  /**
+   * Mode developpeur : revele les mesures techniques (images par seconde,
+   * appels de rendu, greffons de diagnostic). Elles n ont aucun sens pour un
+   * apprenant en formation et signalaient le prototype ; elles restent
+   * indispensables au reglage, donc elles sont deplacees, pas supprimees.
+   */
+  developerMode: z.boolean().default(false),
   keybindings: z.record(z.string(), z.string()).default({}),
 });
 

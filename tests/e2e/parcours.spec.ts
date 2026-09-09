@@ -10,6 +10,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const ECRANS = [
   { route: 'accueil', titre: /Apprendre le metier/ },
+  { route: 'apprendre', titre: /^Apprendre$/ },
   { route: 'campus', titre: /Campus NEO Systems/ },
   { route: 'connaissances', titre: /NEO Knowledge/ },
   { route: 'revision', titre: /NEO Review/ },
@@ -213,5 +214,34 @@ test.describe('visuel', () => {
     );
     expect(debordement).toBe(false);
     await expect(page).toHaveScreenshot('texte-agrandi-reglages.png');
+  });
+});
+
+
+test.describe('architecture de l information', () => {
+  test('la navigation principale se limite a quatre destinations', async ({ page }) => {
+    await ouvrir(page, 'accueil');
+    const nav = page.getByRole('navigation', { name: 'Navigation principale' });
+    await expect(nav.getByRole('link')).toHaveText([
+      'Accueil',
+      'Apprendre',
+      'Laboratoire',
+      'Campus',
+    ]);
+  });
+
+  test('aucune destination principale n est vide au premier contact', async ({ page }) => {
+    // Une entree de navigation qui n annonce que son propre vide est une impasse.
+    for (const route of ['accueil', 'apprendre', 'campus']) {
+      await ouvrir(page, route);
+      await expect(page.getByText(/Aucune mission en cours|Aucune competence suivie/)).toHaveCount(
+        0,
+      );
+    }
+  });
+
+  test('les mesures de rendu restent cachees hors mode developpeur', async ({ page }) => {
+    await ouvrir(page, 'campus');
+    await expect(page.getByText(/img\/s/)).toHaveCount(0);
   });
 });

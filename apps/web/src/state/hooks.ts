@@ -42,6 +42,7 @@ export function useSimValue<T>(revision: number, compute: () => T): T {
 
 export type RouteName =
   | 'accueil'
+  | 'apprendre'
   | 'campus'
   | 'mission'
   | 'connaissances'
@@ -61,6 +62,7 @@ export interface Route {
 
 const KNOWN_ROUTES: RouteName[] = [
   'accueil',
+  'apprendre',
   'campus',
   'mission',
   'connaissances',
