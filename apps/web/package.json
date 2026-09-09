@@ -23,12 +23,12 @@
     "@tssr/sim-network": "*",
     "@tssr/sim-systems": "*",
     "@tssr/storage": "*",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^4.3.3",
     "eslint-plugin-react-hooks": "^5.2.0",
     "vite": "^5.4.10"
