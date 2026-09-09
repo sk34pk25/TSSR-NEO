@@ -109,10 +109,20 @@ export class ItsmEngine {
     return true;
   }
 
-  comment(ticketId: string, comment: Omit<TicketComment, 'id' | 'at'>): boolean {
+  comment(
+    ticketId: string,
+    comment: Omit<TicketComment, 'id' | 'at' | 'authorRole' | 'visibility'> &
+      Partial<Pick<TicketComment, 'authorRole' | 'visibility'>>,
+  ): boolean {
     const ticket = this.ticket(ticketId);
     if (!ticket) return false;
-    ticket.comments.push({ id: `c-${ticket.comments.length + 1}`, at: this.now(), ...comment });
+    ticket.comments.push({
+      id: `c-${ticket.comments.length + 1}`,
+      at: this.now(),
+      authorRole: 'technician',
+      visibility: 'public',
+      ...comment,
+    });
     ticket.updatedAt = this.now();
     this.emit('itsm.ticket.comment', { ticketId, author: comment.author });
     return true;
