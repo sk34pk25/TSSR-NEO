@@ -38,12 +38,37 @@ export function serviceWorkerPrecache(options: { base: string }): Plugin {
       walk(distDir);
 
       const base = options.base.endsWith('/') ? options.base : `${options.base}/`;
+
+      /*
+       * Seules les ressources du chargement initial sont precachees.
+       * Les blocs charges paresseusement (le moteur graphique en particulier)
+       * seraient sinon telecharges des la premiere visite, ce qui annulerait
+       * l interet du decoupage. Ils sont mis en cache a leur premier usage.
+       */
+      let referenced = new Set<string>();
+      try {
+        const html = readFileSync(join(distDir, 'index.html'), 'utf8');
+        for (const match of html.matchAll(/(?:src|href)="([^"]+)"/g)) {
+          const value = match[1];
+          if (value !== undefined) referenced.add(value.replace(base, '').replace(/^\.?\//, ''));
+        }
+      } catch {
+        referenced = new Set<string>();
+      }
+
+      const isInitial = (relative: string): boolean => {
+        if (relative === 'index.html' || relative === 'manifest.webmanifest') return true;
+        if (relative.startsWith('icons/') || relative === 'favicon.svg') return true;
+        return referenced.has(relative);
+      };
+
       // Les sources de deboguage et le service worker lui-meme ne sont jamais precaches.
       const shipped = files
         .filter((file) => !file.endsWith('.map'))
         .filter((file) => relative(distDir, file) !== 'sw.js');
 
       const urls = shipped
+        .filter((file) => isInitial(relative(distDir, file).split(sep).join('/')))
         .map((file) => `${base}${relative(distDir, file).split(sep).join('/')}`)
         .sort();
 

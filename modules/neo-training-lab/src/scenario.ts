@@ -1,4 +1,4 @@
-import type { HardwareAsset, WorldState } from '@tssr/contracts';
+import type { HardwareAsset, PatchCable, WorldState } from '@tssr/contracts';
 import { TopologyBuilder, makePool } from '@tssr/sim-network';
 import { createSystem } from '@tssr/sim-systems';
 import type { ScenarioContext, ScenarioFactory } from '@tssr/mission-engine';
@@ -7,27 +7,34 @@ const VLAN_BUREAUX = 10;
 const VLAN_SERVEURS = 20;
 const VLAN_QUARANTAINE = 99;
 
-function switchAsset(
+type PortSpec = { label: string; interfaceId: string };
+
+function makeAsset(
+  id: string,
+  assetTag: string,
+  kind: HardwareAsset['kind'],
+  model: string,
   networkNodeId: string,
-  ports: { label: string; interfaceId: string }[],
+  ports: PortSpec[],
+  placement: { rackUnit: number; heightU: number },
 ): HardwareAsset {
   return {
     schemaVersion: 1,
-    id: 'asset-sw-lab',
-    assetTag: 'NEO-SW-001',
-    kind: 'switch',
-    model: 'NEO SwitchLine 24',
+    id,
+    assetTag,
+    kind,
+    model,
     vendor: 'NEO Systems',
-    serial: 'SWL-0001',
+    serial: `${assetTag}-SN`,
     rackId: 'rack-lab',
-    rackUnit: 40,
-    heightU: 1,
+    rackUnit: placement.rackUnit,
+    heightU: placement.heightU,
     ports: ports.map((p) => ({
       id: `port-${p.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
       label: p.label,
-      role: 'ethernet',
+      role: 'ethernet' as const,
       interfaceId: p.interfaceId,
-      ledLink: 'off',
+      ledLink: 'off' as const,
     })),
     powered: true,
     networkNodeId,
@@ -36,7 +43,7 @@ function switchAsset(
     lifecycle: 'in-service',
     history: [],
     components: [
-      { id: 'psu-1', kind: 'psu', model: 'PSU 150W', slot: 'PSU1', health: 'ok' },
+      { id: 'psu-1', kind: 'psu', model: 'Alimentation', slot: 'PSU1', health: 'ok' },
       { id: 'fan-1', kind: 'fan', model: 'Ventilateur', slot: 'FAN1', health: 'ok' },
     ],
     temperatureC: 32,
@@ -130,8 +137,79 @@ export const trainingLabScenario: ScenarioFactory = {
     b.link('sw-lab', 'Gi0/24', 'r-lab', 'Gi0/0');
 
     const network = b.build();
-    const swNode = network.nodes.find((n) => n.id === 'sw-lab');
-    const ports = (swNode?.interfaces ?? []).map((i) => ({ label: i.name, interfaceId: i.id }));
+    const nodeById = new Map(network.nodes.map((n) => [n.id, n]));
+    const ifaceId = (nodeId: string, name: string): string =>
+      nodeById.get(nodeId)?.interfaces.find((i) => i.name === name)?.id ?? '';
+
+    /*
+     * Equipements physiques et brassage.
+     * Chaque cable possede le lien reseau correspondant : le debrancher coupe
+     * reellement la liaison simulee, et le rebrancher la retablit.
+     */
+    const swPorts = (nodeById.get('sw-lab')?.interfaces ?? []).map((i) => ({
+      label: i.name,
+      interfaceId: i.id,
+    }));
+    const assets: HardwareAsset[] = [
+      makeAsset('asset-sw-lab', 'NEO-SW-001', 'switch', 'NEO SwitchLine 24', 'sw-lab', swPorts, {
+        rackUnit: 40,
+        heightU: 1,
+      }),
+      makeAsset(
+        'asset-r-lab',
+        'NEO-RT-001',
+        'router',
+        'NEO RouteEdge 100',
+        'r-lab',
+        [{ label: 'Gi0/0', interfaceId: ifaceId('r-lab', 'Gi0/0') }],
+        { rackUnit: 38, heightU: 1 },
+      ),
+      makeAsset(
+        'asset-srv-neo',
+        'NEO-SRV-001',
+        'server',
+        'NEO ServerLine R2',
+        'srv-neo',
+        [{ label: 'eth0', interfaceId: ifaceId('srv-neo', 'eth0') }],
+        { rackUnit: 30, heightU: 2 },
+      ),
+      makeAsset(
+        'asset-pc-tech',
+        'NEO-PC-010',
+        'desktop',
+        'NEO DeskLine',
+        'pc-tech',
+        [{ label: 'eth0', interfaceId: ifaceId('pc-tech', 'eth0') }],
+        { rackUnit: 12, heightU: 2 },
+      ),
+      makeAsset(
+        'asset-pc-camille',
+        'NEO-PC-011',
+        'desktop',
+        'NEO DeskLine',
+        'pc-camille',
+        [{ label: 'eth0', interfaceId: ifaceId('pc-camille', 'eth0') }],
+        { rackUnit: 8, heightU: 2 },
+      ),
+    ];
+
+    const assetByNode = new Map(assets.map((a) => [a.networkNodeId as string, a]));
+    const portFor = (nodeId: string, interfaceId: string): { assetId: string; portId: string } => {
+      const asset = assetByNode.get(nodeId);
+      const port = asset?.ports.find((p) => p.interfaceId === interfaceId);
+      return { assetId: asset?.id ?? '', portId: port?.id ?? '' };
+    };
+
+    const cables: PatchCable[] = network.links.map((link, index) => ({
+      id: `cable-${index + 1}`,
+      from: portFor(link.a.nodeId, link.a.interfaceId),
+      to: portFor(link.b.nodeId, link.b.interfaceId),
+      media: 'copper' as const,
+      lengthM: 2,
+      condition: 'ok' as const,
+      linkId: link.id,
+      color: '#3fd0ff',
+    }));
 
     const systems = [
       createSystem({
@@ -180,8 +258,8 @@ export const trainingLabScenario: ScenarioFactory = {
       vms: [],
       cloud: [],
       racks: [{ id: 'rack-lab', name: 'Baie A', room: 'Local technique', units: 42 }],
-      assets: [switchAsset('sw-lab', ports)],
-      cables: [],
+      assets,
+      cables,
       tickets: [
         {
           schemaVersion: 1,

@@ -11,6 +11,7 @@
       "@tssr/evaluation": ["core/evaluation/src/index.ts"],
       "@tssr/mission-engine": ["core/mission-engine/src/index.ts"],
       "@tssr/rendering": ["core/rendering/src/index.ts"],
+      "@tssr/rendering/three": ["core/rendering/src/three-renderer.ts"],
       "@tssr/sync": ["core/sync/src/index.ts"],
       "@tssr/permissions": ["core/permissions/src/index.ts"],
       "@tssr/sim-network": ["simulation/network/src/index.ts"],

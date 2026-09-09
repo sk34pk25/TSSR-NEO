@@ -13,6 +13,8 @@ export const workspacePackages: Record<string, string> = {
   '@tssr/evaluation': 'core/evaluation/src/index.ts',
   '@tssr/mission-engine': 'core/mission-engine/src/index.ts',
   '@tssr/rendering': 'core/rendering/src/index.ts',
+  // Sous-chemin dedie : il permet de charger le moteur graphique paresseusement.
+  '@tssr/rendering/three': 'core/rendering/src/three-renderer.ts',
   '@tssr/sync': 'core/sync/src/index.ts',
   '@tssr/permissions': 'core/permissions/src/index.ts',
   '@tssr/sim-network': 'simulation/network/src/index.ts',
@@ -31,6 +33,12 @@ export const workspacePackages: Record<string, string> = {
   '@tssr/module-training-lab': 'modules/neo-training-lab/src/index.ts',
 };
 
-export const workspaceAliases: Record<string, string> = Object.fromEntries(
-  Object.entries(workspacePackages).map(([name, rel]) => [name, resolve(root, rel)]),
-);
+/*
+ * Les alias les plus specifiques d abord : sans cela "@tssr/rendering" capterait
+ * "@tssr/rendering/three" et le chargement paresseux du moteur serait casse.
+ */
+export const workspaceAliases: { find: string; replacement: string }[] = Object.entries(
+  workspacePackages,
+)
+  .sort(([a], [b]) => b.length - a.length)
+  .map(([name, rel]) => ({ find: name, replacement: resolve(root, rel) }));

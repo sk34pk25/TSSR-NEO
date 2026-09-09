@@ -22,9 +22,14 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Le moteur graphique a son propre bloc : il n est telecharge
+          // qu au moment ou le campus tridimensionnel est ouvert.
+          if (id.includes('node_modules/three')) return 'moteur-3d';
+          // Le pont vers le moteur doit rester dans le bloc paresseux que
+          // Rollup cree pour l import dynamique : on ne le nomme donc pas.
+          if (id.includes('three-renderer')) return undefined;
           // Le coeur reste leger : la simulation et les modules sont charges a part.
           if (id.includes('/simulation/') || id.includes('/core/')) return 'simulation';
-          if (id.includes('/modules/')) return 'modules';
           if (id.includes('node_modules/react')) return 'react';
           if (id.includes('node_modules/zod')) return 'contracts';
           return undefined;

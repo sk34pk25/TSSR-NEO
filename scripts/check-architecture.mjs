@@ -114,12 +114,15 @@ for (const [name, dir] of packages) {
         continue;
       }
       if (!specifier.startsWith('@tssr/')) continue;
-      const targetDir = packages.get(specifier);
+      // Un sous-chemin (@tssr/x/y) appartient au paquet @tssr/x.
+      const parts = specifier.split('/');
+      const packageName = parts.slice(0, 2).join('/');
+      const targetDir = packages.get(packageName);
       if (targetDir === undefined) {
         violations.push(`${shown} : paquet interne inconnu "${specifier}".`);
         continue;
       }
-      graph.get(name)?.add(specifier);
+      graph.get(name)?.add(packageName);
       const targetLayer = layerOf(targetDir);
 
       // Regle 1 : pas de dependance vers une couche superieure.

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { SwitchConsole } from '@tssr/sim-network';
 import { scoreLabel } from '@tssr/evaluation';
 import { NetworkXray } from '../components/NetworkXray.tsx';
@@ -15,7 +15,12 @@ import {
 } from '../components/TerminalPanel.tsx';
 import { navigate, useSession, useSimValue } from '../state/hooks.ts';
 
-type CenterTab = 'terminal' | 'console' | 'reseau';
+// La vue materielle embarque le moteur 3D : elle est chargee a la demande.
+const Hardware3D = lazy(() =>
+  import('../components/Hardware3D.tsx').then((module) => ({ default: module.Hardware3D })),
+);
+
+type CenterTab = 'terminal' | 'console' | 'materiel';
 type SideTab = 'nova' | 'tickets' | 'supervision';
 
 /** Ecran de mission : simulation, diagnostic et suivi au meme endroit. */
@@ -231,8 +236,16 @@ export function MissionView(): JSX.Element {
               >
                 Console equipement
               </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={centerTab === 'materiel'}
+                onClick={() => setCenterTab('materiel')}
+              >
+                Materiel
+              </button>
             </div>
-            {centerTab === 'terminal' ? (
+            {centerTab === 'materiel' ? null : centerTab === 'terminal' ? (
               <select
                 className="neo-select"
                 style={{ width: 'auto' }}
@@ -263,6 +276,18 @@ export function MissionView(): JSX.Element {
             )}
           </div>
           <div className="neo-panel__body neo-panel__body--flush" style={{ minHeight: 0 }}>
+            {centerTab === 'materiel' ? (
+              <Suspense
+                fallback={<div style={{ padding: 16 }}>Chargement de la vue materielle...</div>}
+              >
+                <Hardware3D
+                  world={world}
+                  profile={session.profile}
+                  version={version}
+                  onChange={refresh}
+                />
+              </Suspense>
+            ) : null}
             {centerTab === 'terminal' && terminal ? (
               <TerminalPanel
                 key={machineId}

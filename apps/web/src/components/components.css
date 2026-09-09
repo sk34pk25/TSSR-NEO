@@ -396,3 +396,150 @@
   background: var(--neo-accent-dim);
   font-size: var(--neo-fs-sm);
 }
+
+/* ----------------------------------------------------------- campus 3D */
+.campus3d {
+  display: flex;
+  flex-direction: column;
+  gap: var(--neo-space-4);
+}
+.campus3d__stage {
+  position: relative;
+  height: min(62vh, 560px);
+  min-height: 320px;
+  border: 1px solid var(--neo-border);
+  border-radius: var(--neo-radius-lg);
+  overflow: hidden;
+  background: var(--neo-bg-0);
+}
+.campus3d__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+.campus3d__canvas:active {
+  cursor: grabbing;
+}
+.campus3d__veil {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--neo-space-5);
+  text-align: center;
+  color: var(--neo-text-muted);
+  background: rgba(9, 12, 16, 0.82);
+}
+.campus3d__labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.campus3d__label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--neo-border-accent);
+  background: rgba(13, 17, 23, 0.86);
+  color: var(--neo-accent);
+  font-size: var(--neo-fs-xs);
+  white-space: nowrap;
+  transform-origin: center;
+}
+.campus3d__focus {
+  position: absolute;
+  left: 50%;
+  bottom: 58px;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: var(--neo-radius);
+  border: 1px solid var(--neo-border-strong);
+  background: var(--neo-surface-raised);
+  font-size: var(--neo-fs-sm);
+  max-width: 90%;
+  text-align: center;
+}
+.campus3d__hud {
+  position: absolute;
+  top: var(--neo-space-3);
+  left: var(--neo-space-3);
+  right: var(--neo-space-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--neo-space-3);
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  border-radius: var(--neo-radius);
+  background: rgba(13, 17, 23, 0.7);
+  backdrop-filter: blur(8px);
+}
+:root[data-reduce-complexity='true'] .campus3d__hud {
+  backdrop-filter: none;
+  background: var(--neo-bg-2);
+}
+.campus3d__stats {
+  font-family: var(--neo-font-mono);
+  font-size: var(--neo-fs-xs);
+}
+.campus3d__help {
+  position: absolute;
+  left: 50%;
+  bottom: var(--neo-space-3);
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: var(--neo-fs-xs);
+  text-align: center;
+  max-width: 92%;
+}
+.campus3d__zones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--neo-space-3);
+}
+.campus3d__zone {
+  position: relative;
+  cursor: pointer;
+  padding-left: var(--neo-space-5);
+}
+.campus3d__chip {
+  position: absolute;
+  left: var(--neo-space-3);
+  top: var(--neo-space-4);
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+}
+
+/* ------------------------------------------------------- vue materielle 3D */
+.hardware3d {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(240px, 0.9fr);
+  min-height: 0;
+  height: 100%;
+}
+.hardware3d__stage {
+  position: relative;
+  min-height: 260px;
+  background: var(--neo-bg-0);
+}
+.hardware3d__panel {
+  min-height: 0;
+  overflow: auto;
+  padding: var(--neo-space-3);
+  border-left: 1px solid var(--neo-border);
+}
+@media (max-width: 900px) {
+  .hardware3d {
+    grid-template-columns: 1fr;
+    grid-template-rows: 260px minmax(0, 1fr);
+  }
+  .hardware3d__panel {
+    border-left: 0;
+    border-top: 1px solid var(--neo-border);
+  }
+}

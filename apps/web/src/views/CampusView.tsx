@@ -1,12 +1,12 @@
+import { lazy, Suspense } from 'react';
 import { checkPrerequisites } from '@tssr/progression';
+import { zoneById } from '@tssr/rendering';
 import { navigate, useSession } from '../state/hooks.ts';
 
-interface Area {
-  id: string;
-  name: string;
-  purpose: string;
-  action: { label: string; run: () => void };
-}
+// Le campus tridimensionnel embarque le moteur graphique : il est charge a la demande.
+const Campus3D = lazy(() =>
+  import('../components/Campus3D.tsx').then((module) => ({ default: module.Campus3D })),
+);
 
 /**
  * Campus NEO Systems.
@@ -15,51 +15,6 @@ interface Area {
  */
 export function CampusView(): JSX.Element {
   const session = useSession();
-
-  const areas: Area[] = [
-    {
-      id: 'accueil',
-      name: 'Accueil et support',
-      purpose: 'File des demandes utilisateurs, qualification et priorisation.',
-      action: { label: 'Ouvrir les tickets', run: () => navigate('tickets') },
-    },
-    {
-      id: 'commandement',
-      name: 'Centre de commandement',
-      purpose: 'Supervision des equipements et des services, alertes en cours.',
-      action: { label: 'Ouvrir la supervision', run: () => navigate('supervision') },
-    },
-    {
-      id: 'salle-reseau',
-      name: 'Salle reseau',
-      purpose: 'Commutateurs, brassage, VLAN et plan d adressage.',
-      action: {
-        label: 'Ouvrir la vue reseau',
-        run: () => {
-          if (!session.world) session.startFreeLab();
-          navigate('laboratoire');
-        },
-      },
-    },
-    {
-      id: 'formation',
-      name: 'Zone formation',
-      purpose: 'Fiches de connaissances, revisions courtes et graphe de competences.',
-      action: { label: 'Ouvrir les connaissances', run: () => navigate('connaissances') },
-    },
-    {
-      id: 'espace-personnel',
-      name: 'Espace personnel',
-      purpose: 'Progression, competences suivies, badges et parametres.',
-      action: { label: 'Voir la progression', run: () => navigate('progression') },
-    },
-    {
-      id: 'studio',
-      name: 'NEO Studio',
-      purpose: 'Cockpit formateur : suivi de groupe et points faibles.',
-      action: { label: 'Ouvrir le cockpit', run: () => navigate('formateur') },
-    },
-  ];
 
   return (
     <div>
@@ -136,19 +91,34 @@ export function CampusView(): JSX.Element {
 
       <section style={{ marginTop: 'var(--neo-space-6)' }}>
         <h2>Zones du site</h2>
-        <div className="card-grid">
-          {areas.map((area) => (
-            <article key={area.id} className="course-card">
-              <h3 style={{ fontSize: 'var(--neo-fs-md)', margin: 0 }}>{area.name}</h3>
-              <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)', margin: 0 }}>
-                {area.purpose}
-              </p>
-              <button type="button" className="neo-btn neo-btn--sm" onClick={area.action.run}>
-                {area.action.label}
-              </button>
-            </article>
-          ))}
-        </div>
+        <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
+          Chaque zone visible mene a une fonction reelle de la plateforme. La liste sous la vue
+          donne exactement les memes acces au clavier.
+        </p>
+        <Suspense
+          fallback={
+            <div className="neo-card" role="status">
+              Preparation du campus...
+            </div>
+          }
+        >
+          <Campus3D
+            profile={session.profile}
+            reduceMotion={session.progress.preferences.accessibility.reduceMotion}
+            highlightZoneIds={session.runner === undefined ? [] : ['training-lab']}
+            onEnterZone={(zoneId) => {
+              const zone = zoneById(zoneId);
+              if (!zone) return;
+              // Une zone qui exige une infrastructure la prepare avant d ouvrir l ecran.
+              const needsWorld =
+                zone.route === 'laboratoire' ||
+                zone.route === 'supervision' ||
+                zone.route === 'tickets';
+              if (needsWorld && session.world === undefined) session.startFreeLab();
+              navigate(zone.route);
+            }}
+          />
+        </Suspense>
       </section>
     </div>
   );
