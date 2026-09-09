@@ -3,8 +3,8 @@
 > Ce document est la memoire du projet. Il ne contient **aucun secret**.
 > Il doit toujours etre verifie contre le depot reel avant d etre cru sur parole.
 
-**Derniere mise a jour :** 2026-09-09
-**Version du Core :** 0.1.0
+**Derniere mise a jour :** 2026-09-09 (phase Core avancee)
+**Version du Core :** 0.2.0
 **Version des contrats :** 1
 **Version de l API Core exposee aux modules :** 1.0.0
 
@@ -34,31 +34,35 @@ DSL d assertions : 28 types de verifications executables, composables par `all` 
 
 ### Simulation
 
-| Paquet               | Etat                                                                                                                                     |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `sim-network`        | complet et teste : IPv4, VLAN, ARP, routage, pare-feu, NAT, DNS, DHCP, ping, traceroute, console d equipement, constructeur de topologie |
-| `sim-systems`        | complet et teste : systeme de fichiers, droits POSIX et ACL, comptes, services, terminal bash et PowerShell                              |
-| `sim-itsm`           | complet : matrice de priorite, delais, incidents majeurs, changements avec regles d approbation                                          |
-| `sim-monitoring`     | complet : sondes contre l etat reel, alertes, correlation                                                                                |
-| `sim-hardware`       | complet : brassage creant de vrais liens, LED derivees, pannes de composants                                                             |
-| `sim-backup`         | complet : copie reelle, integrite, chaines incrementales, restauration et test de restauration                                           |
-| `sim-virtualization` | fonctionnel : capacite, contention, instantanes, clones, panne d hote                                                                    |
-| `sim-cloud`          | fonctionnel : hierarchie, provisionnement, couts simules, audit d exposition                                                             |
-| `sim-deployment`     | fonctionnel : deploiement de masse, echecs controles, retour arriere                                                                     |
-| `sim-remote`         | fonctionnel : sessions dependant du DNS, du routage, du pare-feu et des droits                                                           |
-| `sim-world`          | facade unique composant tous les moteurs                                                                                                 |
+| Paquet               | Etat                                                                                                                                                                                                      |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sim-network`        | complet et teste : IPv4, VLAN, ARP, routage, pare-feu, NAT, DNS, DHCP avec relais, arbre recouvrant, routage dynamique, fondation IPv6 avec decouverte de voisins, ping, traceroute, console d equipement |
+| `sim-systems`        | complet et teste : systeme de fichiers, droits POSIX et ACL, comptes, services, terminal bash et PowerShell                                                                                               |
+| `sim-itsm`           | complet : matrice de priorite, delais, incidents majeurs, changements avec regles d approbation                                                                                                           |
+| `sim-monitoring`     | complet : sondes contre l etat reel, alertes, correlation                                                                                                                                                 |
+| `sim-hardware`       | complet : brassage creant de vrais liens, LED derivees, pannes de composants                                                                                                                              |
+| `sim-backup`         | complet : copie reelle, integrite, chaines incrementales, restauration et test de restauration                                                                                                            |
+| `sim-virtualization` | fonctionnel : capacite, contention, instantanes, clones, panne d hote                                                                                                                                     |
+| `sim-cloud`          | fonctionnel : hierarchie, provisionnement, couts simules, audit d exposition                                                                                                                              |
+| `sim-deployment`     | fonctionnel : deploiement de masse, echecs controles, retour arriere                                                                                                                                      |
+| `sim-remote`         | fonctionnel : sessions dependant du DNS, du routage, du pare-feu et des droits                                                                                                                            |
+| `sim-world`          | facade unique composant tous les moteurs                                                                                                                                                                  |
 
 ### Core
 
-| Paquet                | Etat                                                                                                               |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `events`              | generateur deterministe, empreintes, bus d evenements avec journal, horloge simulee                                |
-| `evaluation`          | evaluateur d assertions, score multidimensionnel                                                                   |
-| `mission-engine`      | variantes parametriques, registre de scenarios, deroulement de mission, indices, evenements dynamiques, debrief    |
-| `storage`             | adaptateurs memoire et IndexedDB, sauvegardes scellees, instantanes, reprise apres incident, export/import verifie |
-| `progression`         | experience, niveaux, rangs, badges, maitrise, repetition espacee, difficulte adaptative, prerequis                 |
-| `rendering`           | detection de capacites, profils de qualite, graphe de scene, rendu de la vue reseau                                |
-| `permissions`, `sync` | paquets declares, non encore implementes                                                                           |
+| Paquet           | Etat                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `events`         | generateur deterministe, empreintes, bus d evenements avec journal, horloge simulee                                |
+| `evaluation`     | evaluateur d assertions, score multidimensionnel                                                                   |
+| `mission-engine` | variantes parametriques, registre de scenarios, deroulement de mission, indices, evenements dynamiques, debrief    |
+| `storage`        | adaptateurs memoire et IndexedDB, sauvegardes scellees, instantanes, reprise apres incident, export/import verifie |
+| `progression`    | experience, niveaux, rangs, badges, maitrise, repetition espacee, difficulte adaptative, prerequis                 |
+| `rendering`      | detection de capacites, profils de qualite, vue reseau, scene 3D et campus                                         |
+| `permissions`    | politique serialisable, refus prioritaire, portee par proprietaire et par groupe, prise de controle a usage unique |
+| `sync`           | file persistante, idempotence, tentatives espacees, fusion de conflit sans perte, fournisseur HTTP reel            |
+| `audio`          | quatre bus sur Web Audio, sons synthetises, ambiance, degradation propre                                           |
+| `classroom`      | cohorte locale, analyses de competences et de missions, points faibles classes                                     |
+| `rendering`      | abstraction Scene3D, implementation Three.js chargee paresseusement, campus, materiel, controleur de camera        |
 
 ### Savoir
 
@@ -83,17 +87,23 @@ mission a solutions multiples, deux variantes parametriques, quatre competences,
 
 ## Tests
 
-81 tests, tous au vert.
+**143 tests unitaires et d interface**, plus **76 verifications de bout en bout**
+sur cinq configurations, tous au vert.
 
-| Fichier                              | Portee                                                                                     |
-| ------------------------------------ | ------------------------------------------------------------------------------------------ |
-| `tests/network-engine.test.ts`       | 23 tests : segmentation VLAN, routage, filtrage, DNS, DHCP, determinisme                   |
-| `tests/terminal.test.ts`             | 15 tests : droits, tubes, redirections, elevation, coherence avec le reseau                |
-| `tests/mission-training-lab.test.ts` | 17 tests : contrats, variantes, deroulement, solutions alternatives, echec, indices, score |
-| `tests/core-services.test.ts`        | 26 tests : sauvegarde, reprise, progression, connaissances, NOVA                           |
+| Fichier                              | Portee                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------- |
+| `tests/network-engine.test.ts`       | segmentation VLAN, routage, filtrage, DNS, DHCP, determinisme                   |
+| `tests/network-advanced.test.ts`     | relais DHCP, arbre recouvrant, routage dynamique, IPv6 et decouverte de voisins |
+| `tests/terminal.test.ts`             | droits, tubes, redirections, elevation, coherence avec le reseau                |
+| `tests/mission-training-lab.test.ts` | contrats, variantes, deroulement, solutions alternatives, echec, score          |
+| `tests/core-services.test.ts`        | sauvegarde, reprise, progression, connaissances, NOVA                           |
+| `tests/hardware-3d.test.ts`          | campus, collisions, materiel derive de la simulation, brassage                  |
+| `tests/subsystems.test.ts`           | permissions, synchronisation, audio, cockpit formateur                          |
+| `tests/ui/components.test.tsx`       | panneaux React et accessibilite en environnement DOM                            |
+| `tests/e2e/parcours.spec.ts`         | fumee, parcours complet, accessibilite, captures visuelles                      |
 
-Non couvert par des tests automatises a ce jour : composants React, service worker, accessibilite,
-captures visuelles. Voir la feuille de route.
+Voir `docs/testing-e2e.md` pour la campagne de bout en bout et le statut des
+captures visuelles.
 
 ### Verification manuelle en navigateur
 
@@ -118,15 +128,18 @@ confirme sur un navigateur classique ou apres publication.
 
 Construction de production, tailles compressees :
 
-| Element         | Mesure   | Budget  | Marge |
-| --------------- | -------- | ------- | ----- |
-| JavaScript      | 141,8 Ko | 320 Ko  | 56 %  |
-| CSS             | 3,3 Ko   | 60 Ko   | 94 %  |
-| Premiere visite | 147,1 Ko | 1200 Ko | 88 %  |
+| Element                        | Mesure   | Budget  | Marge |
+| ------------------------------ | -------- | ------- | ----- |
+| JavaScript initial             | 158,1 Ko | 320 Ko  | 51 %  |
+| CSS initial                    | 3,8 Ko   | 60 Ko   | 94 %  |
+| Chargement initial, total      | 163,5 Ko | 400 Ko  | 59 %  |
+| Moteur 3D, charge a la demande | 119,4 Ko | 200 Ko  | 40 %  |
+| Tout le contenu servi          | 291,8 Ko | 1200 Ko | 76 %  |
 
-Aucune bibliotheque 3D n est actuellement embarquee : voir `docs/adr/0002-choix-du-moteur-3d.md`.
-
----
+Le moteur graphique forme un bloc separe : il n est telecharge qu a l ouverture
+du campus ou de la vue materielle, et n est pas precache lors de la premiere
+visite. Le budget distingue explicitement le chemin critique des blocs
+paresseux, sans quoi une regression sur le chargement initial passerait inapercue.
 
 ## Securite et confidentialite
 
@@ -164,22 +177,29 @@ construction injecte desormais la liste reelle des fichiers livres dans le servi
 
 ## Limitations reelles connues
 
-1. **Pas de 3D immersive a ce jour.** L abstraction de rendu existe et la vue reseau est livree ;
-   le moteur 3D reste a choisir apres mesure. La 3D est en priorite 9 du cahier des charges.
-2. **Cockpit formateur limite a l apprenant local.** Le suivi de classe exige un service de
-   synchronisation absent. L ecran l annonce explicitement plutot que d afficher des donnees fictives.
-3. **Relais DHCP non simule.** Un serveur DHCP doit se trouver dans le domaine de diffusion du client.
-   La consequence est correcte et diagnosticable, mais le relais reste a implementer.
-4. **Pas de protocole de routage dynamique.** Routes connectees, statiques et par defaut uniquement.
-5. **Spanning tree absent.** Une boucle de couche 2 est detectee et signalee, pas resolue.
-6. **`core/permissions` et `core/sync` sont des paquets vides.** Ils sont declares mais sans code.
-7. **Pas de multijoueur ni de mode classe.** Architecture prevue, non implementee.
-8. **Audio non implemente.** Les preferences existent, aucun son n est joue.
-9. **Internationalisation partielle.** Les contrats acceptent des textes multilingues, l interface
-   est uniquement en francais.
-10. **Aucun test de composant React ni de capture visuelle automatisee.**
-
----
+1. **Le banc d essai 3D n a tourne que sur une machine** (Apple M2). La
+   degradation sur materiel modeste et sur mobile reste a mesurer.
+2. **Le routage IPv6 entre prefixes n est pas simule.** Adressage, lien-local,
+   auto-configuration et decouverte de voisins le sont ; le message d erreur
+   annonce lui-meme cette limite.
+3. **L arbre recouvrant est une abstraction** : racine elue, ports bloques,
+   boucle neutralisee. L echange de trames de configuration n est pas reproduit.
+4. **Le routage dynamique est une abstraction a vecteur de distance** : pas de
+   temporisateurs ni de format de message propre a un protocole existant.
+5. **Aucun service de synchronisation n est configure.** Le fournisseur HTTP est
+   du code reel et fonctionnel, mais sans point de service il se declare
+   indisponible et la file attend sans perte.
+6. **Le cockpit formateur ne connait que cet appareil.** Les profils de
+   demonstration sont signales comme tels et ne peuvent pas etre confondus avec
+   des apprenants reels.
+7. **Les captures visuelles ne sont pas une porte de publication** : un rendu
+   Linux et un rendu macOS different toujours. Elles sont versionnees par
+   plateforme et comparees a la demande.
+8. **Pas de multijoueur ni de mode classe en direct.**
+9. **Internationalisation partielle** : les contrats acceptent des textes
+   multilingues, l interface est uniquement en francais.
+10. **Aucun vrai cours pedagogique.** Le NEO Training Lab reste le seul module
+    visible ; il valide le Core, il ne l enseigne pas.
 
 ## Etat des documents prives
 
@@ -189,11 +209,13 @@ Aucun document source prive n a ete fourni, utilise ou publie.
 
 ## Prochaine action recommandee
 
-Configurer le depot distant et la publication continue :
+Le premier vrai cours pedagogique, attendu via le `TSSR NEO Course Builder Master Prompt`.
+Le Core est pret a le recevoir : contrats de module stables, moteur de mission
+eprouve, campus et materiel connectes a la simulation.
 
-1. l utilisateur authentifie GitHub (`gh auth login`) ou fournit un depot distant ;
-2. pousser la branche principale et activer GitHub Pages sur le workflow existant ;
-3. verifier la construction publiee et le fonctionnement hors ligne sur l URL reelle.
+Sans dependance a cette livraison, deux chantiers peuvent avancer :
 
-En parallele, sans blocage : executer le banc d essai 3D sur du materiel representatif afin de
-trancher `docs/adr/0002-choix-du-moteur-3d.md`.
+1. mesurer le banc d essai 3D sur du materiel modeste et sur mobile, afin de
+   completer l ADR 0002 sur la degradation ;
+2. brancher un service de synchronisation reel, la file et la fusion de conflit
+   etant deja testees.

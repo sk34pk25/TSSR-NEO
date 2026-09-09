@@ -111,7 +111,12 @@ Le temps simule est porte par `SimClock` et `EventBus.setSimTime`.
 - Les commentaires expliquent **pourquoi**, pas **quoi**.
 - Aucun journal de deboguage laisse dans le code (`no-console`, `warn` et `error` autorises).
 
-Portes de qualite : `npm run verify` (types, lint, architecture, tests).
+Portes de qualite : `npm run verify` (types, lint, architecture, tests), puis
+`npm run build` et `npm run check:budget`. La campagne de bout en bout est decrite
+dans `docs/testing-e2e.md`.
+
+Le moteur graphique n est importe que par `core/rendering/src/three-renderer.ts`,
+charge paresseusement. Aucun autre fichier du depot ne connait Three.js.
 
 ---
 
@@ -153,9 +158,14 @@ La plateforme ne scanne jamais la machine reelle du joueur et n accede jamais a 
 npm run verify        # types + lint + architecture + tests
 npm run dev           # serveur de developpement
 npm run build         # construction de production
-npm run check:budget  # budgets de performance sur dist
-npm run test          # tests unitaires et d integration
+npm run check:budget  # budgets de performance, chemin critique et blocs paresseux
+npm run test          # tests unitaires, d integration et d interface
+npm run test:e2e:ci   # fumee, parcours et accessibilite
+npm run test:visual   # comparaison de captures, propre a la plateforme
+npm run test:prod     # fumee sur l URL publiee
 ```
+
+URL de production : https://sk34pk25.github.io/TSSR-NEO/
 
 Le cache npm est local au depot (`.npmrc`) car le cache global de la machine contient des fichiers
 appartenant a root ; ne pas revenir en arriere sans corriger la cause.

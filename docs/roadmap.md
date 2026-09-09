@@ -30,59 +30,60 @@ URL de production : https://sk34pk25.github.io/TSSR-NEO/
 
 ---
 
-## Phase 3 — Couverture de qualite
+## Phase 3 — Couverture de qualite _(terminee)_
 
-| Tache                             | Dependance                    | Critere de fin                                                     |
-| --------------------------------- | ----------------------------- | ------------------------------------------------------------------ |
-| Tests de composants React         | environnement DOM pour Vitest | rendu et interactions des panneaux couverts                        |
-| Tests d accessibilite automatises | tests de composants           | navigation clavier et roles verifies                               |
-| Captures visuelles comparees      | publication                   | bureau, tablette, mobile, echelles d interface                     |
-| Agent de test joueur              | tests de composants           | debutant, expert, hors ligne, reprise apres incident, clavier seul |
+| Tache                        | Etat                                                |
+| ---------------------------- | --------------------------------------------------- |
+| Tests de composants React    | onze tests d interface en environnement DOM         |
+| Accessibilite automatisee    | analyse sur chaque ecran, clavier, focus visible    |
+| Captures visuelles comparees | cinq configurations, versionnees par plateforme     |
+| Fumee sur la production      | executee apres chaque deploiement, sur l URL reelle |
 
-Risque : des tests fragiles ralentiraient le developpement.
-Attenuation : cibler les comportements observables, jamais les details d implementation.
-
----
-
-## Phase 4 — Decision et integration 3D
-
-| Tache                                          | Dependance   | Critere de fin                                             |
-| ---------------------------------------------- | ------------ | ---------------------------------------------------------- |
-| Executer le banc d essai sur materiel varie    | aucune       | mesures consignees dans l ADR 0002                         |
-| Trancher le moteur                             | banc d essai | ADR 0002 passe en accepte                                  |
-| Implementer le rendu 3D derriere l abstraction | decision     | campus et baie navigables, aucun changement du code metier |
-| Chargement progressif des ressources 3D        | rendu 3D     | budget de premiere visite toujours respecte                |
-| Modes de camera contextuels                    | rendu 3D     | transitions fluides, jamais desorientantes                 |
-
-Risque principal : degrader les priorites superieures pour de la qualite graphique.
-Attenuation : les budgets de performance sont une porte bloquante de la publication.
+Les captures visuelles restent hors porte de publication : un rendu Linux et un
+rendu macOS different toujours, et en faire une porte produirait de faux echecs.
+Voir `docs/testing-e2e.md`.
 
 ---
 
-## Phase 5 — Enrichissement de la simulation
+## Phase 4 — Decision et integration 3D _(terminee)_
 
-| Tache                           | Valeur pedagogique                       | Critere de fin                                                                 |
-| ------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------ |
-| Relais DHCP                     | eleve : cas tres frequent en entreprise  | un client obtient un bail via un relais, et le diagnostic explique son absence |
-| Spanning tree                   | moyen : explique les boucles de couche 2 | une boucle est bloquee, pas seulement detectee                                 |
-| Routage dynamique simplifie     | moyen                                    | convergence apres coupure de lien                                              |
-| IPv6                            | eleve a terme                            | adressage, decouverte de voisins, double pile                                  |
-| Active Directory approfondi     | eleve                                    | strategies de groupe appliquees avec ordre de precedence                       |
-| Sonde de temperature et energie | faible                                   | mesures coherentes avec la charge                                              |
+| Tache                               | Etat                                                        |
+| ----------------------------------- | ----------------------------------------------------------- |
+| Banc d essai execute                | quatre configurations mesurees, garde-fous de validite      |
+| Moteur tranche                      | Three.js, WebGL 2 par defaut, ADR 0002 accepte              |
+| Rendu derriere l abstraction        | seul `three-renderer.ts` importe une bibliotheque graphique |
+| Chargement paresseux                | bloc separe de 119 Ko, hors chargement initial              |
+| Campus navigable et modes de camera | neuf zones, quatre modes, transitions douces                |
+
+Reste ouvert : mesurer la degradation sur materiel modeste et sur mobile.
 
 ---
 
-## Phase 6 — Comptes et synchronisation
+## Phase 5 — Enrichissement de la simulation _(largement terminee)_
 
-| Tache                                             | Dependance                  | Critere de fin                                               |
-| ------------------------------------------------- | --------------------------- | ------------------------------------------------------------ |
-| Implementer `core/sync`                           | contrats de synchronisation | fusion multi-appareils avec resolution de conflit            |
-| Implementer `core/permissions`                    | roles                       | invite, apprenant, formateur, administrateur                 |
-| Integration Supabase                              | **compte externe requis**   | migrations versionnees, securite au niveau des lignes testee |
-| Migration de la progression invite vers un compte | synchronisation             | aucune perte de donnees                                      |
-| Prise de controle administrateur initiale         | permissions                 | procedure a usage unique, verrouillee apres emploi           |
+| Tache                       | Etat                                                             |
+| --------------------------- | ---------------------------------------------------------------- |
+| Relais DHCP                 | fait et teste, avec causes d echec distinctes                    |
+| Arbre recouvrant            | fait : racine elue, ports bloques, connectivite preservee        |
+| Routage dynamique           | fait : abstraction a vecteur de distance, convergence et retrait |
+| Fondation IPv6 et voisinage | fait : adressage, lien-local, auto-configuration, decouverte     |
+| Routage IPv6 entre prefixes | **non fait**, annonce explicitement par le moteur                |
+| Active Directory approfondi | non commence                                                     |
 
-Contrainte permanente : la plateforme doit rester **entierement jouable sans compte**.
+---
+
+## Phase 6 — Comptes et synchronisation _(fondations posees)_
+
+| Tache                           | Etat                                                            |
+| ------------------------------- | --------------------------------------------------------------- |
+| `core/permissions`              | fait : politique serialisable, rejouable par un service distant |
+| `core/sync`                     | fait : file persistante, idempotence, fusion de conflit         |
+| Fondation audio                 | fait : quatre bus, degradation propre                           |
+| Cockpit formateur et admin      | fait, sur donnees locales explicitement etiquetees              |
+| Service de synchronisation reel | **en attente** : aucun point de service configure               |
+| Migration invite vers compte    | en attente du service                                           |
+
+Contrainte permanente : la plateforme reste entierement jouable sans compte.
 
 ---
 
@@ -95,15 +96,13 @@ mode examen configurable, mode classe, collaboration multi-roles, audio, interna
 
 ## Dette technique suivie
 
-| Element                                              | Impact                                                       | Traitement prevu                                                    |
-| ---------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------- |
-| `core/permissions` et `core/sync` vides              | aucun aujourd hui, ils ne sont importes nulle part           | phase 6                                                             |
-| Pas de tests de composants                           | regression d interface possible                              | phase 3                                                             |
-| Journal d evenements borne a 5000 entrees            | perte d evenements non significatifs sur tres longue session | acceptable, les evenements significatifs sont toujours conserves    |
-| Le cockpit formateur n affiche que l apprenant local | fonctionnalite annoncee comme limitee dans l ecran           | phase 6                                                             |
-| Cache npm local au depot                             | contournement d un cache global appartenant a root           | corriger la cause sur la machine, puis retirer la ligne de `.npmrc` |
-
----
+| Element                                      | Impact                                                    | Traitement prevu                        |
+| -------------------------------------------- | --------------------------------------------------------- | --------------------------------------- |
+| Banc d essai 3D sur une seule machine        | la degradation sur materiel modeste reste inconnue        | mesurer sur mobile et machine ancienne  |
+| Captures visuelles hors porte de publication | une regression visuelle peut passer entre deux executions | comparer a la demande avant une release |
+| Aucun service de synchronisation             | pas de suivi multi-appareils                              | phase 6, des qu un service existe       |
+| Journal d evenements borne a 5000 entrees    | perte d evenements non significatifs sur longue session   | acceptable, les significatifs restent   |
+| Cache npm local au depot                     | contournement d un cache global appartenant a root        | corriger la cause sur la machine        |
 
 ## Definition de fin
 
