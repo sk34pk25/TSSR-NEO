@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { CORE_VERSION } from '../state/session.ts';
 import { useSession } from '../state/hooks.ts';
 import { recoverFromCorruptedCache, serviceWorkerStatus } from '../state/pwa.ts';
+import type { Role } from '@tssr/contracts';
 
 declare const __TSSR_BUILD__: string;
 /**
@@ -11,6 +12,7 @@ declare const __TSSR_BUILD__: string;
 export function DiagnosticsView(): JSX.Element {
   const session = useSession();
   const [storage, setStorage] = useState<Record<string, number>>({});
+  const [bootstrapMessage, setBootstrapMessage] = useState<string | undefined>(undefined);
   const [sw, setSw] = useState<{
     state: string;
     scope: string | undefined;
@@ -133,6 +135,67 @@ export function DiagnosticsView(): JSX.Element {
             affectee.
           </span>
         </div>
+      </section>
+
+      <section className="neo-card">
+        <h2 style={{ fontSize: 'var(--neo-fs-lg)' }}>Roles et autorisations</h2>
+        <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
+          Ces verifications servent a ne pas proposer une action impossible. Elles ne remplacent
+          jamais un controle cote service : lorsqu un service distant sera branche, il reevaluera
+          exactement les memes regles.
+        </p>
+        <div className="neo-field" style={{ maxWidth: 280 }}>
+          <label htmlFor="role">Role local</label>
+          <select
+            id="role"
+            className="neo-select"
+            value={session.role}
+            onChange={(event) => session.setRole(event.target.value as Role)}
+          >
+            <option value="guest">Invite</option>
+            <option value="student">Apprenant</option>
+            <option value="trainer">Formateur</option>
+            <option value="admin">Administrateur</option>
+          </select>
+        </div>
+        <dl className="kv" style={{ marginTop: 'var(--neo-space-3)' }}>
+          <dt>Permissions effectives</dt>
+          <dd>{session.policy.effectivePermissions(session.subject()).length}</dd>
+          <dt>Prise de controle initiale</dt>
+          <dd>{session.bootstrap.locked ? 'verrouillee' : 'disponible'}</dd>
+        </dl>
+        <button
+          type="button"
+          className="neo-btn neo-btn--sm"
+          disabled={session.bootstrap.locked}
+          onClick={() => {
+            const result = session.claimAdministrator();
+            setBootstrapMessage(result.reason);
+          }}
+        >
+          Revendiquer le role administrateur
+        </button>
+        {bootstrapMessage !== undefined ? (
+          <p className="neo-tag neo-tag--accent" style={{ marginTop: 'var(--neo-space-3)' }}>
+            {bootstrapMessage}
+          </p>
+        ) : null}
+      </section>
+
+      <section className="neo-card">
+        <h2 style={{ fontSize: 'var(--neo-fs-lg)' }}>Synchronisation et audio</h2>
+        <dl className="kv">
+          <dt>Etat de synchronisation</dt>
+          <dd>{session.syncState.status}</dd>
+          <dt>Operations en file</dt>
+          <dd>{session.syncState.pending}</dd>
+          <dt>Derniere erreur</dt>
+          <dd>{session.syncState.lastError ?? 'aucune'}</dd>
+          <dt>Service distant</dt>
+          <dd>aucun configure : la file attend sans perte</dd>
+          <dt>Etat audio</dt>
+          <dd>{session.audioStatus}</dd>
+        </dl>
       </section>
 
       <section className="neo-card">

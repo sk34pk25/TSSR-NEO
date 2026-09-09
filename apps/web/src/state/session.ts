@@ -3,6 +3,7 @@ import type {
   MissionDefinition,
   PlayerProgress,
   Preferences,
+  Role,
   SaveState,
   Snapshot,
 } from '@tssr/contracts';
@@ -25,6 +26,17 @@ import {
   type QualityProfile,
   type RenderCapabilities,
 } from '@tssr/rendering';
+import { AudioEngine, EVENT_CUES, type AudioStatus } from '@tssr/audio';
+import {
+  PolicyEngine,
+  claimAdmin,
+  createBootstrapState,
+  type BootstrapState,
+  type Permission,
+  type Resource,
+  type Subject,
+} from '@tssr/permissions';
+import { HttpSyncProvider, SyncEngine, type SyncState } from '@tssr/sync';
 import {
   missionPosteSansReseau,
   trainingLabCompetencies,
@@ -79,6 +91,21 @@ export class AppSession {
   storageMode: 'indexeddb' | 'memory' = 'memory';
   recovery: RecoveryOffer | undefined;
   booted = false;
+
+  /** Role local. Sans service distant, il vaut « invite » puis « apprenant ». */
+  role: Role = 'student';
+  readonly policy = new PolicyEngine();
+  bootstrap: BootstrapState = createBootstrapState();
+
+  readonly audio = new AudioEngine();
+  audioStatus: AudioStatus = 'inactif';
+
+  /**
+   * Synchronisation : la file fonctionne toujours, le fournisseur non.
+   * Aucun service n est configure a ce jour, ce que l interface indique.
+   */
+  readonly sync = new SyncEngine({ provider: new HttpSyncProvider() });
+  syncState: SyncState = { status: 'idle', pending: 0, revision: 0 };
   snapshots: Snapshot[] = [];
   lastSavedAt: number | undefined;
 
@@ -118,8 +145,67 @@ export class AppSession {
     }
     await this.saveManager.markSessionOpen();
     this.snapshots = await this.saveManager.listSnapshots();
+
+    await this.sync.init();
+    this.sync.subscribe((state) => {
+      this.syncState = state;
+      this.notify();
+    });
+    this.audio.subscribe((status) => {
+      this.audioStatus = status;
+      this.notify();
+    });
+    this.audio.setLevels(this.progress.preferences.audio);
+
     this.booted = true;
     this.notify();
+  }
+
+  /** Sujet courant pour les decisions d autorisation. */
+  subject(): Subject {
+    return { role: this.role, profileId: this.progress.profileId };
+  }
+
+  can(permission: Permission, resource?: Resource): boolean {
+    return this.policy.can(this.subject(), permission, resource).allowed;
+  }
+
+  whyNot(permission: Permission, resource?: Resource): string {
+    return this.policy.can(this.subject(), permission, resource).reason;
+  }
+
+  setRole(role: Role): void {
+    this.role = role;
+    this.notify();
+  }
+
+  /** Prise de controle initiale : elle se verrouille apres un seul usage. */
+  claimAdministrator(): { allowed: boolean; reason: string } {
+    const result = claimAdmin(this.bootstrap, this.progress.profileId, Date.now());
+    this.bootstrap = result.state;
+    if (result.decision.allowed) this.role = 'admin';
+    this.notify();
+    return { allowed: result.decision.allowed, reason: result.decision.reason };
+  }
+
+  /**
+   * Active le son.
+   * Doit etre appele depuis un geste utilisateur : les navigateurs refusent
+   * de produire du son autrement, et nous le signalons plutot que de le masquer.
+   */
+  async enableAudio(): Promise<AudioStatus> {
+    const status = await this.audio.resume();
+    this.audio.setLevels(this.progress.preferences.audio);
+    if (status === 'actif') this.audio.startAmbience();
+    return status;
+  }
+
+  /** Relie les evenements de simulation aux retours sonores. */
+  private attachAudio(world: SimulationWorld): void {
+    world.bus.onAny((entry) => {
+      const cue = EVENT_CUES[entry.type];
+      if (cue !== undefined) this.audio.play(cue);
+    });
   }
 
   /** Applique les preferences a la racine du document (accessibilite comprise). */
@@ -147,6 +233,7 @@ export class AppSession {
       updatedAt: Date.now(),
     };
     this.applyPreferences();
+    this.audio.setLevels(this.progress.preferences.audio);
     await this.saveManager.saveProgress(this.progress);
     this.nova?.setProgress(this.progress);
     this.notify();
@@ -186,6 +273,7 @@ export class AppSession {
     runner.start();
     this.world = world;
     this.runner = runner;
+    this.attachAudio(world);
     this.nova = new Nova({
       library: this.library,
       world,
@@ -205,6 +293,7 @@ export class AppSession {
     const world = new SimulationWorld(state, { bus, seed });
     this.world = world;
     this.runner = undefined;
+    this.attachAudio(world);
     this.nova = new Nova({
       library: this.library,
       world,
@@ -326,6 +415,8 @@ export class AppSession {
     const result = applyMissionResult(this.progress, runner.definition, score);
     this.progress = result.progress;
     await this.saveManager.saveProgress(this.progress);
+    await this.sync.recordProgress(this.progress);
+    void this.sync.flush();
     this.nova?.setProgress(this.progress);
     this.notify();
     return result;

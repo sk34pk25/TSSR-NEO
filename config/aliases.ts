@@ -17,6 +17,8 @@ export const workspacePackages: Record<string, string> = {
   '@tssr/rendering/three': 'core/rendering/src/three-renderer.ts',
   '@tssr/sync': 'core/sync/src/index.ts',
   '@tssr/permissions': 'core/permissions/src/index.ts',
+  '@tssr/audio': 'core/audio/src/index.ts',
+  '@tssr/classroom': 'core/classroom/src/index.ts',
   '@tssr/sim-network': 'simulation/network/src/index.ts',
   '@tssr/sim-systems': 'simulation/systems/src/index.ts',
   '@tssr/sim-hardware': 'simulation/hardware/src/index.ts',

@@ -192,6 +192,62 @@ export function SettingsView(): JSX.Element {
       </section>
 
       <section className="neo-card">
+        <h2 style={{ fontSize: 'var(--neo-fs-lg)' }}>Son</h2>
+        <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
+          Le son doit etre active par un geste de votre part : les navigateurs l exigent. Etat
+          actuel : <strong>{session.audioStatus}</strong>. Le son n est jamais le seul porteur d une
+          information.
+        </p>
+        <div className="neo-row">
+          <button
+            type="button"
+            className="neo-btn neo-btn--sm"
+            onClick={() => {
+              void session.enableAudio().then((status) => setMessage(`Audio : ${status}`));
+            }}
+          >
+            Activer le son
+          </button>
+          <button
+            type="button"
+            className="neo-btn neo-btn--sm neo-btn--ghost"
+            onClick={() => {
+              session.audio.setMuted(!session.audio.isMuted());
+              setMessage(session.audio.isMuted() ? 'Son coupe.' : 'Son retabli.');
+            }}
+          >
+            Couper ou retablir
+          </button>
+        </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 'var(--neo-space-3)',
+            marginTop: 'var(--neo-space-3)',
+          }}
+        >
+          {(['master', 'ambience', 'sfx', 'voice', 'music'] as const).map((bus) => (
+            <div className="neo-field" key={bus}>
+              <label htmlFor={`audio-${bus}`}>{bus}</label>
+              <input
+                id={`audio-${bus}`}
+                className="neo-input"
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={prefs.audio[bus]}
+                onChange={(event) =>
+                  update({ audio: { ...prefs.audio, [bus]: Number(event.target.value) } })
+                }
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="neo-card">
         <h2 style={{ fontSize: 'var(--neo-fs-lg)' }}>Confidentialite et donnees</h2>
         <p className="neo-muted" style={{ fontSize: 'var(--neo-fs-sm)' }}>
           Aucune publicite, aucun traqueur, aucune donnee personnelle collectee. La telemetrie

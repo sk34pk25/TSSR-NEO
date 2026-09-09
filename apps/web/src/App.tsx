@@ -9,7 +9,8 @@ import { MissionView } from './views/MissionView.tsx';
 import { ProgressionView } from './views/ProgressionView.tsx';
 import { ReviewView } from './views/ReviewView.tsx';
 import { SettingsView } from './views/SettingsView.tsx';
-import { SupervisionView, TicketsView, TrainerView } from './views/SimpleViews.tsx';
+import { SupervisionView, TicketsView } from './views/SimpleViews.tsx';
+import { TrainerView } from './views/TrainerView.tsx';
 import { useRoute, useSession } from './state/hooks.ts';
 
 /** Aucun ecran blanc : une erreur de rendu reste rattrapable par l utilisateur. */
