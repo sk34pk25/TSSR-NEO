@@ -8,7 +8,6 @@ import {
   floodDomain,
   forwardPacket,
   makePool,
-  requestDhcpLease,
   resolveName,
   TopologyIndex,
   connectToService,
