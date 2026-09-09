@@ -1,0 +1,79 @@
+{
+  "date": "2026-09-09",
+  "machine": {
+    "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+    "coeurs": 8,
+    "memoireGo": 16,
+    "navigateur": "Chromium (pane de developpement)",
+    "webgl2": true,
+    "webgpu": true
+  },
+  "protocole": {
+    "scene": "salle reseau TSSR NEO, 377 objets logiques",
+    "resolution": "1600x900, ratio de pixels force a 1",
+    "charge": "deux cameras alternees, animation par instance, selection par pointage, habillage projete, LOD, instanciation, chargement GLB",
+    "mesure": "cout reel d une image, GPU vide apres chaque rendu, hors synchronisation verticale",
+    "images": "290 par configuration, dix premieres ecartees (compilation des nuanceurs)",
+    "validation": "lecture de 576 pixels au centre de l image apres le premier rendu",
+    "reserve": "temps de demarrage releves avec cache chaud ; le poids reseau reflete le telechargement a froid"
+  },
+  "mesures": [
+    {
+      "moteur": "Three.js",
+      "version": "0.169.0",
+      "backend": "WebGL 2",
+      "demarrageMs": 64,
+      "frameP50Ms": 0.2,
+      "frameP95Ms": 0.3,
+      "frameP99Ms": 0.4,
+      "drawCallsParImage": 117,
+      "memoireMo": 6.2,
+      "reseauKo": 286,
+      "pixelsRendus": "576/576"
+    },
+    {
+      "moteur": "Babylon.js",
+      "version": "7.31.2",
+      "backend": "WebGL 2",
+      "demarrageMs": 91,
+      "frameP50Ms": 0.4,
+      "frameP95Ms": 0.8,
+      "frameP99Ms": 10.0,
+      "drawCallsParImage": 117,
+      "memoireMo": 5.9,
+      "reseauKo": 1175,
+      "pixelsRendus": "576/576"
+    },
+    {
+      "moteur": "Three.js",
+      "version": "0.169.0",
+      "backend": "WebGPU",
+      "demarrageMs": 86,
+      "frameP50Ms": 1.2,
+      "frameP95Ms": 1.8,
+      "frameP99Ms": 2.2,
+      "drawCallsParImage": 602,
+      "memoireMo": null,
+      "reseauKo": 337,
+      "pixelsRendus": "non verifiable"
+    },
+    {
+      "moteur": "Babylon.js",
+      "version": "7.31.2",
+      "backend": "WebGPU",
+      "demarrageMs": 28,
+      "frameP50Ms": 1.6,
+      "frameP95Ms": 2.0,
+      "frameP99Ms": 5.2,
+      "drawCallsParImage": 117,
+      "memoireMo": 50.6,
+      "reseauKo": 0,
+      "pixelsRendus": "non verifiable"
+    }
+  ],
+  "limites": [
+    "Une seule machine mesuree : la degradation sur materiel modeste reste a mesurer.",
+    "Les compteurs de draw calls sont definis par chaque moteur ; celui du backend WebGPU de Three.js compte les passes differemment.",
+    "Le poids reseau de Babylon.js WebGPU est nul car le moteur etait deja en cache lors de cette execution."
+  ]
+}

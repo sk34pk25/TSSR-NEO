@@ -5,76 +5,188 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TSSR NEO - banc d essai des moteurs 3D</title>
     <style>
-      :root { color-scheme: dark; }
+      :root {
+        color-scheme: dark;
+      }
       body {
         margin: 0;
         background: #0d1117;
         color: #e6edf3;
-        font: 14px/1.5 ui-sans-serif, system-ui, sans-serif;
+        font:
+          14px/1.5 ui-sans-serif,
+          system-ui,
+          sans-serif;
         padding: 24px;
       }
-      h1 { font-size: 1.4rem; margin: 0 0 4px; }
-      p { color: #8b98a6; max-width: 78ch; }
-      button {
-        padding: 8px 14px; margin-right: 8px; border-radius: 8px;
-        border: 1px solid #35424f; background: #1a232e; color: inherit; cursor: pointer;
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 4px;
       }
-      button:disabled { opacity: .5; cursor: progress; }
-      canvas { width: 100%; height: 380px; display: block; border: 1px solid #26303c; border-radius: 10px; background: #06090d; margin: 16px 0; }
-      table { border-collapse: collapse; width: 100%; margin-top: 16px; }
-      th, td { padding: 6px 10px; border-bottom: 1px solid #26303c; text-align: left; }
-      th { color: #8b98a6; font-weight: 550; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
-      code { font-family: ui-monospace, monospace; color: #3fd0ff; }
-      .note { border-left: 3px solid #ffb454; padding: 8px 12px; background: rgba(255,180,84,.08); border-radius: 6px; }
+      h2 {
+        font-size: 1.05rem;
+        margin: 26px 0 8px;
+      }
+      p {
+        color: #8b98a6;
+        max-width: 80ch;
+      }
+      button {
+        padding: 8px 14px;
+        margin: 0 8px 8px 0;
+        border-radius: 8px;
+        border: 1px solid #35424f;
+        background: #1a232e;
+        color: inherit;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: progress;
+      }
+      button.primary {
+        background: #1e79c9;
+        border-color: transparent;
+        color: #04121b;
+        font-weight: 650;
+      }
+      /* Le canevas garde une taille de rendu fixe ; le conteneur se contente de le rogner. */
+      .stage-wrap {
+        position: relative;
+        margin: 16px 0;
+        overflow: hidden;
+        max-width: 100%;
+        height: 420px;
+        border: 1px solid #26303c;
+        border-radius: 10px;
+      }
+      canvas {
+        width: 1600px;
+        height: 900px;
+        display: block;
+        background: #06090d;
+        transform-origin: top left;
+      }
+      #overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .overlay-label {
+        position: absolute;
+        top: 0;
+        left: 0;
+        padding: 3px 8px;
+        border-radius: 6px;
+        background: rgba(13, 17, 23, 0.82);
+        border: 1px solid rgba(63, 208, 255, 0.45);
+        color: #3fd0ff;
+        font-size: 11px;
+        white-space: nowrap;
+        transition: opacity 0.2s linear;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 12px;
+        font-size: 13px;
+      }
+      th,
+      td {
+        padding: 6px 10px;
+        border-bottom: 1px solid #26303c;
+        text-align: left;
+      }
+      th {
+        color: #8b98a6;
+        font-weight: 550;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      code {
+        font-family: ui-monospace, monospace;
+        color: #3fd0ff;
+      }
+      .note {
+        border-left: 3px solid #ffb454;
+        padding: 8px 12px;
+        background: rgba(255, 180, 84, 0.08);
+        border-radius: 6px;
+        max-width: 80ch;
+      }
+      pre {
+        font-family: ui-monospace, monospace;
+        color: #8b98a6;
+        font-size: 12px;
+      }
     </style>
   </head>
   <body>
     <h1>Banc d essai des moteurs 3D</h1>
     <p>
-      Ce banc compare les moteurs 3D candidats sur une scene representative de TSSR NEO :
-      une baie de serveurs instanciee, un eclairage PBR, une selection par pointage et une
-      camera en rotation continue. Chaque moteur execute strictement la meme scene.
-      Les mesures sont locales et servent a documenter la decision technique
-      (voir <code>docs/adr/0002-choix-du-moteur-3d.md</code>).
+      Chaque moteur construit <strong>exactement la meme scene</strong> : local technique, quatre
+      baies, quatre-vingts serveurs instancies avec deux niveaux de detail, commutateurs, panneaux
+      de brassage, quatre-vingt-seize ports, quatre-vingt-seize cables courbes, poste de travail,
+      eclairage PBR, temoins lumineux animes par instance, selection par pointage, deux cameras
+      alternees, habillage pedagogique projete et chargement d un fichier GLB genere a l execution.
     </p>
     <p class="note">
-      Cet outil est reserve au developpement. Il charge les moteurs depuis un CDN public
-      et n est jamais inclus dans l application publiee.
+      Outil de developpement uniquement. Les moteurs sont charges depuis un CDN public au moment de
+      la mesure ; ils ne sont jamais inclus dans l application publiee. Resultats consignes dans
+      <code>docs/adr/0002-choix-du-moteur-3d.md</code>.
     </p>
 
     <div>
-      <label for="count">Objets instancies</label>
-      <input id="count" type="number" value="600" min="50" max="5000" step="50" />
-      <label for="seconds">Duree de mesure (s)</label>
-      <input id="seconds" type="number" value="8" min="3" max="30" />
+      <label for="seconds">Duree de mesure par moteur (s)</label>
+      <input id="seconds" type="number" value="10" min="4" max="60" />
     </div>
     <div style="margin-top: 12px">
-      <button id="run-three">Mesurer Three.js</button>
-      <button id="run-babylon">Mesurer Babylon.js</button>
+      <button id="run-all" class="primary">Mesurer tous les moteurs</button>
+      <button id="run-three-webgl">Three.js WebGL 2</button>
+      <button id="run-three-webgpu">Three.js WebGPU</button>
+      <button id="run-babylon-webgl">Babylon.js WebGL 2</button>
+      <button id="run-babylon-webgpu">Babylon.js WebGPU</button>
       <button id="copy">Copier les resultats</button>
     </div>
 
-    <canvas id="stage"></canvas>
+    <div class="stage-wrap">
+      <canvas id="stage"></canvas>
+      <div id="overlay"></div>
+    </div>
 
     <table>
       <thead>
         <tr>
-          <th>Moteur</th>
+          <th>Configuration</th>
           <th>Backend</th>
-          <th>Init (ms)</th>
+          <th>Demarrage (ms)</th>
           <th>FPS moyen</th>
           <th>FPS 1 % bas</th>
+          <th>Frame p50/p95/p99 (ms)</th>
+          <th>Draw calls</th>
           <th>Objets</th>
-          <th>Memoire JS (Mo)</th>
-          <th>Poids charge (Ko)</th>
+          <th>Memoire (Mo)</th>
+          <th>Reseau (Ko)</th>
+          <th>Pixels rendus</th>
         </tr>
       </thead>
       <tbody id="results"></tbody>
     </table>
 
-    <h2 style="font-size: 1.1rem; margin-top: 28px">Capacites detectees</h2>
-    <pre id="caps" style="font-family: ui-monospace, monospace; color: #8b98a6"></pre>
+    <h2>Capacites detectees</h2>
+    <pre id="caps"></pre>
 
+    <!-- Les modules Three.js utilisent des specificateurs nus : la carte d import les resout. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+          "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.webgpu.js",
+          "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.tsl.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+        }
+      }
+    </script>
     <script type="module" src="./bench.js"></script>
   </body>
 </html>

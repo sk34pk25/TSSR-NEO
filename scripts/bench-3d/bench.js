@@ -1,23 +1,27 @@
 /*
- * Banc d essai des moteurs 3D pour TSSR NEO.
+ * Orchestration du banc d essai des moteurs 3D de TSSR NEO.
  *
- * Scene identique pour chaque moteur :
- *  - une grille d objets instancies representant des equipements en baie ;
- *  - un materiau PBR et deux sources de lumiere ;
- *  - une camera en rotation continue ;
- *  - une selection par pointage a chaque seconde.
- *
- * Mesures : temps d initialisation, cadence moyenne, cadence du centile bas,
- * memoire JavaScript quand le navigateur l expose, et poids reseau charge.
+ * Chaque moteur construit la meme scene (voir scene-spec.js) et subit la meme
+ * charge : rotation de camera, alternance de deux cameras, animation par instance,
+ * selection par pointage, habillage pedagogique projete a l ecran.
  */
+import { buildThree } from './three-runner.js';
+import { buildBabylon } from './babylon-runner.js';
+import { expectedObjectCount, overlayAnchors } from './scene-spec.js';
 
-const THREE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js';
-const BABYLON_URL = 'https://cdnjs.cloudflare.com/ajax/libs/babylonjs/7.31.2/babylon.js';
+/*
+ * Resolution de rendu fixe.
+ * La mesure ne doit dependre ni de la taille de la fenetre, ni de la densite de
+ * l ecran, ni du fait que le canevas soit visible : sans cela les chiffres ne
+ * sont comparables ni entre moteurs ni entre machines.
+ */
+const RENDER_WIDTH = 1600;
+const RENDER_HEIGHT = 900;
 
-const canvas = document.getElementById('stage');
+const overlay = document.getElementById('overlay');
 const results = document.getElementById('results');
-const caps = document.getElementById('caps');
-const rows = [];
+const capsBox = document.getElementById('caps');
+const measurements = [];
 
 function detectCapabilities() {
   const probe = document.createElement('canvas');
@@ -35,250 +39,207 @@ function detectCapabilities() {
     coeurs: navigator.hardwareConcurrency ?? 'non expose',
     memoireGo: navigator.deviceMemory ?? 'non exposee',
     pixelRatio: window.devicePixelRatio,
+    resolutionMesure: `${1600}x${900}`,
+    objetsScene: expectedObjectCount(),
   };
 }
 
-caps.textContent = JSON.stringify(detectCapabilities(), null, 2);
+capsBox.textContent = JSON.stringify(detectCapabilities(), null, 2);
 
-function transferredKb() {
+function transferredKb(filter) {
   if (typeof performance.getEntriesByType !== 'function') return 0;
   return (
     performance
       .getEntriesByType('resource')
-      .filter((entry) => entry.name.includes('cdnjs'))
+      .filter((entry) => entry.name.includes(filter))
       .reduce((sum, entry) => sum + (entry.transferSize || entry.encodedBodySize || 0), 0) / 1024
   );
 }
 
 function memoryMb() {
-  const memory = performance.memory;
-  return memory ? Math.round(memory.usedJSHeapSize / 1048576) : undefined;
+  return performance.memory ? performance.memory.usedJSHeapSize / 1048576 : undefined;
 }
 
-/** Mesure la cadence pendant la duree demandee et renvoie moyenne et centile bas. */
-function measure(renderFrame, seconds) {
-  return new Promise((resolve) => {
-    const deltas = [];
-    let last = performance.now();
-    const end = last + seconds * 1000;
-    const loop = (now) => {
-      const delta = now - last;
-      last = now;
-      if (delta > 0) deltas.push(delta);
-      renderFrame(now);
-      if (now < end) requestAnimationFrame(loop);
-      else {
-        const sorted = [...deltas].sort((a, b) => a - b);
-        const average = deltas.reduce((sum, value) => sum + value, 0) / deltas.length;
-        const lowIndex = Math.max(0, Math.floor(sorted.length * 0.99) - 1);
-        resolve({
-          fpsMoyen: Math.round(1000 / average),
-          fpsBas: Math.round(1000 / (sorted[lowIndex] ?? average)),
-          frames: deltas.length,
-        });
-      }
-    };
-    requestAnimationFrame(loop);
+function percentile(sorted, p) {
+  if (sorted.length === 0) return 0;
+  const index = Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1));
+  return sorted[index];
+}
+
+/** Habillage pedagogique : trois etiquettes suivant des ancres de la scene. */
+function renderOverlay(runner) {
+  const anchors = overlayAnchors();
+  if (overlay.children.length !== anchors.length) {
+    overlay.replaceChildren(
+      ...anchors.map((anchor) => {
+        const node = document.createElement('div');
+        node.className = 'overlay-label';
+        node.textContent = anchor.label;
+        return node;
+      }),
+    );
+  }
+  anchors.forEach((anchor, index) => {
+    const node = overlay.children[index];
+    try {
+      const projected = runner.project(anchor.position);
+      node.style.transform = `translate(${Math.round(projected.x)}px, ${Math.round(projected.y)}px)`;
+      node.style.opacity = projected.visible ? '1' : '0';
+    } catch {
+      node.style.opacity = '0';
+    }
   });
 }
 
-function record(row) {
-  rows.push(row);
+async function runOne({ label, build, mode, seconds }) {
+  // Un canevas neuf par mesure : aucun etat residuel entre moteurs.
+  // Le noeud est relu a chaque fois : la reference precedente est detachee.
+  const previous = document.getElementById('stage');
+  const fresh = previous.cloneNode(false);
+  previous.replaceWith(fresh);
+  const canvas = fresh;
+  // Taille imposee en pixels CSS ET en tampon : certains moteurs se
+  // redimensionnent seuls sur la taille de mise en page.
+  canvas.style.width = `${RENDER_WIDTH}px`;
+  canvas.style.height = `${RENDER_HEIGHT}px`;
+  canvas.width = RENDER_WIDTH;
+  canvas.height = RENDER_HEIGHT;
+
+  const networkBefore = transferredKb(mode === 'babylon' ? 'babylon' : 'three');
+  const memoryBefore = memoryMb();
+  const startedAt = performance.now();
+
+  const runner = await build({ canvas, mode: mode.includes('webgpu') ? 'webgpu' : 'webgl' });
+
+  // Le temps de demarrage inclut la premiere image reellement soumise au GPU.
+  runner.frame(performance.now());
+  await runner.flush();
+  const startupMs = Math.round(performance.now() - startedAt);
+  // Controle de validite : une mesure sur un canevas vide serait rapide et fausse.
+  const pixelsRendus = runner.sampleRendered();
+
+  /*
+   * Boucle de mesure pilotee par minuterie plutot que par la synchronisation
+   * d affichage. La cadence rendue par le compositeur n est pas mesurable de
+   * facon fiable ici ; on mesure donc le COUT REEL d une image, GPU compris,
+   * en forcant la fin des travaux graphiques apres chaque rendu.
+   *
+   * La cadence rapportee est donc une cadence theorique hors synchronisation
+   * verticale : elle compare les moteurs a charge identique, et n est pas
+   * plafonnee a soixante images par seconde.
+   */
+  const deltas = [];
+  let drawCalls = 0;
+  const frames = Math.max(60, Math.round(seconds * 30));
+  const virtualStep = 1000 / 60;
+  for (let i = 0; i < frames; i += 1) {
+    const virtualNow = i * virtualStep;
+    const before = performance.now();
+    runner.frame(virtualNow);
+    await runner.flush();
+    const cost = performance.now() - before;
+    // Les toutes premieres images incluent la compilation des nuanceurs.
+    if (i >= 10 && cost > 0 && cost < 2000) deltas.push(cost);
+    renderOverlay(runner);
+    // Valeur de la derniere image mesuree : un compteur par image, pas un cumul.
+    drawCalls = runner.drawCalls();
+    if (i % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  const sorted = [...deltas].sort((a, b) => a - b);
+  const average = deltas.reduce((sum, value) => sum + value, 0) / Math.max(1, deltas.length);
+  const memoryAfter = memoryMb();
+
+  const row = {
+    label,
+    moteur: runner.name,
+    backend: runner.backend,
+    startupMs,
+    fpsMoyen: Math.round(1000 / average),
+    frameP50: Math.round(percentile(sorted, 50) * 100) / 100,
+    frameP95: Math.round(percentile(sorted, 95) * 100) / 100,
+    frameP99: Math.round(percentile(sorted, 99) * 100) / 100,
+    fpsBas1: Math.round(1000 / (percentile(sorted, 99) || average)),
+    drawCalls,
+    objets: runner.objects,
+    memoireMo:
+      memoryBefore !== undefined && memoryAfter !== undefined
+        ? Math.round((memoryAfter - memoryBefore) * 10) / 10
+        : undefined,
+    reseauKo: Math.round(transferredKb(mode === 'babylon' ? 'babylon' : 'three') - networkBefore),
+    images: deltas.length,
+    pixelsRendus,
+    methode: 'cout image hors synchronisation verticale, GPU vide apres chaque rendu',
+  };
+
+  runner.dispose();
+  overlay.replaceChildren();
+  measurements.push(row);
+  appendRow(row);
+  return row;
+}
+
+function appendRow(row) {
   const tr = document.createElement('tr');
   tr.innerHTML = [
-    row.moteur,
+    row.label,
     row.backend,
-    row.initMs,
+    row.startupMs,
     row.fpsMoyen,
-    row.fpsBas,
+    row.fpsBas1,
+    `${row.frameP50} / ${row.frameP95} / ${row.frameP99}`,
+    row.drawCalls,
     row.objets,
     row.memoireMo ?? 'non exposee',
     row.reseauKo,
+    row.pixelsRendus,
   ]
     .map((cell) => `<td>${cell}</td>`)
     .join('');
   results.appendChild(tr);
 }
 
-function resetCanvas() {
-  const clone = canvas.cloneNode(false);
-  canvas.parentNode.replaceChild(clone, canvas);
-  return clone;
+function appendError(label, error) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${label}</td><td colspan="9" style="color:#ff5c7a">${String(error)}</td>`;
+  results.appendChild(tr);
+  measurements.push({ label, erreur: String(error) });
 }
 
-async function benchThree(count, seconds) {
-  const before = transferredKb();
-  const start = performance.now();
-  const THREE = await import(THREE_URL);
-  const stage = resetCanvas();
-  const renderer = new THREE.WebGLRenderer({ canvas: stage, antialias: true });
-  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
-  renderer.setSize(stage.clientWidth, stage.clientHeight, false);
+const SUITES = {
+  'three-webgl': { label: 'Three.js WebGL 2', build: buildThree, mode: 'three' },
+  'three-webgpu': { label: 'Three.js WebGPU', build: buildThree, mode: 'three-webgpu' },
+  'babylon-webgl': { label: 'Babylon.js WebGL 2', build: buildBabylon, mode: 'babylon' },
+  'babylon-webgpu': { label: 'Babylon.js WebGPU', build: buildBabylon, mode: 'babylon-webgpu' },
+};
 
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x06090d);
-  const camera = new THREE.PerspectiveCamera(55, stage.clientWidth / stage.clientHeight, 0.1, 200);
-  scene.add(new THREE.HemisphereLight(0x88aaff, 0x101418, 0.7));
-  const key = new THREE.DirectionalLight(0xffffff, 1.4);
-  key.position.set(8, 14, 6);
-  scene.add(key);
-
-  const geometry = new THREE.BoxGeometry(1.6, 0.25, 0.9);
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x2a3440,
-    roughness: 0.45,
-    metalness: 0.7,
-  });
-  const mesh = new THREE.InstancedMesh(geometry, material, count);
-  const matrix = new THREE.Matrix4();
-  const perRack = 36;
-  for (let i = 0; i < count; i += 1) {
-    const rack = Math.floor(i / perRack);
-    matrix.makeTranslation(
-      (rack % 12) * 2.4 - 14,
-      (i % perRack) * 0.3,
-      Math.floor(rack / 12) * 4 - 6,
-    );
-    mesh.setMatrixAt(i, matrix);
-  }
-  scene.add(mesh);
-
-  const raycaster = new THREE.Raycaster();
-  const pointer = new THREE.Vector2(0, 0);
-  const initMs = Math.round(performance.now() - start);
-  let lastPick = 0;
-
-  const stats = await measure((now) => {
-    const angle = now / 4000;
-    camera.position.set(Math.cos(angle) * 26, 12, Math.sin(angle) * 26);
-    camera.lookAt(0, 5, 0);
-    if (now - lastPick > 1000) {
-      lastPick = now;
-      raycaster.setFromCamera(pointer, camera);
-      raycaster.intersectObject(mesh);
-    }
-    renderer.render(scene, camera);
-  }, seconds);
-
-  record({
-    moteur: 'Three.js',
-    backend: 'WebGL 2',
-    initMs,
-    objets: count,
-    memoireMo: memoryMb(),
-    reseauKo: Math.round(transferredKb() - before),
-    ...stats,
-  });
-  renderer.dispose();
-}
-
-function loadScript(url) {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = url;
-    script.onload = resolve;
-    script.onerror = () => reject(new Error(`Chargement impossible : ${url}`));
-    document.head.appendChild(script);
-  });
-}
-
-async function benchBabylon(count, seconds) {
-  const before = transferredKb();
-  const start = performance.now();
-  if (typeof window.BABYLON === 'undefined') await loadScript(BABYLON_URL);
-  const BABYLON = window.BABYLON;
-  const stage = resetCanvas();
-  const engine = new BABYLON.Engine(stage, true, { preserveDrawingBuffer: false });
-  const scene = new BABYLON.Scene(engine);
-  scene.clearColor = new BABYLON.Color4(0.02, 0.03, 0.05, 1);
-
-  const camera = new BABYLON.ArcRotateCamera(
-    'cam',
-    0,
-    1.1,
-    30,
-    new BABYLON.Vector3(0, 5, 0),
-    scene,
-  );
-  new BABYLON.HemisphericLight('hemi', new BABYLON.Vector3(0, 1, 0), scene).intensity = 0.7;
-  const key = new BABYLON.DirectionalLight('key', new BABYLON.Vector3(-0.6, -1, -0.4), scene);
-  key.intensity = 1.4;
-
-  const source = BABYLON.MeshBuilder.CreateBox(
-    'unit',
-    { width: 1.6, height: 0.25, depth: 0.9 },
-    scene,
-  );
-  const material = new BABYLON.PBRMetallicRoughnessMaterial('pbr', scene);
-  material.baseColor = new BABYLON.Color3(0.16, 0.2, 0.25);
-  material.metallic = 0.7;
-  material.roughness = 0.45;
-  source.material = material;
-
-  const perRack = 36;
-  const matrices = new Float32Array(count * 16);
-  const matrix = BABYLON.Matrix.Identity();
-  for (let i = 0; i < count; i += 1) {
-    const rack = Math.floor(i / perRack);
-    BABYLON.Matrix.TranslationToRef(
-      (rack % 12) * 2.4 - 14,
-      (i % perRack) * 0.3,
-      Math.floor(rack / 12) * 4 - 6,
-      matrix,
-    );
-    matrix.copyToArray(matrices, i * 16);
-  }
-  source.thinInstanceSetBuffer('matrix', matrices, 16);
-
-  const initMs = Math.round(performance.now() - start);
-  let lastPick = 0;
-
-  const stats = await measure((now) => {
-    camera.alpha = now / 4000;
-    if (now - lastPick > 1000) {
-      lastPick = now;
-      scene.pick(stage.width / 2, stage.height / 2);
-    }
-    scene.render();
-  }, seconds);
-
-  record({
-    moteur: 'Babylon.js',
-    backend: engine.webGLVersion === 2 ? 'WebGL 2' : 'WebGL 1',
-    initMs,
-    objets: count,
-    memoireMo: memoryMb(),
-    reseauKo: Math.round(transferredKb() - before),
-    ...stats,
-  });
-  engine.dispose();
-}
-
-function withBusyButtons(handler) {
-  return async () => {
-    const buttons = [...document.querySelectorAll('button')];
-    for (const button of buttons) button.disabled = true;
+async function run(keys) {
+  const buttons = [...document.querySelectorAll('button')];
+  for (const button of buttons) button.disabled = true;
+  const seconds = Number(document.getElementById('seconds').value);
+  for (const key of keys) {
+    const suite = SUITES[key];
     try {
-      const count = Number(document.getElementById('count').value);
-      const seconds = Number(document.getElementById('seconds').value);
-      await handler(count, seconds);
+      await runOne({ ...suite, seconds });
     } catch (error) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td colspan="8" style="color:#ff5c7a">${String(error)}</td>`;
-      results.appendChild(tr);
-    } finally {
-      for (const button of buttons) button.disabled = false;
+      appendError(suite.label, error);
     }
-  };
+  }
+  for (const button of buttons) button.disabled = false;
 }
 
-document.getElementById('run-three').addEventListener('click', withBusyButtons(benchThree));
-document.getElementById('run-babylon').addEventListener('click', withBusyButtons(benchBabylon));
+document.getElementById('run-all').addEventListener('click', () => void run(Object.keys(SUITES)));
+for (const key of Object.keys(SUITES)) {
+  document.getElementById(`run-${key}`)?.addEventListener('click', () => void run([key]));
+}
 document.getElementById('copy').addEventListener('click', () => {
   const payload = {
     capacites: detectCapabilities(),
-    mesures: rows,
+    mesures: measurements,
     date: new Date().toISOString(),
   };
   void navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
 });
+
+// Expose les resultats pour une collecte automatisee depuis l exterieur.
+window.__TSSR_BENCH__ = { run, measurements, capabilities: detectCapabilities() };
