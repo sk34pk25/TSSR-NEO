@@ -1,0 +1,94 @@
+/*
+ * Jetons de design TSSR NEO.
+ * Direction : sombre premium, anthracite et metal, verre depoli discret,
+ * cyan electrique reserve a l information fonctionnelle.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Fonds */
+  --neo-bg-0: #090c10;
+  --neo-bg-1: #0d1117;
+  --neo-bg-2: #131a22;
+  --neo-bg-3: #1a232e;
+  --neo-surface: rgba(20, 27, 35, 0.86);
+  --neo-surface-raised: rgba(26, 35, 46, 0.94);
+  --neo-glass: rgba(24, 32, 42, 0.62);
+
+  /* Traits */
+  --neo-border: #26303c;
+  --neo-border-strong: #35424f;
+  --neo-border-accent: rgba(63, 208, 255, 0.42);
+
+  /* Texte */
+  --neo-text: #e6edf3;
+  --neo-text-muted: #8b98a6;
+  --neo-text-dim: #5f6d7b;
+
+  /* Accent et etats : couleur uniquement quand elle porte du sens */
+  --neo-accent: #3fd0ff;
+  --neo-accent-strong: #7ce0ff;
+  --neo-accent-dim: rgba(63, 208, 255, 0.14);
+  --neo-success: #4ade80;
+  --neo-warning: #ffb454;
+  --neo-danger: #ff5c7a;
+  --neo-info: #8b9dff;
+
+  /* Typographie */
+  --neo-font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --neo-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --neo-fs-xs: calc(0.72rem * var(--neo-text-scale, 1));
+  --neo-fs-sm: calc(0.82rem * var(--neo-text-scale, 1));
+  --neo-fs-md: calc(0.94rem * var(--neo-text-scale, 1));
+  --neo-fs-lg: calc(1.15rem * var(--neo-text-scale, 1));
+  --neo-fs-xl: calc(1.5rem * var(--neo-text-scale, 1));
+  --neo-fs-2xl: calc(2.1rem * var(--neo-text-scale, 1));
+
+  /* Espacement et rayons */
+  --neo-space-1: 4px;
+  --neo-space-2: 8px;
+  --neo-space-3: 12px;
+  --neo-space-4: 16px;
+  --neo-space-5: 24px;
+  --neo-space-6: 32px;
+  --neo-radius-sm: 6px;
+  --neo-radius: 10px;
+  --neo-radius-lg: 16px;
+
+  --neo-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --neo-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.32);
+  --neo-transition: 160ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* Contraste renforce : accessibilite, pas un theme decoratif. */
+:root[data-contrast='high'] {
+  --neo-text: #ffffff;
+  --neo-text-muted: #c6d2de;
+  --neo-border: #4a5765;
+  --neo-border-strong: #6d7d8d;
+  --neo-bg-1: #05080b;
+  --neo-surface: rgba(13, 17, 23, 0.98);
+  --neo-glass: rgba(13, 17, 23, 0.95);
+}
+
+/* Daltonisme : on remplace les teintes ambigues par des paires distinguables. */
+:root[data-colorblind='protanopia'],
+:root[data-colorblind='deuteranopia'] {
+  --neo-success: #6ec6ff;
+  --neo-danger: #ffb000;
+  --neo-warning: #ffe066;
+}
+:root[data-colorblind='tritanopia'] {
+  --neo-success: #4ade80;
+  --neo-danger: #ff5c7a;
+  --neo-accent: #ff8ad4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --neo-transition: 1ms linear;
+  }
+}
+:root[data-reduce-motion='true'] {
+  --neo-transition: 1ms linear;
+}

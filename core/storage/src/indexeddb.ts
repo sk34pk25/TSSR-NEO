@@ -1,4 +1,4 @@
-import { STORE_NAMES, type StorageAdapter, type StoreName } from './adapter.ts';
+import { MemoryStorageAdapter, STORE_NAMES, type StorageAdapter, type StoreName } from './adapter.ts';
 
 const DB_NAME = 'tssr-neo';
 const DB_VERSION = 1;
@@ -92,7 +92,6 @@ export class IndexedDbStorageAdapter implements StorageAdapter {
 
 /** Choisit le meilleur support disponible sans jamais faire echouer le demarrage. */
 export async function createStorage(): Promise<StorageAdapter> {
-  const { MemoryStorageAdapter } = await import('./adapter.ts');
   if (!IndexedDbStorageAdapter.isAvailable()) return new MemoryStorageAdapter();
   try {
     const adapter = new IndexedDbStorageAdapter();

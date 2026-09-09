@@ -1,0 +1,214 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 700px at 12% -8%, rgba(63, 208, 255, 0.07), transparent 60%),
+    radial-gradient(900px 600px at 92% 4%, rgba(139, 157, 255, 0.05), transparent 55%),
+    var(--neo-bg-1);
+  color: var(--neo-text);
+  font-family: var(--neo-font-sans);
+  font-size: var(--neo-fs-md);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+:root[data-reduce-complexity='true'] body {
+  background: var(--neo-bg-1);
+}
+
+h1, h2, h3, h4 {
+  margin: 0 0 var(--neo-space-2);
+  line-height: 1.25;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+h1 { font-size: var(--neo-fs-2xl); }
+h2 { font-size: var(--neo-fs-xl); }
+h3 { font-size: var(--neo-fs-lg); }
+p { margin: 0 0 var(--neo-space-3); }
+
+a {
+  color: var(--neo-accent);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+/* Focus toujours visible : navigation clavier de premiere classe. */
+:focus-visible {
+  outline: 2px solid var(--neo-accent);
+  outline-offset: 2px;
+  border-radius: var(--neo-radius-sm);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.boot-screen {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--neo-text-muted);
+}
+
+/* ------------------------------------------------------------ primitives */
+
+.neo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--neo-space-2);
+  padding: 9px 16px;
+  border-radius: var(--neo-radius);
+  border: 1px solid var(--neo-border-strong);
+  background: linear-gradient(180deg, var(--neo-bg-3), var(--neo-bg-2));
+  color: var(--neo-text);
+  font-size: var(--neo-fs-sm);
+  font-weight: 550;
+  cursor: pointer;
+  transition: border-color var(--neo-transition), transform var(--neo-transition), background var(--neo-transition);
+}
+.neo-btn:hover:not(:disabled) {
+  border-color: var(--neo-border-accent);
+  transform: translateY(-1px);
+}
+.neo-btn:active:not(:disabled) { transform: translateY(0); }
+.neo-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.neo-btn--primary {
+  border-color: transparent;
+  background: linear-gradient(180deg, #2fb6e6, #1e79c9);
+  color: #04121b;
+  font-weight: 650;
+}
+.neo-btn--ghost {
+  background: transparent;
+  border-color: var(--neo-border);
+}
+.neo-btn--danger {
+  border-color: rgba(255, 92, 122, 0.5);
+  color: var(--neo-danger);
+}
+.neo-btn--sm { padding: 5px 10px; font-size: var(--neo-fs-xs); }
+
+.neo-card {
+  background: var(--neo-surface);
+  border: 1px solid var(--neo-border);
+  border-radius: var(--neo-radius-lg);
+  padding: var(--neo-space-5);
+  backdrop-filter: blur(10px);
+}
+:root[data-reduce-complexity='true'] .neo-card { backdrop-filter: none; }
+
+.neo-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--neo-surface);
+  border: 1px solid var(--neo-border);
+  border-radius: var(--neo-radius);
+  overflow: hidden;
+}
+.neo-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--neo-space-3);
+  padding: 10px var(--neo-space-4);
+  border-bottom: 1px solid var(--neo-border);
+  background: var(--neo-bg-2);
+  font-size: var(--neo-fs-sm);
+  font-weight: 600;
+}
+.neo-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--neo-space-4);
+}
+.neo-panel__body--flush { padding: 0; }
+
+.neo-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--neo-border);
+  background: var(--neo-bg-2);
+  font-size: var(--neo-fs-xs);
+  color: var(--neo-text-muted);
+  white-space: nowrap;
+}
+.neo-tag--ok { color: var(--neo-success); border-color: rgba(74, 222, 128, 0.35); }
+.neo-tag--warn { color: var(--neo-warning); border-color: rgba(255, 180, 84, 0.35); }
+.neo-tag--danger { color: var(--neo-danger); border-color: rgba(255, 92, 122, 0.35); }
+.neo-tag--accent { color: var(--neo-accent); border-color: var(--neo-border-accent); }
+
+.neo-muted { color: var(--neo-text-muted); }
+.neo-dim { color: var(--neo-text-dim); }
+.neo-mono { font-family: var(--neo-font-mono); font-size: var(--neo-fs-sm); }
+
+.neo-stack { display: flex; flex-direction: column; gap: var(--neo-space-3); }
+.neo-row { display: flex; align-items: center; gap: var(--neo-space-3); flex-wrap: wrap; }
+.neo-grow { flex: 1; }
+
+.neo-field { display: flex; flex-direction: column; gap: 5px; }
+.neo-field label { font-size: var(--neo-fs-xs); color: var(--neo-text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.neo-input,
+.neo-select,
+.neo-textarea {
+  width: 100%;
+  padding: 8px 11px;
+  border-radius: var(--neo-radius-sm);
+  border: 1px solid var(--neo-border-strong);
+  background: var(--neo-bg-1);
+  color: var(--neo-text);
+  font-size: var(--neo-fs-sm);
+}
+.neo-textarea { resize: vertical; min-height: 84px; font-family: inherit; }
+
+.neo-table { width: 100%; border-collapse: collapse; font-size: var(--neo-fs-sm); }
+.neo-table th,
+.neo-table td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--neo-border); }
+.neo-table th { color: var(--neo-text-muted); font-weight: 550; font-size: var(--neo-fs-xs); text-transform: uppercase; letter-spacing: 0.05em; }
+.neo-table tbody tr:hover { background: rgba(63, 208, 255, 0.05); }
+
+.neo-scroll { overflow: auto; }
+.neo-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.neo-scroll::-webkit-scrollbar-thumb { background: var(--neo-border-strong); border-radius: 6px; }
+
+.neo-visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+
+.neo-skip-link {
+  position: absolute;
+  left: var(--neo-space-3);
+  top: -60px;
+  z-index: 100;
+  padding: 8px 14px;
+  background: var(--neo-accent);
+  color: #04121b;
+  border-radius: var(--neo-radius-sm);
+  transition: top var(--neo-transition);
+}
+.neo-skip-link:focus { top: var(--neo-space-3); }
