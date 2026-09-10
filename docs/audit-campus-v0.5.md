@@ -68,7 +68,16 @@ La ronde du technicien traversait `network-room-col-right`,
 interpolation lineaire entre deux coordonnees : aucune notion de chemin
 n existait.
 
-### 2.4 Entree du centre de commandement barree — **P0**
+### 2.4 Le mobilier barrait l entree de six pieces sur neuf — **P0**
+
+Trouve en completant le detecteur d un controle de circulation. Dans la salle
+machine, une baie se tenait exactement dans l axe de la porte ; dans la salle
+reseau, un etabli mordait de deux centimetres sur le passage ; dans la salle de
+documentation, la table de lecture occupait l entree. Consequence directe :
+l equipement qu on venait manipuler se trouvait hors d atteinte depuis la seule
+allee praticable.
+
+### 2.5 Entree du centre de commandement barree — **P0**
 
 Trouve pendant la correction, pas par le detecteur initial : la rangee de
 postes de travail occupait l axe de la porte, et l embrasure n etait pas
@@ -99,6 +108,10 @@ Aucun objet sous le sol, aucun modele manquant, aucun modele non declare.
 | Entree de piece barree                    | postes ecartes de l axe de la porte                             |
 | Aretes parfaitement vives                 | cube adouci d un chanfrein de 2,5 cm sur tout le decor regroupe |
 | Teleportation entre points de passage     | vitesse humaine, rotation progressive, animations en fondu      |
+| Mobilier barrant l axe des portes         | allee centrale degagee dans six pieces                          |
+| Equipement hors d atteinte depuis l allee | on arrive tourne vers ce que la piece sert a faire              |
+| Personne assise a hauteur d homme debout  | echelle mesuree sur une pose de reference, une fois par modele  |
+| Point d interaction sur la face arriere   | la facade regarde desormais le cote par lequel on arrive        |
 
 Le detecteur passe de **sept defauts a zero**, et dix-sept verifications
 automatiques empechent leur retour, dont une simulation de cinq minutes de vie
@@ -118,3 +131,7 @@ du campus qui echoue si quiconque quitte le sol marchable.
    ou debrancher un cordon reste a faire.
 4. **Les personnages ne s evitent pas entre eux.** Deux itineraires qui se
    croisent peuvent se traverser.
+5. **Les volumes de collision du mobilier restent des boites genereuses.** Une
+   personne assise a son poste chevauche donc celui de son bureau, ce qui est
+   voulu : ce qu on interdit est de traverser la structure du batiment, pas de
+   s asseoir sur une chaise.

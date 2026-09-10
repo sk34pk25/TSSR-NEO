@@ -76,7 +76,12 @@ export class NpcRuntime {
   constructor(liste: readonly NpcSpec[] = npcs()) {
     const navigation = campusNavigation();
     this.gens = liste.map((spec) => {
-      const sur = navigation.pointSur(spec.position) ?? spec.position;
+      // Une personne assise occupe une chaise, qui est un obstacle : la
+      // ramener sur le sol marchable la sortirait de son bureau.
+      const sur =
+        spec.activite === 'assis'
+          ? spec.position
+          : (navigation.pointSur(spec.position) ?? spec.position);
       return {
         spec,
         position: sur,
@@ -172,9 +177,14 @@ export class NpcRuntime {
        * aussitot pour rebuter au meme endroit. On recalcule simplement un
        * chemin depuis la ou elle se trouve, qui est un endroit valide.
        */
-      if (navigation.estMarchable(nouvelle)) {
+      /*
+       * On accepte aussi un pas dont le point de depart n est pas praticable :
+       * c est le cas de quelqu un qui se leve de sa chaise. Le refuser aurait
+       * oblige a le replacer d un bond sur le sol, ce qui se voit.
+       */
+      if (navigation.estMarchable(nouvelle) || !navigation.estMarchable(gens.position)) {
         gens.position = nouvelle;
-        gens.dernierPointSur = nouvelle;
+        if (navigation.estMarchable(nouvelle)) gens.dernierPointSur = nouvelle;
         gens.blocages = 0;
       } else {
         gens.chemin = [];

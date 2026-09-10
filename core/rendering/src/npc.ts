@@ -74,6 +74,20 @@ function dans(zoneId: string, dx: number, dz: number): Vec3 {
   return campusNavigation().pointSur(voulu) ?? voulu;
 }
 
+/**
+ * Place quelqu un a un poste de travail.
+ *
+ * Une personne assise occupe une chaise, et une chaise est un obstacle : la
+ * contraindre au sol marchable la repoussait dans l allee, a cote de son
+ * bureau. On la pose donc directement au poste, sans passer par la grille, ce
+ * qui n a pas d inconvenient puisqu elle ne s y deplace pas.
+ */
+function auPoste(zoneId: string, dx: number, dz: number): Vec3 {
+  const zone = zoneById(zoneId) as CampusZone;
+  const versCouloir = zone.doorSide === 'south' ? 1 : -1;
+  return [zone.center[0] + dx, 0, zone.center[2] + versCouloir * dz];
+}
+
 /** Destination nommee d un personnage, elle aussi ramenee sur le marchable. */
 export interface Etape {
   nom: string;
@@ -128,7 +142,7 @@ function construire(): readonly NpcSpec[] {
     nom: 'Camille Renard',
     role: 'utilisateur',
     zoneId: 'offices',
-    position: dans('offices', -2.6, -0.5),
+    position: auPoste('offices', -3.1, 0.5),
     orientation: Math.PI,
     activite: 'assis',
     asset: 'personne-b',
@@ -159,14 +173,14 @@ function construire(): readonly NpcSpec[] {
     nom: 'Thomas Baillet',
     role: 'utilisateur',
     zoneId: 'offices',
-    position: dans('offices', 2.4, -0.5),
+    position: auPoste('offices', 2.1, 0.5),
     orientation: Math.PI,
     activite: 'assis',
     asset: 'personne-c',
     itineraire: [
-      { nom: 'son poste', point: dans('offices', 2.4, -0.5), pause: 40, activite: 'assis' },
+      { nom: 'son poste', point: auPoste('offices', 2.1, 0.5), pause: 40, activite: 'assis' },
       { nom: 'espace detente', point: dans('personal-space', 0, 2.4), pause: 16, activite: 'debout' },
-      { nom: 'son poste', point: dans('offices', 2.4, -0.5), pause: 30, activite: 'assis' },
+      { nom: 'son poste', point: auPoste('offices', 2.1, 0.5), pause: 30, activite: 'assis' },
     ],
     dialogue: {
       ouverture:
@@ -305,7 +319,12 @@ export function buildNpcNodes(): Piece {
      * est ramenee ici. Un personnage doit toujours pouvoir etre replace sur le
      * dernier endroit sur plutot que rester dans le decor.
      */
-    const sur = navigation.pointSur(npc.position) ?? npc.position;
+    // Une personne assise reste a son poste ; seules celles qui se deplacent
+    // doivent imperativement se tenir sur le sol marchable.
+    const sur =
+      npc.activite === 'assis'
+        ? npc.position
+        : (navigation.pointSur(npc.position) ?? npc.position);
     const placement: Placement = { position: sur, yaw: npc.orientation };
     // Une legere irregularite d orientation : personne ne se tient pile droit.
     const pose = varier([placement], rng, { decalage: 0.05, rotation: 0.14 })[0] as Placement;

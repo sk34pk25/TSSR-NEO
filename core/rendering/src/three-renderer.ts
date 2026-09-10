@@ -177,6 +177,8 @@ export class ThreeRenderer implements Renderer3D {
   >();
   private readonly horloge = new THREE.Clock();
   private cubeAdouciCache: THREE.BufferGeometry | undefined;
+  /** Facteur d echelle par modele, mesure une fois sur une pose de reference. */
+  private readonly echelles = new Map<string, number>();
   /** Numero de scene : une reponse tardive ne doit pas polluer la suivante. */
   private generation = 0;
 
@@ -387,43 +389,50 @@ export class ThreeRenderer implements Renderer3D {
     const clips = this.chargeur.clips(ref.assetId);
     const voulu = ref.animation;
     if (voulu !== undefined && clips.length > 0) {
+      /*
+       * Correction d echelle, mesuree sur une pose de reference.
+       *
+       * Un modele anime ne fait pas la taille de sa pose de repos : les pistes
+       * reecrivent les transformations des membres. Mais la mesure ne peut pas
+       * se faire sur l animation demandee non plus : une personne assise est
+       * plus courte qu une personne debout, et la ramener a la hauteur
+       * declaree la faisait grandir jusqu a depasser son bureau. On mesure donc
+       * toujours debout, une seule fois par modele, et l on garde le facteur.
+       */
+      const asset = assetById(ref.assetId);
+      const reference = THREE.AnimationClip.findByName(clips, 'idle') ?? clips[0];
+      let correction = this.echelles.get(ref.assetId);
+
+      if (correction === undefined && asset && reference) {
+        const temoin = groupe.children[0];
+        if (temoin) {
+          const mesureur = new THREE.AnimationMixer(temoin);
+          mesureur.clipAction(reference).play();
+          mesureur.update(0);
+          const boite = new THREE.Box3().setFromObject(temoin);
+          const taille = new THREE.Vector3();
+          boite.getSize(taille);
+          correction = taille.y > 0.01 ? asset.hauteur / taille.y : 1;
+          this.echelles.set(ref.assetId, correction);
+          mesureur.stopAllAction();
+        }
+      }
+
+      if (correction !== undefined && Math.abs(correction - 1) > 0.02) {
+        for (const enfant of groupe.children) {
+          enfant.scale.multiplyScalar(correction);
+          if (ref.offsetY !== undefined) enfant.position.y -= ref.offsetY * (correction - 1);
+        }
+      }
+
       for (const enfant of groupe.children) {
         const clip = THREE.AnimationClip.findByName(clips, voulu) ?? clips[0];
         if (!clip) continue;
         const mixeur = new THREE.AnimationMixer(enfant);
-        mixeur.clipAction(clip).play();
-        // Poser la premiere image avant toute mesure : c est elle qui compte.
+        const action = mixeur.clipAction(clip);
+        action.play();
         mixeur.update(0);
         this.mixeurs.push(mixeur);
-      }
-
-      /*
-       * Correction d echelle apres animation.
-       *
-       * Un modele anime ne fait pas la taille de sa pose de repos : les pistes
-       * d animation reecrivent les transformations des membres, et la mesure
-       * faite au chargement se revele fausse. Les personnages arrivaient ainsi
-       * a deux metres quatre-vingt. On mesure donc ce qui est reellement pose,
-       * puis on ramene a la hauteur declaree.
-       */
-      const asset = assetById(ref.assetId);
-      const premier = groupe.children[0];
-      if (asset && premier) {
-        const boite = new THREE.Box3().setFromObject(premier);
-        const taille = new THREE.Vector3();
-        boite.getSize(taille);
-        if (taille.y > 0.01) {
-          const correction = asset.hauteur / taille.y;
-          if (Math.abs(correction - 1) > 0.02) {
-            for (const enfant of groupe.children) {
-              enfant.scale.multiplyScalar(correction);
-              // Reposer la base au sol apres correction de l echelle.
-              if (ref.offsetY !== undefined) {
-                enfant.position.y -= ref.offsetY * (correction - 1);
-              }
-            }
-          }
-        }
       }
     }
 
@@ -437,11 +446,19 @@ export class ThreeRenderer implements Renderer3D {
      */
     const conteneur = groupe.children[0];
     if (conteneur && groupe.children.length === 1) {
+      const mixeur = this.mixeurs[this.mixeurs.length - 1];
+      const clipCourant =
+        ref.animation === undefined
+          ? undefined
+          : (THREE.AnimationClip.findByName(clips, ref.animation) ?? clips[0]);
       this.pilotes.set(node.id, {
         conteneur,
-        mixeur: this.mixeurs[this.mixeurs.length - 1],
+        mixeur,
         clips,
-        actionCourante: undefined,
+        // Sans l action courante, le premier changement d animation se ferait
+        // sans fondu, ce qui se voit immediatement.
+        actionCourante:
+          mixeur && clipCourant ? mixeur.clipAction(clipCourant) : undefined,
         animation: ref.animation,
       });
     }

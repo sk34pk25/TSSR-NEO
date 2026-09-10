@@ -68,8 +68,20 @@ function corpsEnCollision(position) {
   return [...heurts];
 }
 
+/*
+ * Un mur est infranchissable ; une chaise ne l est pas.
+ *
+ * Les volumes de mobilier sont volontairement genereux, pour que le joueur ne
+ * vienne pas se coller a un bureau. Y voir une faute pour une personne assise
+ * a son poste serait un contresens : ce qu on interdit, c est de traverser la
+ * structure du batiment.
+ */
+const STRUCTUREL = /-col-|-obstacle-mur|corridor-col/;
+
 for (const npc of npcs()) {
-  const heurts = corpsEnCollision(npc.position);
+  const heurts = corpsEnCollision(npc.position).filter(
+    (id) => STRUCTUREL.test(id) || npc.activite !== 'assis',
+  );
   if (heurts.length > 0) {
     signaler(
       'P0',

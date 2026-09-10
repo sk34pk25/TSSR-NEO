@@ -119,10 +119,29 @@ describe('trajets', () => {
 });
 
 describe('placement des personnages', () => {
-  it('aucun personnage n est dans une geometrie solide', () => {
+  it('aucun personnage ne traverse la structure du batiment', () => {
+    /*
+     * Un mur est infranchissable ; une chaise ne l est pas. Les volumes de
+     * mobilier sont volontairement genereux, pour que le joueur ne vienne pas
+     * se coller a un bureau : y voir une faute pour une personne assise a son
+     * poste serait un contresens.
+     */
+    const structurel = /-col-|corridor-col/;
     for (const personne of npcs()) {
-      const sur = navigation.pointSur(personne.position) as Vec3;
-      expect(corpsEnCollision(sur), personne.nom).toEqual([]);
+      const position =
+        personne.activite === 'assis'
+          ? personne.position
+          : ((navigation.pointSur(personne.position) ?? personne.position) as Vec3);
+      const heurts = corpsEnCollision(position).filter(
+        (id) => structurel.test(id) || personne.activite !== 'assis',
+      );
+      expect(heurts, personne.nom).toEqual([]);
+    }
+  });
+
+  it('ceux qui se deplacent se tiennent bien sur le sol marchable', () => {
+    for (const personne of npcs().filter((p) => p.activite !== 'assis')) {
+      expect(navigation.estMarchable(personne.position), personne.nom).toBe(true);
     }
   });
 
@@ -158,6 +177,9 @@ describe('vie du campus', () => {
       vie.avancer(1 / 60);
       if (image % 300 !== 0) continue;
       for (const presence of vie.presences()) {
+        // Une personne assise occupe sa chaise, qui est un obstacle : seul
+        // celui qui marche doit se tenir sur le sol praticable.
+        if (presence.etat === 'sitting') continue;
         expect(navigation.estMarchable(presence.position), `${presence.id} a l image ${image}`).toBe(
           true,
         );
