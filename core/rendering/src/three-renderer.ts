@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { assetById, type AssetSpec } from './asset-registry.ts';
 import type { QualityProfile } from './capabilities.ts';
 import {
   easeInOut,
@@ -20,6 +22,80 @@ import {
  * Choix documente dans docs/adr/0002-choix-du-moteur-3d.md, apres mesure.
  * C est le seul fichier du depot qui importe une bibliotheque graphique.
  */
+/**
+ * Chargeur de modeles.
+ *
+ * Trois exigences le gouvernent. Un modele absent ou illisible ne doit jamais
+ * empecher la scene de fonctionner : la primitive reste visible a sa place.
+ * Un modele demande deux fois n est telecharge qu une fois. Et la taille reelle
+ * du fichier n a aucune importance : c est la hauteur declaree dans le registre
+ * qui fixe l echelle, parce que deux bibliotheques n emploient pas la meme unite.
+ */
+class ChargeurDeModeles {
+  private readonly loader = new GLTFLoader();
+  private readonly cache = new Map<string, Promise<THREE.Object3D | undefined>>();
+  private readonly animations = new Map<string, THREE.AnimationClip[]>();
+
+  constructor(private readonly base: string) {}
+
+  /** Modele pret a l emploi, normalise et centre selon son ancrage. */
+  charger(assetId: string): Promise<THREE.Object3D | undefined> {
+    const enCours = this.cache.get(assetId);
+    if (enCours) return enCours;
+    const asset = assetById(assetId);
+    if (!asset) return Promise.resolve(undefined);
+
+    const promesse = new Promise<THREE.Object3D | undefined>((resolve) => {
+      this.loader.load(
+        `${this.base}assets/3d/${asset.fichier}`,
+        (gltf) => {
+          const racine = gltf.scene;
+          normaliser(racine, asset);
+          if (gltf.animations.length > 0) this.animations.set(assetId, gltf.animations);
+          resolve(racine);
+        },
+        undefined,
+        () => {
+          // Un modele qui n arrive pas laisse simplement la primitive en place.
+          console.warn(`Modele 3D indisponible : ${asset.fichier}`);
+          resolve(undefined);
+        },
+      );
+    });
+    this.cache.set(assetId, promesse);
+    return promesse;
+  }
+
+  clips(assetId: string): THREE.AnimationClip[] {
+    return this.animations.get(assetId) ?? [];
+  }
+}
+
+/**
+ * Ramene un modele a sa taille reelle et pose son origine au bon endroit.
+ *
+ * Sans cette etape, un meuble issu d une bibliotheque arrive a une echelle
+ * arbitraire et avec une origine placee au hasard : au centre, au sommet, ou
+ * a un coin. Le resultat serait un decor de tailles incoherentes flottant
+ * au-dessus du sol.
+ */
+function normaliser(racine: THREE.Object3D, asset: AssetSpec): void {
+  const boite = new THREE.Box3().setFromObject(racine);
+  const taille = new THREE.Vector3();
+  boite.getSize(taille);
+  const reference = asset.hauteurSource ?? taille.y;
+  if (reference > 0.0001) racine.scale.setScalar(asset.hauteur / reference);
+
+  const apres = new THREE.Box3().setFromObject(racine);
+  const centre = new THREE.Vector3();
+  apres.getCenter(centre);
+  racine.position.x -= centre.x;
+  racine.position.z -= centre.z;
+  if (asset.ancrage === 'sol') racine.position.y -= apres.min.y;
+  else if (asset.ancrage === 'plafond') racine.position.y -= apres.max.y;
+  else racine.position.y -= centre.y;
+}
+
 /** Deux etats de camera decrivent-ils le meme cadrage ? */
 function memeCadrage(a: CameraState, b: CameraState): boolean {
   const proche = (u: readonly number[], v: readonly number[]): boolean =>
@@ -45,6 +121,12 @@ export class ThreeRenderer implements Renderer3D {
   private description: Scene3D | undefined;
   private frameTimes: number[] = [];
   private highlighted = new Set<string>();
+  private readonly chargeur: ChargeurDeModeles;
+  /** Mixeurs d animation actifs, avances a chaque image. */
+  private readonly mixeurs: THREE.AnimationMixer[] = [];
+  private readonly horloge = new THREE.Clock();
+  /** Numero de scene : une reponse tardive ne doit pas polluer la suivante. */
+  private generation = 0;
 
   private transition:
     { from: CameraState; to: CameraState; startedAt: number; durationMs: number } | undefined;
@@ -55,8 +137,9 @@ export class ThreeRenderer implements Renderer3D {
     fov: 60,
   };
 
-  constructor(profile: QualityProfile) {
+  constructor(profile: QualityProfile, base = '/') {
     this.profile = profile;
+    this.chargeur = new ChargeurDeModeles(base);
   }
 
   async mount(canvas: HTMLCanvasElement): Promise<void> {
@@ -169,6 +252,9 @@ export class ThreeRenderer implements Renderer3D {
       }
     }
 
+    this.generation += 1;
+    this.mixeurs.length = 0;
+
     let budget = this.profile.maxInstances;
     for (const node of description.nodes) {
       const object = this.createObject(node, budget);
@@ -176,7 +262,81 @@ export class ThreeRenderer implements Renderer3D {
       if (node.instances) budget -= node.instances.length / 16;
       this.objects.set(node.id, object);
       this.scene.add(object);
+      // La silhouette arrive apres coup et remplace la primitive si elle arrive.
+      if (node.model) void this.habiller(node, object, this.generation);
     }
+  }
+
+  /**
+   * Remplace la primitive d un noeud par sa silhouette reelle.
+   *
+   * La primitive reste dans la scene jusqu a l arrivee du modele, puis lui cede
+   * la place : a aucun moment il n y a de trou. En profil economique, ou quand
+   * le fichier n arrive pas, elle reste simplement en place.
+   */
+  private async habiller(
+    node: Scene3DNode,
+    primitive: THREE.Object3D,
+    generation: number,
+  ): Promise<void> {
+    const ref = node.model;
+    if (!ref) return;
+    const modele = await this.chargeur.charger(ref.assetId);
+    // La scene a pu changer pendant le telechargement.
+    if (!modele || generation !== this.generation) return;
+
+    const groupe = new THREE.Group();
+    groupe.name = node.id;
+    groupe.userData.node = node;
+
+    const poser = (matrice: THREE.Matrix4 | undefined): void => {
+      const copie = modele.clone(true);
+      if (ref.echelle !== undefined) copie.scale.multiplyScalar(ref.echelle);
+      if (ref.yaw !== undefined) copie.rotation.y += ref.yaw;
+      const conteneur = new THREE.Group();
+      conteneur.add(copie);
+      if (matrice) {
+        conteneur.applyMatrix4(matrice);
+      } else {
+        conteneur.position.set(...node.position);
+        if (node.rotation) conteneur.rotation.set(...node.rotation);
+      }
+      if (ref.offsetY !== undefined) conteneur.position.y += ref.offsetY;
+      groupe.add(conteneur);
+    };
+
+    if (node.instances) {
+      /*
+       * Une silhouette detaillee ne peut pas etre instanciee comme une boite :
+       * elle porte plusieurs maillages. On la clone donc par emplacement, en
+       * respectant le plafond du profil pour ne pas ruiner la fluidite.
+       */
+      const total = node.instances.length / 16;
+      const plafond = Math.min(total, Math.max(1, Math.round(this.profile.maxInstances / 40)));
+      const matrice = new THREE.Matrix4();
+      for (let i = 0; i < plafond; i += 1) {
+        matrice.fromArray(node.instances, i * 16);
+        poser(matrice.clone());
+      }
+    } else {
+      poser(undefined);
+    }
+
+    const clips = this.chargeur.clips(ref.assetId);
+    const voulu = ref.animation;
+    if (voulu !== undefined && clips.length > 0) {
+      for (const enfant of groupe.children) {
+        const clip = THREE.AnimationClip.findByName(clips, voulu) ?? clips[0];
+        if (!clip) continue;
+        const mixeur = new THREE.AnimationMixer(enfant);
+        mixeur.clipAction(clip).play();
+        this.mixeurs.push(mixeur);
+      }
+    }
+
+    primitive.visible = false;
+    this.scene.add(groupe);
+    this.objects.set(`${node.id}__modele`, groupe);
   }
 
   private createObject(node: Scene3DNode, budget: number): THREE.Object3D | undefined {
@@ -357,6 +517,13 @@ export class ThreeRenderer implements Renderer3D {
       if (delta > 0 && delta < 2000) this.frameTimes.push(delta);
       if (this.frameTimes.length > 90) this.frameTimes.shift();
       this.advanceTransition(now);
+      // Les personnages animes avancent au rythme reel, pas au rythme des images.
+      if (this.mixeurs.length > 0) {
+        const ecoule = this.horloge.getDelta();
+        for (const mixeur of this.mixeurs) mixeur.update(ecoule);
+      } else {
+        this.horloge.getDelta();
+      }
       this.renderer?.render(this.scene, this.camera);
       this.frame = requestAnimationFrame(loop);
     };

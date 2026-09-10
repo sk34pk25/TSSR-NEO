@@ -50,7 +50,7 @@ export function Hardware3D({ world, profile, version, onChange }: Hardware3DProp
       try {
         const { ThreeRenderer } = await import('@tssr/rendering/three');
         if (cancelled) return;
-        const renderer = new ThreeRenderer(profile);
+        const renderer = new ThreeRenderer(profile, __TSSR_BASE_PATH__);
         await renderer.mount(canvas);
         renderer.setScene(scene);
         // Cadrage sur les baies reellement presentes, pas sur une position figee.

@@ -38,3 +38,23 @@ Les interfaces de TSSR NEO sont originales : elles ne reproduisent au pixel pres
 
 TSSR NEO n est affilie, associe, autorise ni approuve par aucun des editeurs, constructeurs ou
 organismes dont les technologies sont citees.
+
+## Modeles tridimensionnels
+
+Les modeles vivent dans `assets/3d/`. Chaque entree du registre
+(`core/rendering/src/asset-registry.ts`) declare sa licence, son auteur et sa
+source ; `tests/assets-3d.test.ts` verifie que le fichier existe, qu il reste
+dans les limites de poids, et qu aucun asset n est utilise sans licence.
+
+| Collection                | Licence                    | Auteur | Source                                       | Contenu                                        |
+| ------------------------- | -------------------------- | ------ | -------------------------------------------- | ---------------------------------------------- |
+| Furniture Kit             | CC0 1.0 (domaine public)   | Kenney | https://kenney.nl/assets/furniture-kit       | mobilier de bureau, sieges, rangements, plantes |
+| Blocky Characters         | CC0 1.0 (domaine public)   | Kenney | https://kenney.nl/assets/blocky-characters   | six personnages animes et leurs textures        |
+
+**Modifications apportees :** aucune. Les fichiers sont repris tels quels ;
+seules l echelle et l orientation sont ajustees a l execution, d apres la
+hauteur reelle declaree dans le registre.
+
+La licence CC0 n exige aucune attribution. Elle figure ici parce que citer ses
+sources est la regle du depot, et parce que la tracabilite d un asset doit
+rester verifiable.

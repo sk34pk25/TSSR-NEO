@@ -1,7 +1,62 @@
 import { useMemo, useState } from 'react';
-import type { InteractiveSpec } from '@tssr/rendering';
+import { npcById, roleLibelle, type InteractiveSpec } from '@tssr/rendering';
 import { TerminalPanel, terminalAdapter } from './TerminalPanel.tsx';
 import { useSession, useSimValue } from '../state/hooks.ts';
+
+
+/**
+ * Conversation avec une personne du campus.
+ *
+ * Le dialogue enseigne le diagnostic humain : depuis quand, qu est-ce qui a
+ * change, quel message exact. Aucune reponse ne donne la cause ; elles donnent
+ * des symptomes, que le joueur doit relier lui-meme. NOVA n a pas a remplacer
+ * cette etape : demander a un utilisateur ce qu il constate fait partie du
+ * metier.
+ */
+function Dialogue({ npcId }: { npcId: string }): JSX.Element {
+  const npc = npcById(npcId);
+  const [posees, setPosees] = useState<readonly number[]>([]);
+
+  if (!npc) {
+    return <p className="neo-muted">Cette personne n est pas disponible.</p>;
+  }
+
+  return (
+    <div className="dialogue">
+      <p className="dialogue__role">{roleLibelle(npc.role)}</p>
+      <p className="dialogue__replique">{npc.dialogue.ouverture}</p>
+
+      {posees.map((index) => {
+        const echange = npc.dialogue.questions[index];
+        if (!echange) return null;
+        return (
+          <div key={index} className="dialogue__echange">
+            <p className="dialogue__question">{echange.question}</p>
+            <p className="dialogue__replique">{echange.reponse}</p>
+          </div>
+        );
+      })}
+
+      <div className="dialogue__choix">
+        {npc.dialogue.questions.map((echange, index) =>
+          posees.includes(index) ? null : (
+            <button
+              key={echange.question}
+              type="button"
+              className="neo-btn neo-btn--sm"
+              onClick={() => setPosees([...posees, index])}
+            >
+              {echange.question}
+            </button>
+          ),
+        )}
+        {posees.length === npc.dialogue.questions.length ? (
+          <span className="neo-dim">Vous avez fait le tour de ce qu il ou elle peut vous dire.</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 interface CampusInteractionProps {
   interaction: InteractiveSpec;
@@ -62,7 +117,9 @@ export function CampusInteraction({ interaction, onFermer }: CampusInteractionPr
       </div>
 
       <div className="interaction__corps">
-        {world === undefined ? (
+        {interaction.kind === 'npc' ? (
+          <Dialogue npcId={interaction.targetId} />
+        ) : world === undefined ? (
           <div className="neo-card">
             <h3 style={{ marginTop: 0 }}>Aucune infrastructure chargee</h3>
             <p className="neo-muted">

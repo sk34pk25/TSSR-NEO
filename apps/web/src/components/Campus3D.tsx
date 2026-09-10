@@ -222,7 +222,7 @@ export function Campus3D({
         // Import dynamique : le moteur reste hors du paquet initial.
         const { ThreeRenderer } = await import('@tssr/rendering/three');
         if (cancelled) return;
-        const renderer = new ThreeRenderer(profile);
+        const renderer = new ThreeRenderer(profile, __TSSR_BASE_PATH__);
         await renderer.mount(canvas);
         renderer.setScene(scene);
         controllerRef.current.setColliders(scene.colliders);

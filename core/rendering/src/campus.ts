@@ -1,20 +1,22 @@
 import {
+  alea,
   baieInformatique,
   bloc,
   compacter,
   boite,
-  canape,
   comptoir,
-  etagere,
   fusionner,
   panneauMural,
   plante,
-  postesDeTravail,
   table,
+  objet,
+  varier,
   vide,
   type Piece,
+  type Placement,
 } from './kit.ts';
 import { MATERIALS, teinte } from './materials.ts';
+import { buildNpcNodes } from './npc.ts';
 import type { Collider, MaterialSpec, Scene3D, Scene3DNode, Vec3 } from './scene3d.ts';
 
 /**
@@ -559,6 +561,112 @@ function enveloppe(zone: CampusZone): Piece {
   return { nodes, colliders };
 }
 
+
+/**
+ * Poste de travail complet, avec de vraies silhouettes.
+ *
+ * Le kit procedural reste sous chaque objet : il tient lieu de repli, de volume
+ * de collision et de version economique. Ce qui change est ce que l on voit.
+ */
+function postesModelises(prefixe: string, postes: readonly Placement[], rng: () => number): Piece {
+  if (postes.length === 0) return vide();
+  // Un bureau reste droit ; ce sont les sieges et les objets poses qui bougent.
+  const bureaux = varier(postes, rng, { decalage: 0.05, rotation: 0.03 });
+  const sieges = bureaux.map((poste) => decaler(poste, [-0.02, 0, 0.66]));
+  const ecrans = bureaux.map((poste) => decaler(poste, [-0.05, 0.74, -0.2]));
+  const claviers = bureaux.map((poste) => decaler(poste, [-0.05, 0.75, 0.08]));
+  const souris = bureaux.map((poste) => decaler(poste, [0.28, 0.755, 0.08]));
+
+  return fusionner(
+    objet(`${prefixe}-bureau`, 'bureau', bureaux, { kind: 'box', size: [1.5, 0.74, 0.75] }, MATERIALS.boisClair),
+    objet(
+      `${prefixe}-siege`,
+      'siege-bureau',
+      varier(sieges, rng, { decalage: 0.14, rotation: 0.5 }),
+      { kind: 'box', size: [0.5, 1, 0.5] },
+      MATERIALS.tissuSiege,
+    ),
+    objet(`${prefixe}-ecran`, 'ecran', ecrans, { kind: 'box', size: [0.56, 0.42, 0.06] }, MATERIALS.ecranAllume),
+    objet(
+      `${prefixe}-clavier`,
+      'clavier',
+      varier(claviers, rng, { decalage: 0.04, rotation: 0.12 }),
+      { kind: 'box', size: [0.42, 0.03, 0.14] },
+      MATERIALS.plastiqueClair,
+    ),
+    objet(
+      `${prefixe}-souris`,
+      'souris',
+      varier(souris, rng, { decalage: 0.05, rotation: 0.4 }),
+      { kind: 'box', size: [0.07, 0.035, 0.11] },
+      MATERIALS.plastiqueClair,
+    ),
+    {
+      nodes: [],
+      colliders: bureaux.map((poste, index) =>
+        bloc(`${prefixe}-obstacle-${index}`, [poste.position[0], 0.4, poste.position[2]], [
+          1.7, 0.8, 1.7,
+        ]),
+      ),
+    },
+  );
+}
+
+/** Deplace un emplacement dans son propre repere, orientation comprise. */
+function decaler(placement: Placement, offset: Vec3): Placement {
+  const yaw = placement.yaw ?? 0;
+  const c = Math.cos(yaw);
+  const sn = Math.sin(yaw);
+  return {
+    position: [
+      placement.position[0] + offset[0] * c + offset[2] * sn,
+      placement.position[1] + offset[1],
+      placement.position[2] - offset[0] * sn + offset[2] * c,
+    ],
+    yaw,
+  };
+}
+
+/**
+ * Petits objets poses sur les surfaces.
+ *
+ * Ce sont eux qui font qu une piece semble occupee : un carton laisse la, des
+ * livres, une corbeille, une tasse. Sans eux, un decor meuble reste un decor.
+ */
+function accessoires(prefixe: string, rng: () => number, endroits: readonly Vec3[]): Piece {
+  if (endroits.length === 0) return vide();
+  const choix = [
+    { asset: 'carton-ferme', taille: [0.34, 0.32, 0.34] as Vec3, materiau: MATERIALS.boisClair },
+    { asset: 'carton-ouvert', taille: [0.34, 0.34, 0.34] as Vec3, materiau: MATERIALS.boisClair },
+    { asset: 'livres', taille: [0.24, 0.2, 0.16] as Vec3, materiau: MATERIALS.boisFonce },
+    { asset: 'corbeille', taille: [0.3, 0.4, 0.3] as Vec3, materiau: MATERIALS.plastiqueSombre },
+    { asset: 'plante-petite-a', taille: [0.3, 0.34, 0.3] as Vec3, materiau: MATERIALS.feuillage },
+    { asset: 'plante-petite-b', taille: [0.28, 0.3, 0.28] as Vec3, materiau: MATERIALS.feuillage },
+  ];
+  const groupes = new Map<number, Placement[]>();
+  for (const endroit of endroits) {
+    const index = Math.floor(rng() * choix.length) % choix.length;
+    const liste = groupes.get(index) ?? [];
+    liste.push({ position: endroit, yaw: rng() * Math.PI * 2 });
+    groupes.set(index, liste);
+  }
+  const pieces: Piece[] = [];
+  for (const [index, placements] of groupes) {
+    const modele = choix[index];
+    if (!modele) continue;
+    pieces.push(
+      objet(
+        `${prefixe}-accessoire-${index}`,
+        modele.asset,
+        placements,
+        { kind: 'box', size: modele.taille },
+        modele.materiau,
+      ),
+    );
+  }
+  return fusionner(...pieces);
+}
+
 /**
  * Amenagement propre a chaque zone.
  *
@@ -572,17 +680,78 @@ function amenagement(zone: CampusZone): Piece {
   const fond = cz - versCouloir * (profondeur / 2 - 1.4);
   const gauche = cx - largeur / 2;
   const droite = cx + largeur / 2;
+  // Graine derivee du nom de la zone : chaque piece est irreguliere a sa facon,
+  // et toujours de la meme facon d une execution a l autre.
+  const rng = alea(
+    [...zone.id].reduce((total, lettre) => total + lettre.charCodeAt(0), zone.id.length * 7),
+  );
+
+  /** Plante en pot modelisee, avec une echelle variable. */
+  const plantes = (positions: readonly Vec3[]): Piece =>
+    objet(
+      `${zone.id}-plante`,
+      'plante-pot',
+      varier(
+        positions.map((position) => ({ position })),
+        rng,
+        { decalage: 0.16, rotation: Math.PI, echelle: 0.14 },
+      ),
+      { kind: 'cylinder', radius: 0.3, height: 1.05 },
+      MATERIALS.feuillage,
+    );
 
   switch (zone.id) {
     case 'reception':
       return fusionner(
         comptoir(`${zone.id}-banque`, [cx - 1.4, 0, fond + versCouloir * 0.6], 3.4, 0),
-        canape(`${zone.id}-banquette`, [droite - 2.2, 0, cz + versCouloir * 0.6], 2.2, Math.PI / 2),
-        table(`${zone.id}-basse`, [droite - 3.6, 0, cz + versCouloir * 0.6], [0.9, 0.42, 0.9]),
-        plante(`${zone.id}-vert`, [
-          [gauche + 0.9, 0, cz - versCouloir * 1.2],
-          [gauche + 0.9, 0, cz + versCouloir * 2.4],
+        objet(
+          `${zone.id}-canape`,
+          'canape',
+          varier([{ position: [droite - 2.2, 0, cz + versCouloir * 0.6], yaw: Math.PI / 2 }], rng, {
+            decalage: 0.08,
+            rotation: 0.05,
+          }),
+          { kind: 'box', size: [2, 0.78, 0.85] },
+          MATERIALS.tissuCanape,
+        ),
+        objet(
+          `${zone.id}-table-basse`,
+          'table-basse',
+          varier([{ position: [droite - 3.7, 0, cz + versCouloir * 0.6] }], rng, {
+            decalage: 0.1,
+            rotation: 0.25,
+          }),
+          { kind: 'box', size: [0.9, 0.42, 0.9] },
+          MATERIALS.boisClair,
+        ),
+        objet(
+          `${zone.id}-fauteuil`,
+          'fauteuil',
+          varier(
+            [
+              { position: [droite - 4.9, 0, cz + versCouloir * 1.6], yaw: -Math.PI / 2.4 },
+              { position: [droite - 4.9, 0, cz - versCouloir * 0.5], yaw: -Math.PI / 1.8 },
+            ],
+            rng,
+            { decalage: 0.15, rotation: 0.35 },
+          ),
+          { kind: 'box', size: [0.8, 0.74, 0.8] },
+          MATERIALS.tissuSiege,
+        ),
+        objet(
+          `${zone.id}-portemanteau`,
+          'portemanteau',
+          [{ position: [gauche + 0.8, 0, cz + versCouloir * 2.6], yaw: 0.4 }],
+          { kind: 'cylinder', radius: 0.28, height: 1.75 },
+          MATERIALS.metalBrosse,
+        ),
+        plantes([
+          [gauche + 1, 0, cz - versCouloir * 1.2],
           [droite - 0.9, 0, fond + versCouloir * 0.9],
+        ]),
+        accessoires(zone.id, rng, [
+          [droite - 3.7, 0.44, cz + versCouloir * 0.6],
+          [gauche + 1.9, 0, fond + versCouloir * 2.4],
         ]),
         panneauMural(
           `${zone.id}-signaletique`,
@@ -594,35 +763,45 @@ function amenagement(zone: CampusZone): Piece {
       );
 
     case 'offices': {
-      const postes = [];
+      const postes: Placement[] = [];
       for (let rangee = 0; rangee < 2; rangee += 1) {
         for (let poste = 0; poste < 3; poste += 1) {
           postes.push({
-            position: [gauche + 1.9 + poste * 2.4, 0, fond + versCouloir * (0.6 + rangee * 3.1)] as Vec3,
+            position: [gauche + 1.9 + poste * 2.4, 0, fond + versCouloir * (0.6 + rangee * 3.1)],
             yaw: rangee === 0 ? 0 : Math.PI,
           });
         }
       }
       return fusionner(
-        postesDeTravail(`${zone.id}-poste`, postes),
-        plante(`${zone.id}-vert`, [
+        postesModelises(`${zone.id}-poste`, postes, rng),
+        objet(
+          `${zone.id}-etagere`,
+          'etagere-large',
+          [{ position: [gauche + 0.75, 0, cz + versCouloir * 2.2], yaw: Math.PI / 2 }],
+          { kind: 'box', size: [1.6, 1.1, 0.4] },
+          MATERIALS.boisFonce,
+        ),
+        plantes([
           [droite - 0.9, 0, fond + versCouloir * 0.8],
           [droite - 0.9, 0, cz + versCouloir * 2.4],
         ]),
-        etagere(`${zone.id}-rangement`, [gauche + 0.7, 0, cz + versCouloir * 2.2], 1.6, Math.PI / 2),
+        accessoires(zone.id, rng, [
+          [gauche + 0.9, 0, cz - versCouloir * 1.4],
+          [droite - 1.6, 0, cz + versCouloir * 3.1],
+          [gauche + 3, 0, cz + versCouloir * 3.2],
+        ]),
       );
     }
 
     case 'command-center': {
-      // Une supervision, c est un mur d ecrans et une rangee de postes en face.
-      const postes = [0, 1, 2, 3].map((index) => ({
-        position: [gauche + 1.8 + index * 1.9, 0, cz + versCouloir * 1.6] as Vec3,
+      const postes: Placement[] = [0, 1, 2, 3].map((index) => ({
+        position: [gauche + 1.8 + index * 1.9, 0, cz + versCouloir * 1.6],
         yaw: zone.doorSide === 'south' ? 0 : Math.PI,
       }));
       const ecrans: Piece = { nodes: [], colliders: [] };
       for (let index = 0; index < 3; index += 1) {
         const p = panneauMural(
-          `${zone.id}-ecran-${index}`,
+          `${zone.id}-mur-ecran-${index}`,
           [gauche + 2.2 + index * 2.4, 1.95, fond + versCouloir * 0.5],
           [2, 1.1, 0.05],
           0,
@@ -632,47 +811,91 @@ function amenagement(zone: CampusZone): Piece {
       }
       return fusionner(
         ecrans,
-        postesDeTravail(`${zone.id}-poste`, postes),
-        plante(`${zone.id}-vert`, [[droite - 0.9, 0, cz + versCouloir * 2.6]]),
+        postesModelises(`${zone.id}-poste`, postes, rng),
+        plantes([[droite - 0.9, 0, cz + versCouloir * 2.6]]),
+        accessoires(zone.id, rng, [[gauche + 1, 0, cz + versCouloir * 2.8]]),
       );
     }
 
     case 'knowledge': {
-      const rayonnages: Piece[] = [];
+      const rayons: Placement[] = [];
       for (let index = 0; index < 3; index += 1) {
-        rayonnages.push(
-          etagere(
-            `${zone.id}-rayon-${index}`,
-            [gauche + 0.7, 0, fond + versCouloir * (0.9 + index * 2.1)],
-            1.8,
-            Math.PI / 2,
-          ),
-        );
-        rayonnages.push(
-          etagere(
-            `${zone.id}-rayon-d-${index}`,
-            [droite - 0.7, 0, fond + versCouloir * (0.9 + index * 2.1)],
-            1.8,
-            -Math.PI / 2,
-          ),
-        );
+        rayons.push({
+          position: [gauche + 0.75, 0, fond + versCouloir * (0.9 + index * 2.1)],
+          yaw: Math.PI / 2,
+        });
+        rayons.push({
+          position: [droite - 0.75, 0, fond + versCouloir * (0.9 + index * 2.1)],
+          yaw: -Math.PI / 2,
+        });
       }
       return fusionner(
-        ...rayonnages,
+        objet(
+          `${zone.id}-rayon`,
+          'etagere-large',
+          varier(rayons, rng, { decalage: 0.04, rotation: 0.02 }),
+          { kind: 'box', size: [1.6, 1.1, 0.4] },
+          MATERIALS.boisFonce,
+        ),
         table(`${zone.id}-lecture`, [cx, 0, cz + versCouloir * 0.4], [2.4, 0.74, 1.1]),
-        plante(`${zone.id}-vert`, [[cx - 2.4, 0, cz + versCouloir * 2.6]]),
+        objet(
+          `${zone.id}-chaise`,
+          'chaise',
+          varier(
+            [
+              { position: [cx - 0.7, 0, cz + versCouloir * 1.4], yaw: zone.doorSide === 'south' ? Math.PI : 0 },
+              { position: [cx + 0.7, 0, cz + versCouloir * 1.4], yaw: zone.doorSide === 'south' ? Math.PI : 0 },
+              { position: [cx, 0, cz - versCouloir * 0.7], yaw: zone.doorSide === 'south' ? 0 : Math.PI },
+            ],
+            rng,
+            { decalage: 0.16, rotation: 0.45 },
+          ),
+          { kind: 'box', size: [0.46, 0.86, 0.46] },
+          MATERIALS.tissuSiege,
+        ),
+        accessoires(zone.id, rng, [
+          [cx - 0.5, 0.76, cz + versCouloir * 0.4],
+          [cx + 0.6, 0.76, cz + versCouloir * 0.2],
+        ]),
+        plantes([[cx - 2.6, 0, cz + versCouloir * 2.6]]),
       );
     }
 
     case 'personal-space':
       return fusionner(
-        canape(`${zone.id}-canape`, [cx, 0, fond + versCouloir * 0.9], 2.2, zone.doorSide === 'south' ? 0 : Math.PI),
-        table(`${zone.id}-basse`, [cx, 0, fond + versCouloir * 2.3], [1.1, 0.42, 0.7]),
-        etagere(`${zone.id}-etagere`, [gauche + 0.7, 0, cz], 1.6, Math.PI / 2),
-        plante(`${zone.id}-vert`, [
+        objet(
+          `${zone.id}-canape`,
+          'canape',
+          [{ position: [cx, 0, fond + versCouloir * 0.9], yaw: zone.doorSide === 'south' ? 0 : Math.PI }],
+          { kind: 'box', size: [2, 0.78, 0.85] },
+          MATERIALS.tissuCanape,
+        ),
+        objet(
+          `${zone.id}-table-basse`,
+          'table-basse',
+          varier([{ position: [cx, 0, fond + versCouloir * 2.3] }], rng, { decalage: 0.12, rotation: 0.3 }),
+          { kind: 'box', size: [1, 0.42, 0.7] },
+          MATERIALS.boisClair,
+        ),
+        objet(
+          `${zone.id}-etagere`,
+          'etagere-large',
+          [{ position: [gauche + 0.75, 0, cz], yaw: Math.PI / 2 }],
+          { kind: 'box', size: [1.6, 1.1, 0.4] },
+          MATERIALS.boisFonce,
+        ),
+        objet(
+          `${zone.id}-cafe`,
+          'machine-cafe',
+          [{ position: [gauche + 0.9, 0.9, cz + versCouloir * 2.2], yaw: Math.PI / 2 }],
+          { kind: 'box', size: [0.3, 0.34, 0.3] },
+          MATERIALS.plastiqueSombre,
+        ),
+        plantes([
           [droite - 0.9, 0, fond + versCouloir * 1.2],
           [droite - 0.9, 0, cz + versCouloir * 2],
         ]),
+        accessoires(zone.id, rng, [[cx + 0.3, 0.44, fond + versCouloir * 2.3]]),
       );
 
     case 'network-room':
@@ -689,10 +912,24 @@ function amenagement(zone: CampusZone): Piece {
           MATERIALS.panneauBrassage,
         ),
         table(`${zone.id}-etabli`, [cx + 1.4, 0, cz + versCouloir * 1.4], [2.2, 0.9, 0.8]),
+        objet(
+          `${zone.id}-tabouret`,
+          'tabouret',
+          varier([{ position: [cx + 1.4, 0, cz + versCouloir * 2.5] }], rng, {
+            decalage: 0.2,
+            rotation: Math.PI,
+          }),
+          { kind: 'cylinder', radius: 0.2, height: 0.75 },
+          MATERIALS.metalBrosse,
+        ),
+        accessoires(zone.id, rng, [
+          [cx + 0.9, 0.92, cz + versCouloir * 1.4],
+          [gauche + 3.6, 0, cz + versCouloir * 2.6],
+          [droite - 1.2, 0, fond + versCouloir * 2.8],
+        ]),
       );
 
     case 'datacenter': {
-      // Deux allees de baies : c est la forme meme d une salle machine.
       const baies = [];
       for (let allee = 0; allee < 2; allee += 1) {
         for (let index = 0; index < 4; index += 1) {
@@ -712,19 +949,22 @@ function amenagement(zone: CampusZone): Piece {
           0,
           MATERIALS.metalBrosse,
         ),
+        accessoires(zone.id, rng, [
+          [droite - 1.4, 0, cz + versCouloir * 3.4],
+          [gauche + 1, 0, cz - versCouloir * 2.6],
+        ]),
       );
     }
 
     case 'training-lab': {
-      // Disposition en U autour d un tableau : une salle de formation.
-      const postes = [
-        { position: [gauche + 2, 0, fond + versCouloir * 2.2] as Vec3, yaw: Math.PI / 2 },
-        { position: [gauche + 2, 0, fond + versCouloir * 4.4] as Vec3, yaw: Math.PI / 2 },
-        { position: [droite - 2, 0, fond + versCouloir * 2.2] as Vec3, yaw: -Math.PI / 2 },
-        { position: [droite - 2, 0, fond + versCouloir * 4.4] as Vec3, yaw: -Math.PI / 2 },
+      const postes: Placement[] = [
+        { position: [gauche + 2, 0, fond + versCouloir * 2.2], yaw: Math.PI / 2 },
+        { position: [gauche + 2, 0, fond + versCouloir * 4.4], yaw: Math.PI / 2 },
+        { position: [droite - 2, 0, fond + versCouloir * 2.2], yaw: -Math.PI / 2 },
+        { position: [droite - 2, 0, fond + versCouloir * 4.4], yaw: -Math.PI / 2 },
       ];
       return fusionner(
-        postesDeTravail(`${zone.id}-poste`, postes),
+        postesModelises(`${zone.id}-poste`, postes, rng),
         panneauMural(
           `${zone.id}-tableau`,
           [gauche + 0.18, 1.75, cz - versCouloir * 0.6],
@@ -735,7 +975,18 @@ function amenagement(zone: CampusZone): Piece {
         baieInformatique(`${zone.id}-baie`, [
           { position: [cx + 2.6, 0, fond + versCouloir * 0.9], yaw: 0, unitesOccupees: 4 },
         ]),
-        plante(`${zone.id}-vert`, [[gauche + 0.9, 0, cz + versCouloir * 3]]),
+        objet(
+          `${zone.id}-bureau-formateur`,
+          'bureau',
+          [{ position: [cx - 1.6, 0, fond + versCouloir * 0.9], yaw: zone.doorSide === 'south' ? Math.PI : 0 }],
+          { kind: 'box', size: [1.5, 0.74, 0.75] },
+          MATERIALS.boisClair,
+        ),
+        plantes([[gauche + 0.95, 0, cz + versCouloir * 3]]),
+        accessoires(zone.id, rng, [
+          [cx - 1.6, 0.76, fond + versCouloir * 0.9],
+          [droite - 1, 0, cz + versCouloir * 3.4],
+        ]),
       );
     }
 
@@ -743,12 +994,44 @@ function amenagement(zone: CampusZone): Piece {
       return fusionner(
         table(`${zone.id}-etabli-a`, [cx - 1.6, 0, cz], [3, 0.9, 1.1]),
         table(`${zone.id}-etabli-b`, [cx + 2, 0, cz + versCouloir * 1.8], [2.2, 0.9, 0.9]),
-        etagere(`${zone.id}-stock-a`, [gauche + 0.7, 0, fond + versCouloir * 1.4], 1.8, Math.PI / 2),
-        etagere(`${zone.id}-stock-b`, [gauche + 0.7, 0, fond + versCouloir * 3.6], 1.8, Math.PI / 2),
+        objet(
+          `${zone.id}-stock`,
+          'etagere-large',
+          varier(
+            [
+              { position: [gauche + 0.75, 0, fond + versCouloir * 1.4], yaw: Math.PI / 2 },
+              { position: [gauche + 0.75, 0, fond + versCouloir * 3.6], yaw: Math.PI / 2 },
+            ],
+            rng,
+            { decalage: 0.05, rotation: 0.03 },
+          ),
+          { kind: 'box', size: [1.6, 1.1, 0.4] },
+          MATERIALS.boisFonce,
+        ),
         baieInformatique(`${zone.id}-baie`, [
           { position: [droite - 1.2, 0, fond + versCouloir * 1.1], yaw: 0, unitesOccupees: 3 },
         ]),
-        plante(`${zone.id}-vert`, [[droite - 1, 0, cz + versCouloir * 2.6]]),
+        objet(
+          `${zone.id}-tabouret`,
+          'tabouret',
+          varier(
+            [
+              { position: [cx - 1.6, 0, cz + versCouloir * 1.1] },
+              { position: [cx + 2, 0, cz + versCouloir * 2.9] },
+            ],
+            rng,
+            { decalage: 0.24, rotation: Math.PI },
+          ),
+          { kind: 'cylinder', radius: 0.2, height: 0.75 },
+          MATERIALS.metalBrosse,
+        ),
+        plantes([[droite - 1, 0, cz + versCouloir * 2.6]]),
+        accessoires(zone.id, rng, [
+          [cx - 2.2, 0.92, cz],
+          [cx + 1.6, 0.92, cz + versCouloir * 1.8],
+          [gauche + 2.4, 0, cz + versCouloir * 2.8],
+          [droite - 2.2, 0, fond + versCouloir * 3.2],
+        ]),
       );
 
     default:
@@ -756,13 +1039,12 @@ function amenagement(zone: CampusZone): Piece {
   }
 }
 
-
 /**
  * Points d interaction poses sur le mobilier.
  *
  * Le mobilier est instancie, donc un objet parmi dix ne peut pas etre designe
- * individuellement. On emet donc, pour les seuls objets manipulables, un noeud
- * dedie qui epouse une piece de l objet : l ecran d un poste, la porte d une
+ * individuellement. Les seuls objets manipulables recoivent donc un noeud
+ * dedie, qui epouse une piece du meuble : l ecran d un poste, la porte d une
  * baie. Il est visible, il fait partie du meuble, et il est designable.
  */
 function pointsDInteraction(zone: CampusZone): Scene3DNode[] {
@@ -773,11 +1055,10 @@ function pointsDInteraction(zone: CampusZone): Scene3DNode[] {
   const fond = cz - versCouloir * (profondeur / 2 - 1.4);
   const gauche = cx - largeur / 2;
 
-  /** Ecran d un poste de travail, designable et utilisable. */
   const poste = (id: string, position: Vec3, yaw: number, libelle: string): void => {
     const c = Math.cos(yaw);
     const sn = Math.sin(yaw);
-    const decalage: Vec3 = [-0.05, 1.06, -0.22];
+    const decalage: Vec3 = [-0.05, 0.95, -0.2];
     nodes.push({
       id,
       kind: 'box',
@@ -787,8 +1068,9 @@ function pointsDInteraction(zone: CampusZone): Scene3DNode[] {
         position[2] - decalage[0] * sn + decalage[2] * c,
       ],
       rotation: [0, yaw, 0],
-      size: [0.58, 0.36, 0.03],
+      size: [0.6, 0.44, 0.05],
       material: MATERIALS.ecranAllume,
+      model: { assetId: 'ecran', offsetY: -0.21 },
       static: true,
       interactive: {
         kind: 'workstation',
@@ -800,7 +1082,6 @@ function pointsDInteraction(zone: CampusZone): Scene3DNode[] {
     });
   };
 
-  /** Porte d une baie, designable et ouvrable. */
   const baie = (id: string, position: Vec3, libelle: string): void => {
     nodes.push({
       id,
@@ -821,19 +1102,8 @@ function pointsDInteraction(zone: CampusZone): Scene3DNode[] {
 
   switch (zone.id) {
     case 'offices':
-      // Rangee la plus proche de la porte : on la rencontre en entrant.
-      poste(
-        `${zone.id}-poste-interactif`,
-        [gauche + 1.9, 0, fond + versCouloir * 3.7],
-        Math.PI,
-        'Poste utilisateur',
-      );
-      poste(
-        `${zone.id}-poste-interactif-b`,
-        [gauche + 4.3, 0, fond + versCouloir * 3.7],
-        Math.PI,
-        'Poste utilisateur',
-      );
+      poste(`${zone.id}-poste-interactif`, [gauche + 1.9, 0, fond + versCouloir * 3.7], Math.PI, 'Poste utilisateur');
+      poste(`${zone.id}-poste-interactif-b`, [gauche + 4.3, 0, fond + versCouloir * 3.7], Math.PI, 'Poste utilisateur');
       break;
     case 'command-center':
       poste(
@@ -844,12 +1114,7 @@ function pointsDInteraction(zone: CampusZone): Scene3DNode[] {
       );
       break;
     case 'training-lab':
-      poste(
-        `${zone.id}-poste-interactif`,
-        [gauche + 2, 0, fond + versCouloir * 4.4],
-        Math.PI / 2,
-        'Poste de formation',
-      );
+      poste(`${zone.id}-poste-interactif`, [gauche + 2, 0, fond + versCouloir * 4.4], Math.PI / 2, 'Poste de formation');
       poste(
         `${zone.id}-poste-interactif-b`,
         [cx + largeur / 2 - 2, 0, fond + versCouloir * 4.4],
@@ -925,13 +1190,59 @@ function couloir(minX: number, maxX: number): Piece {
   }
   nodes.push(...luminaires('corridor', spots));
 
+  const rng = alea(20260910);
   const mobilier = fusionner(
-    plante('corridor-vert', [
-      [minX + 1.2, 0, -CORRIDOR_HALF + 0.7],
-      [minX + 1.2, 0, CORRIDOR_HALF - 0.7],
-      [maxX - 1.2, 0, CORRIDOR_HALF - 0.7],
-    ]),
-    canape('corridor-banc', [minX + 3.4, 0, -CORRIDOR_HALF + 0.6], 1.6, 0),
+    objet(
+      'corridor-plante',
+      'plante-pot',
+      varier(
+        [
+          { position: [minX + 1.3, 0, -CORRIDOR_HALF + 0.7] },
+          { position: [minX + 1.3, 0, CORRIDOR_HALF - 0.7] },
+          { position: [maxX - 1.3, 0, CORRIDOR_HALF - 0.7] },
+          { position: [(minX + maxX) / 2 - 6, 0, -CORRIDOR_HALF + 0.7] },
+          { position: [(minX + maxX) / 2 + 5, 0, CORRIDOR_HALF - 0.7] },
+        ],
+        rng,
+        { decalage: 0.14, rotation: Math.PI, echelle: 0.16 },
+      ),
+      { kind: 'cylinder', radius: 0.3, height: 1.05 },
+      MATERIALS.feuillage,
+    ),
+    objet(
+      'corridor-banc',
+      'canape',
+      varier([{ position: [minX + 3.6, 0, -CORRIDOR_HALF + 0.65] }], rng, {
+        decalage: 0.08,
+        rotation: 0.04,
+      }),
+      { kind: 'box', size: [1.9, 0.78, 0.8] },
+      MATERIALS.tissuCanape,
+    ),
+    objet(
+      'corridor-appoint',
+      'table-appoint',
+      varier([{ position: [minX + 5.1, 0, -CORRIDOR_HALF + 0.7] }], rng, {
+        decalage: 0.1,
+        rotation: 0.4,
+      }),
+      { kind: 'cylinder', radius: 0.24, height: 0.55 },
+      MATERIALS.boisClair,
+    ),
+    objet(
+      'corridor-carton',
+      'carton-ferme',
+      varier(
+        [
+          { position: [maxX - 3.2, 0, CORRIDOR_HALF - 0.55] },
+          { position: [maxX - 3.6, 0, CORRIDOR_HALF - 0.6] },
+        ],
+        rng,
+        { decalage: 0.1, rotation: Math.PI },
+      ),
+      { kind: 'box', size: [0.34, 0.32, 0.34] },
+      MATERIALS.boisClair,
+    ),
   );
 
   return {
@@ -1008,6 +1319,8 @@ function exterieur(minX: number, maxX: number, profondeurMax: number): Scene3DNo
 
 export interface CampusOptions {
   highlightZoneIds?: readonly string[];
+  /** Permet de decrire le batiment seul, pour les verifications de decor. */
+  avecPersonnages?: boolean;
 }
 
 export function buildCampusScene(options: CampusOptions = {}): Scene3D {
@@ -1046,6 +1359,13 @@ export function buildCampusScene(options: CampusOptions = {}): Scene3D {
     });
   }
 
+  // Les gens arrivent apres le decor : ils ne doivent jamais etre fusionnes.
+  if (options.avecPersonnages !== false) {
+    const monde = buildNpcNodes();
+    nodes.push(...monde.nodes);
+    colliders.push(...monde.colliders);
+  }
+
   const highlight = new Set(options.highlightZoneIds ?? []);
   for (const node of nodes) {
     if (node.interactive?.kind === 'sign' && highlight.has(node.interactive.targetId)) {
@@ -1058,7 +1378,7 @@ export function buildCampusScene(options: CampusOptions = {}): Scene3D {
    * designables un par un, donc ils echappent au regroupement.
    */
   const compacts = compacter(nodes, {
-    preserver: (node) => node.id.endsWith('-ceiling'),
+    preserver: (node) => node.id.endsWith('-ceiling') || node.model !== undefined,
   });
 
   return {

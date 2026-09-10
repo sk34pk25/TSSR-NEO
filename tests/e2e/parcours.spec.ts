@@ -85,6 +85,40 @@ async function attendreCampus(page: Page): Promise<void> {
   }
 }
 
+/**
+ * Cherche des yeux un objet manipulable, comme quelqu un qui entre dans une
+ * piece : quelques pas, puis un tour d horizon, jusqu a ce que quelque chose
+ * devienne utilisable.
+ */
+async function chercherUnObjetManipulable(
+  page: Page,
+  invite: ReturnType<Page['locator']>,
+): Promise<void> {
+  const trouve = async (): Promise<boolean> => (await invite.count()) > 0;
+
+  // On avance d abord droit devant : c est ce que fait quelqu un qui entre.
+  for (let pas = 0; pas < 7 && !(await trouve()); pas += 1) {
+    await page.keyboard.down('KeyW');
+    await page.waitForTimeout(320);
+    await page.keyboard.up('KeyW');
+    await page.waitForTimeout(140);
+  }
+  // Puis on regarde autour, sur place, sans s eloigner de ce qu on cherche.
+  for (let vue = 0; vue < 26 && !(await trouve()); vue += 1) {
+    await page.keyboard.down('ArrowRight');
+    await page.waitForTimeout(150);
+    await page.keyboard.up('ArrowRight');
+    await page.waitForTimeout(130);
+  }
+  // En dernier recours, quelques pas de plus dans la direction regardee.
+  for (let pas = 0; pas < 5 && !(await trouve()); pas += 1) {
+    await page.keyboard.down('KeyW');
+    await page.waitForTimeout(300);
+    await page.keyboard.up('KeyW');
+    await page.waitForTimeout(140);
+  }
+}
+
 test.describe('fumee', () => {
   test('la page se charge et se declare prete', async ({ page }) => {
     const erreurs: string[] = [];
@@ -321,17 +355,7 @@ test.describe('travailler sur place', () => {
 
     // On avance en cherchant des yeux, comme dans n importe quel lieu.
     const invite = page.locator('.campus3d__invite');
-    for (let pas = 0; pas < 8 && (await invite.count()) === 0; pas += 1) {
-      await page.keyboard.down('KeyW');
-      await page.waitForTimeout(260);
-      await page.keyboard.up('KeyW');
-      for (let vue = 0; vue < 8 && (await invite.count()) === 0; vue += 1) {
-        await page.keyboard.down('ArrowRight');
-        await page.waitForTimeout(120);
-        await page.keyboard.up('ArrowRight');
-        await page.waitForTimeout(120);
-      }
-    }
+    await chercherUnObjetManipulable(page, invite);
     await expect(invite).toContainText(/Utiliser|Ouvrir/);
 
     await page.keyboard.press('KeyE');
@@ -373,5 +397,32 @@ test.describe('adresses unifiees', () => {
       await ouvrir(page, route);
       await expect(page.locator('h1').first(), `titre sur ${route}`).toHaveCount(1);
     }
+  });
+});
+
+
+test.describe('presence humaine', () => {
+  test('aborder quelqu un et lui poser une question', async ({ page }) => {
+    test.slow();
+    await ouvrir(page, 'campus');
+    await page.getByRole('button', { name: /S y rendre dans la zone Accueil$/ }).click();
+    await page.waitForTimeout(1500);
+
+    const invite = page.locator('.campus3d__invite');
+    await chercherUnObjetManipulable(page, invite);
+    await expect(invite).toContainText(/Parler a|Utiliser|Ouvrir/);
+    await page.keyboard.press('KeyE');
+
+    const echange = page.getByRole('dialog').first();
+    await expect(echange).toBeVisible();
+    // Un dialogue propose des questions ; y repondre revele des symptomes.
+    const question = echange.getByRole('button').filter({ hasText: /\?$/ }).first();
+    if ((await question.count()) > 0) {
+      const texte = (await question.textContent()) ?? '';
+      await question.click();
+      await expect(echange.getByText(texte.trim())).toBeVisible();
+    }
+    await page.keyboard.press('Escape');
+    expect(page.url()).toContain('#/campus');
   });
 });

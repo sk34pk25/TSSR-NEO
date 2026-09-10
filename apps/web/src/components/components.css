@@ -990,3 +990,48 @@
     bottom: 96px;
   }
 }
+
+/* ------------------------------------------------------------- dialogue */
+.dialogue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--neo-space-3);
+  max-width: 72ch;
+}
+.dialogue__role {
+  margin: 0;
+  font-size: var(--neo-fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--neo-text-dim);
+}
+/* Une replique se lit comme une parole, pas comme un paragraphe de notice. */
+.dialogue__replique {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 4px 14px 14px 14px;
+  background: var(--neo-bg-2);
+  line-height: 1.55;
+}
+.dialogue__echange {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dialogue__question {
+  margin: 0 0 0 auto;
+  padding: 8px 14px;
+  max-width: 80%;
+  border-radius: 14px 4px 14px 14px;
+  border: 1px solid var(--neo-border-accent);
+  background: var(--neo-accent-dim);
+  color: var(--neo-accent);
+  font-size: var(--neo-fs-sm);
+}
+.dialogue__choix {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: var(--neo-space-2);
+}

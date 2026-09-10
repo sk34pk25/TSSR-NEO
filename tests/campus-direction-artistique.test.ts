@@ -5,6 +5,7 @@ import {
   compacter,
   interactionLaPlusProche,
   MATERIALS,
+  npcs,
   zoneAt,
   zoneById,
   zoneEntryPoint,
@@ -318,5 +319,120 @@ describe('reperage sonore et spatial', () => {
     }
     // Plusieurs ambiances differentes, sinon tout le batiment sonnerait pareil.
     expect(new Set(CAMPUS_ZONES.map((zone) => zone.ambiance)).size).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe('silhouettes et irregularite', () => {
+  const scene2 = buildCampusScene({});
+
+  it('les objets principaux ne sont plus de simples primitives', () => {
+    const modelises = scene2.nodes.filter((node) => node.model !== undefined);
+    expect(modelises.length).toBeGreaterThanOrEqual(30);
+    const assets = new Set(modelises.map((node) => node.model?.assetId));
+    // Un decor credible demande de la variete, pas un modele repete partout.
+    expect(assets.size).toBeGreaterThanOrEqual(15);
+  });
+
+  it('chaque modele conserve une primitive de repli', () => {
+    for (const node of scene2.nodes.filter((n) => n.model !== undefined)) {
+      // Sans repli, un fichier absent laisserait un trou dans le decor.
+      expect(['box', 'cylinder', 'sphere'], node.id).toContain(node.kind);
+    }
+  });
+
+  it('rompt l alignement parfait sur une part notable du decor', () => {
+    let horsGrille = 0;
+    let total = 0;
+    for (const node of scene2.nodes) {
+      const matrices = node.instances;
+      if (!matrices) continue;
+      for (let index = 0; index < matrices.length; index += 16) {
+        total += 1;
+        const yaw = Math.atan2(matrices[index + 8] ?? 0, matrices[index] ?? 1);
+        const reste = Math.abs(((yaw % (Math.PI / 2)) + Math.PI / 2) % (Math.PI / 2));
+        if (reste > 0.02 && Math.abs(reste - Math.PI / 2) > 0.02) horsGrille += 1;
+      }
+    }
+    // Le gros oeuvre reste d equerre ; c est le mobilier qui doit vivre.
+    expect(horsGrille / total).toBeGreaterThan(0.1);
+  });
+
+  it('produit exactement le meme decor a chaque construction', () => {
+    // L irregularite est seedee : sans cela aucune capture ne serait comparable.
+    const a = buildCampusScene({});
+    const b = buildCampusScene({});
+    const empreinte = (scene: typeof a): string =>
+      scene.nodes
+        .filter((node) => node.instances)
+        .map((node) => `${node.id}:${Array.from(node.instances ?? []).join(',')}`)
+        .join('|');
+    expect(empreinte(a)).toBe(empreinte(b));
+  });
+});
+
+describe('presence humaine', () => {
+  const scene3 = buildCampusScene({});
+
+  it('place des personnes identifiables dans le batiment', () => {
+    const gens = scene3.nodes.filter((node) => node.interactive?.kind === 'npc');
+    expect(gens.length).toBeGreaterThanOrEqual(5);
+    for (const personne of gens) {
+      expect(personne.model?.assetId, personne.id).toMatch(/^personne-/);
+      expect(personne.interactive?.label, personne.id).toMatch(/\S/);
+    }
+  });
+
+  it('donne a chacun une activite visible', () => {
+    const animations = new Set(
+      scene3.nodes
+        .filter((node) => node.interactive?.kind === 'npc')
+        .map((node) => node.model?.animation),
+    );
+    // Tout le monde ne fait pas la meme chose : assis, debout, en deplacement.
+    expect(animations.size).toBeGreaterThanOrEqual(3);
+  });
+
+  it('permet de decrire le batiment sans personne, pour les comparaisons', () => {
+    const vide = buildCampusScene({ avecPersonnages: false });
+    expect(vide.nodes.some((node) => node.interactive?.kind === 'npc')).toBe(false);
+  });
+
+  it('n en fait pas des obstacles : on doit pouvoir s en approcher', () => {
+    const gens = scene3.nodes.filter((node) => node.interactive?.kind === 'npc');
+    for (const personne of gens) {
+      expect(
+        scene3.colliders.some((collider) => collider.id.startsWith(personne.id)),
+        personne.id,
+      ).toBe(false);
+    }
+  });
+});
+
+describe('dialogues', () => {
+  it('chaque personne sait ouvrir et repondre', () => {
+    for (const personne of npcs()) {
+      expect(personne.dialogue.ouverture.length, personne.id).toBeGreaterThan(30);
+      expect(personne.dialogue.questions.length, personne.id).toBeGreaterThanOrEqual(1);
+      for (const echange of personne.dialogue.questions) {
+        expect(echange.question, personne.id).toMatch(/\?$/);
+        expect(echange.reponse.length, personne.id).toBeGreaterThan(20);
+      }
+    }
+  });
+
+  it('ne livre jamais la cause de la panne dans un dialogue', () => {
+    /*
+     * Un utilisateur decrit ce qu il constate, pas ce qu il ignore. Laisser
+     * echapper « VLAN » ou « le port est mal configure » supprimerait tout
+     * l interet du diagnostic.
+     */
+    const interdits = /vlan|quarantaine|port .*(mal|mauvais)|adresse ip|dhcp/i;
+    for (const personne of npcs()) {
+      const tout = [
+        personne.dialogue.ouverture,
+        ...personne.dialogue.questions.flatMap((q) => [q.question, q.reponse]),
+      ].join(' ');
+      expect(interdits.test(tout), `${personne.id} revele la solution`).toBe(false);
+    }
   });
 });
