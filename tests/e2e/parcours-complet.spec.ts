@@ -31,8 +31,16 @@ async function chercherUnObjet(page: Page, invite: ReturnType<Page['locator']>):
   }
 }
 
-test('un nouvel arrivant traverse toute la plateforme sans une erreur', async ({ page }) => {
-  test.slow();
+test('un nouvel arrivant traverse toute la plateforme sans une erreur', async ({ page }, info) => {
+  /*
+   * Une seule configuration suffit : ce parcours verifie un enchainement, pas
+   * une mise en page. Le rejouer a cinq tailles d ecran couterait dix minutes
+   * pour la meme information.
+   */
+  test.skip(info.project.name !== 'bureau', 'parcours joue une seule fois');
+  // Il traverse reellement le batiment a pied : il lui faut du temps, surtout
+  // sur une machine d integration sans pilote graphique.
+  test.setTimeout(300_000);
   const erreurs: string[] = [];
   page.on('pageerror', (erreur) => erreurs.push(String(erreur).slice(0, 200)));
   page.on('console', (message) => {
