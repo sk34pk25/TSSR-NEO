@@ -190,3 +190,31 @@ n a pas encore de silhouettes**.
 8. **Personnages** avec deplacement, etats et dialogues.
 9. **Systeme de composants** et fin des styles en ligne.
 10. **Correction des six defauts 3D** ci-dessus, avec test de non-regression.
+
+
+---
+
+## 8. Suivi des corrections
+
+| Constat de l audit                                          | Etat     | Traitement                                                        |
+| ------------------------------------------------------------ | -------- | ----------------------------------------------------------------- |
+| Onze etiquettes de produit a comprendre                      | corrige  | trois destinations : Accueil, Parcours, NEO Systems               |
+| Trois contenus servis par deux adresses chacun               | corrige  | les anciennes adresses ramenent a la destination unique           |
+| Quatre sous-produits sous « Apprendre »                      | corrige  | un parcours ordonne, fiches en tiroir, revision contextuelle      |
+| L ecran d intervention n avait aucun titre                   | corrige  | titre de premier niveau, verifie sur six ecrans                   |
+| Aucune touche ne faisait tourner la camera                   | corrige  | fleches pour tourner, lettres pour se deplacer                    |
+| Rotation dependante de la cadence d affichage                | corrige  | intention clavier integree dans le temps                          |
+| Vitesse passant de zero au maximum en une image              | corrige  | mise en vitesse et freinage progressifs                           |
+| Deplacement depuis une inspection basculant en 3e personne   | corrige  | retour a hauteur d homme                                          |
+| Position perdue en quittant la 3D                            | corrige  | presence relevee au demontage, restituee au retour                |
+| Cent pour cent de primitives, aucun modele importe           | corrige  | chaine glTF, trente-cinq modeles CC0, vingt-deux poses            |
+| Aucun objet oriente hors des angles droits                   | corrige  | variation deterministe : plus de 40 % du mobilier pose            |
+| Aucun accessoire secondaire                                  | corrige  | cartons, livres, corbeilles, tasses, plantes de tailles variees   |
+| Materiel reseau reduit a des boites                          | corrige  | baies, ports RJ45, temoins, brassage, prises, cordons             |
+| Aucune presence humaine                                      | corrige  | six personnes nommees, animees, avec dialogues                    |
+| Deux cent quatorze reglages de style dans le balisage        | partiel  | systeme de composants pose, conversion en cours                   |
+| Huit destinations affichant leur propre vide                 | partiel  | les trois destinations principales sont traitees                  |
+| Tickets et supervision en destinations autonomes             | **ouvert** | contextualisation non faite                                     |
+| Mission ne commencant pas dans le monde                      | **ouvert** | elle commence toujours par un ecran de travail                  |
+| NOVA absente en dehors de l ecran d intervention             | **ouvert** | pas de fil rouge persistant                                     |
+| Baie consultable mais non manipulable                        | **ouvert** | ouvrir, zoomer, brancher, debrancher restent a faire            |
