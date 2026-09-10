@@ -275,6 +275,8 @@ export function createProfile(
       telemetryConsent: false,
       developerMode: false,
       onboardingSeen: false,
+      campusAideVue: false,
+      audioActive: true,
       keybindings: {},
     },
     offlineModules: [],

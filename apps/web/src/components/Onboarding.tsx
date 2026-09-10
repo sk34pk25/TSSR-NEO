@@ -66,11 +66,20 @@ export function Onboarding({ onTerminer }: OnboardingProps): JSX.Element {
    * cela il retourne au corps du document et la tabulation suivante repart
    * d un point imprevisible.
    */
+  /*
+   * Le rappel de fermeture change d identite a chaque rendu du parent. S en
+   * servir comme dependance d effet faisait desabonner puis reabonner le
+   * clavier sans arret, et la touche Echap ne trouvait plus personne pour
+   * l ecouter. On garde donc une reference stable.
+   */
+  const onTerminerRef = useRef(onTerminer);
+  onTerminerRef.current = onTerminer;
+
   const terminer = useCallback(() => {
-    onTerminer();
+    onTerminerRef.current();
     const contenu = document.getElementById('contenu');
     contenu?.focus();
-  }, [onTerminer]);
+  }, []);
 
   useEffect(() => {
     suivantRef.current?.focus();

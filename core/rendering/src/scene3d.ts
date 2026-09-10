@@ -240,6 +240,8 @@ export interface Renderer3D {
   stats(): RenderStats;
   /** Dimensions reelles d un objet, apres chargement des modeles. */
   mesurer?(nodeId: string): { largeur: number; hauteur: number; profondeur: number } | undefined;
+  /** Deplace un modele pilotable et ajuste son animation en fondu. */
+  deplacerModele?(nodeId: string, position: Vec3, orientation: number, animation?: string): void;
   dispose(): void;
 }
 

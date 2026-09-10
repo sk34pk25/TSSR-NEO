@@ -1041,3 +1041,67 @@
   gap: 6px;
   margin-top: var(--neo-space-2);
 }
+
+/* ------------------------------------------------- commandes du campus */
+/* Bouton discret, mais toujours la : on se pose la question dans le lieu. */
+.campus3d__commandes {
+  position: absolute;
+  right: var(--neo-space-3);
+  bottom: var(--neo-space-3);
+  padding: 5px 12px;
+  border: 1px solid var(--neo-border-strong);
+  border-radius: 999px;
+  background: rgba(13, 17, 23, 0.72);
+  color: var(--neo-text-muted);
+  font: inherit;
+  font-size: var(--neo-fs-xs);
+  cursor: pointer;
+}
+.campus3d__commandes:hover,
+.campus3d__commandes:focus-visible {
+  color: var(--neo-accent);
+  border-color: var(--neo-border-accent);
+}
+
+/*
+ * Aide du premier passage. Elle repond a la question qu on se pose en arrivant
+ * dans un lieu qu on peut parcourir, et disparait des qu on l a lue.
+ */
+.campus3d__tutoriel {
+  position: absolute;
+  left: 50%;
+  bottom: var(--neo-space-5);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--neo-space-3);
+  padding: var(--neo-space-4) var(--neo-space-5);
+  border: 1px solid var(--neo-border-strong);
+  border-radius: var(--neo-radius-lg);
+  background: rgba(13, 17, 23, 0.88);
+  backdrop-filter: blur(6px);
+}
+:root[data-reduce-complexity='true'] .campus3d__tutoriel {
+  backdrop-filter: none;
+  background: var(--neo-bg-2);
+}
+.campus3d__tutoriel dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px var(--neo-space-4);
+  margin: 0;
+}
+.campus3d__tutoriel dl > div {
+  display: contents;
+}
+.campus3d__tutoriel dt {
+  font-family: var(--neo-font-mono);
+  font-size: var(--neo-fs-xs);
+  color: var(--neo-accent);
+}
+.campus3d__tutoriel dd {
+  margin: 0;
+  font-size: var(--neo-fs-sm);
+  color: var(--neo-text-muted);
+}

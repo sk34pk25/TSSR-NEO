@@ -7,6 +7,8 @@
  * a l execution : aucun fichier a telecharger, aucun service payant.
  */
 
+import { Musique } from './musique.ts';
+
 export type BusName = 'ambience' | 'sfx' | 'voice' | 'music';
 
 export interface AudioLevels {
@@ -17,12 +19,19 @@ export interface AudioLevels {
   music: number;
 }
 
+/*
+ * Niveaux de depart.
+ *
+ * La musique reste basse : elle ne doit jamais couvrir un dialogue, un retour
+ * d action ou l ambiance d une piece. C est la voix qui domine, puis les
+ * effets, puis l ambiance, puis la musique.
+ */
 export const DEFAULT_LEVELS: AudioLevels = {
   master: 0.7,
-  ambience: 0.5,
-  sfx: 0.8,
+  ambience: 0.35,
+  sfx: 0.65,
   voice: 0.8,
-  music: 0.4,
+  music: 0.3,
 };
 
 export type AudioStatus = 'inactif' | 'en-attente-interaction' | 'actif' | 'muet' | 'indisponible';
@@ -36,7 +45,21 @@ export type CueName =
   | 'connexion-etablie'
   | 'cable-branche'
   | 'cable-debranche'
-  | 'notification';
+  | 'notification'
+  // Interface : tres courts et tres discrets, sinon ils fatiguent.
+  | 'clic'
+  | 'survol'
+  | 'panneau-ouvert'
+  | 'panneau-ferme'
+  | 'validation'
+  | 'erreur'
+  // Monde : ce qu on entend en manipulant les lieux.
+  | 'porte-ouverte'
+  | 'porte-fermee'
+  | 'baie-ouverte'
+  | 'pas-moquette'
+  | 'pas-dur'
+  | 'frappe-clavier';
 
 interface CueSpec {
   /** Frequences successives, en hertz. */
@@ -74,6 +97,29 @@ const CUES: Record<CueName, CueSpec> = {
   'cable-branche': { notes: [330, 494], duration: 0.1, type: 'triangle', bus: 'sfx', gain: 0.45 },
   'cable-debranche': { notes: [494, 330], duration: 0.1, type: 'triangle', bus: 'sfx', gain: 0.45 },
   notification: { notes: [659.25, 987.77], duration: 0.12, type: 'sine', bus: 'sfx', gain: 0.32 },
+
+  /*
+   * Sons d interface.
+   *
+   * Un clic doit s entendre sans se remarquer : quelques centiemes de seconde,
+   * un niveau bas, et aucune hauteur marquee. Un son de clic trop present
+   * devient insupportable des la dixieme utilisation.
+   */
+  clic: { notes: [1180], duration: 0.028, type: 'sine', bus: 'sfx', gain: 0.1 },
+  survol: { notes: [1560], duration: 0.02, type: 'sine', bus: 'sfx', gain: 0.045 },
+  'panneau-ouvert': { notes: [520, 780], duration: 0.06, type: 'sine', bus: 'sfx', gain: 0.14 },
+  'panneau-ferme': { notes: [780, 520], duration: 0.06, type: 'sine', bus: 'sfx', gain: 0.12 },
+  validation: { notes: [784, 1046.5], duration: 0.08, type: 'sine', bus: 'sfx', gain: 0.2 },
+  erreur: { notes: [196, 155.56], duration: 0.16, type: 'triangle', bus: 'sfx', gain: 0.22 },
+
+  // Monde : matieres et mecanismes, volontairement sourds.
+  'porte-ouverte': { notes: [180, 260], duration: 0.14, type: 'triangle', bus: 'sfx', gain: 0.26 },
+  'porte-fermee': { notes: [260, 150], duration: 0.13, type: 'triangle', bus: 'sfx', gain: 0.28 },
+  'baie-ouverte': { notes: [140, 190, 160], duration: 0.11, type: 'sawtooth', bus: 'sfx', gain: 0.2 },
+  // Un pas ne doit pas s entendre comme une note : la hauteur reste tres basse.
+  'pas-moquette': { notes: [88], duration: 0.05, type: 'triangle', bus: 'sfx', gain: 0.06 },
+  'pas-dur': { notes: [132], duration: 0.04, type: 'square', bus: 'sfx', gain: 0.05 },
+  'frappe-clavier': { notes: [900], duration: 0.018, type: 'square', bus: 'sfx', gain: 0.05 },
 };
 
 /**
@@ -129,6 +175,9 @@ export class AudioEngine {
   private ambienceName: AmbienceName = 'neutre';
   private readonly createContext: () => AudioContext | undefined;
   private listeners = new Set<(status: AudioStatus) => void>();
+  private musique: Musique | undefined;
+  /** Attenuation de la musique demandee par une parole en cours. */
+  private paroleEnCours = false;
 
   constructor(options: AudioEngineOptions = {}) {
     this.levels = { ...DEFAULT_LEVELS, ...options.levels };
@@ -329,6 +378,59 @@ export class AudioEngine {
     return this.ambienceName;
   }
 
+  /**
+   * Proximite de la source d ambiance, entre 0 et 1.
+   *
+   * Le bruit des ventilateurs ne s entendait pas differemment a un metre d une
+   * baie et a quinze metres de la salle machine. Ce facteur multiplie le
+   * niveau du lit sonore : a l autre bout du couloir, il ne reste qu une rumeur.
+   */
+  setAmbienceProximity(proximite: number): void {
+    const context = this.context;
+    if (!context || !this.ambienceGain) return;
+    const borne = Math.max(0, Math.min(1, proximite));
+    const profil = AMBIENCES[this.ambienceName];
+    // Un plancher : une piece n est jamais totalement silencieuse.
+    const niveau = profil.gain * (0.28 + 0.72 * borne);
+    this.ambienceGain.gain.setTargetAtTime(niveau, context.currentTime, 0.5);
+  }
+
+  /**
+   * Lance la musique de fond.
+   *
+   * Elle ne demarre qu une fois le contexte autorise par un geste utilisateur :
+   * un navigateur refuse tout son avant cela, et faire semblant produirait une
+   * erreur au lieu d une musique.
+   */
+  startMusic(): boolean {
+    const context = this.context;
+    const bus = this.buses.get('music');
+    if (!context || !bus) return false;
+    this.musique ??= new Musique({ context, destination: bus });
+    if (this.musique.estActive()) return false;
+    this.musique.demarrer();
+    this.musique.attenuer(this.paroleEnCours);
+    return true;
+  }
+
+  stopMusic(): void {
+    this.musique?.arreter();
+  }
+
+  isMusicPlaying(): boolean {
+    return this.musique?.estActive() ?? false;
+  }
+
+  /**
+   * Abaisse la musique pendant une parole.
+   *
+   * Sans cela, un dialogue passe derriere la nappe et devient penible a suivre.
+   */
+  setSpeaking(parole: boolean): void {
+    this.paroleEnCours = parole;
+    this.musique?.attenuer(parole);
+  }
+
   stopAmbience(): void {
     this.ambienceFilter = undefined;
     this.ambienceGain = undefined;
@@ -342,6 +444,8 @@ export class AudioEngine {
   }
 
   async dispose(): Promise<void> {
+    this.stopMusic();
+    this.musique = undefined;
     this.stopAmbience();
     try {
       await this.context?.close();

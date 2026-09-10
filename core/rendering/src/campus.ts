@@ -15,6 +15,7 @@ import {
   type Placement,
 } from './kit.ts';
 import { MATERIALS, teinte } from './materials.ts';
+import { Navigation, type ZoneMarchable } from './navigation.ts';
 import { buildNpcNodes } from './npc.ts';
 import {
   baie,
@@ -800,8 +801,16 @@ function amenagement(zone: CampusZone): Piece {
     }
 
     case 'command-center': {
+      /*
+       * Les postes s ecartent de l axe de la porte : la rangee barrait
+       * l embrasure, et l entree de la piece n etait pas franchissable.
+       */
       const postes: Placement[] = [0, 1, 2, 3].map((index) => ({
-        position: [gauche + 1.8 + index * 1.9, 0, cz + versCouloir * 1.6],
+        position: [
+          gauche + 1.5 + index * 1.7 + (index >= 2 ? 1.6 : 0),
+          0,
+          cz + versCouloir * 1.6,
+        ],
         yaw: zone.doorSide === 'south' ? 0 : Math.PI,
       }));
       const ecrans: Piece = { nodes: [], colliders: [] };
@@ -1403,6 +1412,43 @@ function exterieur(minX: number, maxX: number, profondeurMax: number): Scene3DNo
   nodes.push(...arbres.nodes);
 
   return nodes;
+}
+
+
+/**
+ * Espace marchable du campus, calcule une fois.
+ *
+ * Il est construit a partir des memes volumes de collision que ceux que
+ * rencontre le joueur : personne ne peut donc marcher la ou le joueur se
+ * cognerait. C est cette verite partagee qui manquait, et son absence laissait
+ * des personnages enfonces dans les cloisons.
+ */
+let navigationCache: Navigation | undefined;
+
+export function campusNavigation(): Navigation {
+  if (navigationCache) return navigationCache;
+  const scene = buildCampusScene({ avecPersonnages: false });
+  const minX = Math.min(...CAMPUS_ZONES.map((zone) => zone.center[0] - zone.size[0] / 2)) - 1;
+  const maxX = Math.max(...CAMPUS_ZONES.map((zone) => zone.center[0] + zone.size[0] / 2)) + 1;
+
+  const zones: ZoneMarchable[] = CAMPUS_ZONES.map((zone) => ({
+    min: [zone.center[0] - zone.size[0] / 2, zone.center[2] - zone.size[1] / 2],
+    max: [zone.center[0] + zone.size[0] / 2, zone.center[2] + zone.size[1] / 2],
+  }));
+  // Le couloir relie les pieces : sans lui, aucun trajet inter-zones n existe.
+  zones.push({ min: [minX, -CORRIDOR_HALF], max: [maxX, CORRIDOR_HALF] });
+  // Les embrasures, sinon une porte n est jamais franchissable.
+  for (const zone of CAMPUS_ZONES) {
+    const versCouloir = zone.doorSide === 'south' ? 1 : -1;
+    const zPorte = zone.center[2] + versCouloir * (zone.size[1] / 2);
+    zones.push({
+      min: [zone.center[0] - DOOR_WIDTH / 2 + 0.2, Math.min(zPorte, zPorte - versCouloir * 0.6)],
+      max: [zone.center[0] + DOOR_WIDTH / 2 - 0.2, Math.max(zPorte, zPorte - versCouloir * 0.6)],
+    });
+  }
+
+  navigationCache = new Navigation({ colliders: scene.colliders, zones });
+  return navigationCache;
 }
 
 export interface CampusOptions {

@@ -1,4 +1,5 @@
-import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
+import { AppareilRequis, estUnOrdinateur } from './components/AppareilRequis.tsx';
 import { Onboarding } from './components/Onboarding.tsx';
 import { AppShell } from './components/Shell.tsx';
 import { AboutView } from './views/AboutView.tsx';
@@ -93,6 +94,12 @@ function CurrentView(): JSX.Element {
 export function App(): JSX.Element {
   const session = useSession();
   const route = useRoute();
+
+  /*
+   * Verifie une seule fois : la plateforme n a pas a changer de nature parce
+   * qu on a tourne l ecran ou redimensionne la fenetre.
+   */
+  const [surOrdinateur] = useState(estUnOrdinateur);
   // Le campus est un lieu ; la mission et le laboratoire sont des plans de travail.
   const variant =
     route.name === 'campus'
@@ -103,12 +110,16 @@ export function App(): JSX.Element {
 
   useEffect(() => {
     void session.boot();
+    session.armerAudioAuPremierGeste();
     const onLeave = (): void => {
       void session.shutdown();
     };
     window.addEventListener('pagehide', onLeave);
     return () => window.removeEventListener('pagehide', onLeave);
   }, [session]);
+
+  // Aucun campus, aucun modele, aucun moteur graphique n est charge ici.
+  if (!surOrdinateur) return <AppareilRequis />;
 
   if (!session.booted) {
     return (

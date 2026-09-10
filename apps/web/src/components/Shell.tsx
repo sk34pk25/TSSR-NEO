@@ -159,6 +159,24 @@ export function AppShell({ children, variant = 'page' }: AppShellProps): JSX.Ele
 
   useEffect(() => onUpdateAvailable(setUpdateReady), []);
 
+  /*
+   * Retour sonore des commandes.
+   *
+   * Ecouter une fois a la racine plutot que d ajouter un appel a chaque bouton :
+   * la regle reste vraie pour les boutons qui n existent pas encore, et aucun
+   * composant n a besoin de connaitre l audio.
+   */
+  useEffect(() => {
+    const onClick = (event: MouseEvent): void => {
+      const cible = event.target as HTMLElement | null;
+      const bouton = cible?.closest('button, a[href], [role="tab"]');
+      if (!bouton) return;
+      session.jouer(bouton.getAttribute('data-son') === 'validation' ? 'validation' : 'clic');
+    };
+    window.addEventListener('click', onClick);
+    return () => window.removeEventListener('click', onClick);
+  }, [session]);
+
   const openCommand = useCallback(() => setCommandOpen(true), []);
   useHotkey({ key: 'k', ctrlOrMeta: true }, openCommand);
 

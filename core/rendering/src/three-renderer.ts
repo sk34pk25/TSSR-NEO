@@ -96,6 +96,46 @@ function normaliser(racine: THREE.Object3D, asset: AssetSpec): void {
   else racine.position.y -= centre.y;
 }
 
+/**
+ * Cube unitaire aux aretes adoucies.
+ *
+ * Une part importante de l aspect « dessine a la regle » vient des aretes
+ * parfaitement vives : dans la realite, aucune arete n est infiniment fine, et
+ * c est le mince liseré de lumiere qui les longe qui donne son relief a un
+ * objet. Cette geometrie remplace la boite standard partout ou le decor est
+ * regroupe, donc sur la quasi-totalite du gros oeuvre et du mobilier.
+ *
+ * Le chanfrein est volontairement petit : on cherche a casser un reflet, pas a
+ * arrondir des meubles.
+ */
+function cubeAdouci(chanfrein = 0.02, segments = 2): THREE.BufferGeometry {
+  const forme = new THREE.Shape();
+  const demi = 0.5 - chanfrein;
+  forme.moveTo(-demi, -0.5);
+  forme.lineTo(demi, -0.5);
+  forme.quadraticCurveTo(0.5, -0.5, 0.5, -demi);
+  forme.lineTo(0.5, demi);
+  forme.quadraticCurveTo(0.5, 0.5, demi, 0.5);
+  forme.lineTo(-demi, 0.5);
+  forme.quadraticCurveTo(-0.5, 0.5, -0.5, demi);
+  forme.lineTo(-0.5, -demi);
+  forme.quadraticCurveTo(-0.5, -0.5, -demi, -0.5);
+
+  const geometrie = new THREE.ExtrudeGeometry(forme, {
+    depth: 1 - chanfrein * 2,
+    bevelEnabled: true,
+    bevelThickness: chanfrein,
+    bevelSize: chanfrein,
+    bevelSegments: segments,
+    curveSegments: segments,
+    steps: 1,
+  });
+  // L extrusion part de zero en profondeur : on recentre sur l origine.
+  geometrie.translate(0, 0, -(0.5 - chanfrein));
+  geometrie.computeVertexNormals();
+  return geometrie;
+}
+
 /** Deux etats de camera decrivent-ils le meme cadrage ? */
 function memeCadrage(a: CameraState, b: CameraState): boolean {
   const proche = (u: readonly number[], v: readonly number[]): boolean =>
@@ -124,7 +164,19 @@ export class ThreeRenderer implements Renderer3D {
   private readonly chargeur: ChargeurDeModeles;
   /** Mixeurs d animation actifs, avances a chaque image. */
   private readonly mixeurs: THREE.AnimationMixer[] = [];
+  /** Modeles pilotables apres coup : personnages, portes, elements mobiles. */
+  private readonly pilotes = new Map<
+    string,
+    {
+      conteneur: THREE.Object3D;
+      mixeur: THREE.AnimationMixer | undefined;
+      clips: THREE.AnimationClip[];
+      actionCourante: THREE.AnimationAction | undefined;
+      animation: string | undefined;
+    }
+  >();
   private readonly horloge = new THREE.Clock();
+  private cubeAdouciCache: THREE.BufferGeometry | undefined;
   /** Numero de scene : une reponse tardive ne doit pas polluer la suivante. */
   private generation = 0;
 
@@ -205,6 +257,16 @@ export class ThreeRenderer implements Renderer3D {
       }
       default: {
         const [w = 1, h = 1, d = 1] = node.size ?? [1, 1, 1];
+        /*
+         * Les boites unitaires sont celles que la passe de compaction produit :
+         * elles portent tout le gros oeuvre et le mobilier, et leur echelle
+         * reelle vit dans la matrice d instance. Une seule geometrie adoucie
+         * suffit donc a chanfreiner l ensemble du batiment.
+         */
+        if (w === 1 && h === 1 && d === 1 && node.instances) {
+          this.cubeAdouciCache ??= cubeAdouci(this.profile.quality === 'performance' ? 0.015 : 0.025);
+          return this.cubeAdouciCache;
+        }
         return new THREE.BoxGeometry(w, h, d);
       }
     }
@@ -368,6 +430,21 @@ export class ThreeRenderer implements Renderer3D {
     primitive.visible = false;
     this.scene.add(groupe);
     this.objects.set(`${node.id}__modele`, groupe);
+
+    /*
+     * Un modele unique et anime peut etre pilote ensuite : c est ainsi qu un
+     * personnage marche. Les decors instancies restent figes.
+     */
+    const conteneur = groupe.children[0];
+    if (conteneur && groupe.children.length === 1) {
+      this.pilotes.set(node.id, {
+        conteneur,
+        mixeur: this.mixeurs[this.mixeurs.length - 1],
+        clips,
+        actionCourante: undefined,
+        animation: ref.animation,
+      });
+    }
   }
 
   private createObject(node: Scene3DNode, budget: number): THREE.Object3D | undefined {
@@ -629,6 +706,39 @@ export class ThreeRenderer implements Renderer3D {
       hauteur: Number(taille.y.toFixed(3)),
       profondeur: Number(taille.z.toFixed(3)),
     };
+  }
+
+  /**
+   * Deplace un modele pilote et ajuste son animation.
+   *
+   * Le changement d animation se fait en fondu : un passage instantane de la
+   * marche a l arret se voit immediatement comme un defaut. La duree reste
+   * courte, de l ordre d un quart de seconde.
+   */
+  deplacerModele(
+    nodeId: string,
+    position: Vec3,
+    orientation: number,
+    animation?: string,
+  ): void {
+    const pilote = this.pilotes.get(nodeId);
+    if (!pilote) return;
+    pilote.conteneur.position.set(position[0], pilote.conteneur.position.y, position[2]);
+    pilote.conteneur.rotation.y = orientation;
+    pilote.conteneur.updateMatrix();
+
+    if (animation === undefined || animation === pilote.animation) return;
+    const mixeur = pilote.mixeur;
+    if (!mixeur || pilote.clips.length === 0) return;
+    const clip = THREE.AnimationClip.findByName(pilote.clips, animation);
+    if (!clip) return;
+    const suivante = mixeur.clipAction(clip);
+    suivante.reset().play();
+    if (pilote.actionCourante) {
+      pilote.actionCourante.crossFadeTo(suivante, 0.28, false);
+    }
+    pilote.actionCourante = suivante;
+    pilote.animation = animation;
   }
 
   stats(): RenderStats {

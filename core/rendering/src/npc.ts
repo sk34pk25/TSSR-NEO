@@ -1,6 +1,6 @@
 import { objet, varier, alea, type Piece, type Placement } from './kit.ts';
 import { MATERIALS } from './materials.ts';
-import { zoneById, type CampusZone } from './campus.ts';
+import { campusNavigation, zoneById, type CampusZone } from './campus.ts';
 import type { Scene3DNode, Vec3 } from './scene3d.ts';
 
 /**
@@ -48,16 +48,39 @@ export interface NpcSpec {
   activite: NpcActivite;
   /** Modele du registre d assets. */
   asset: string;
-  /** Points de passage, pour les personnages qui circulent. */
-  ronde?: readonly Vec3[];
+  /**
+   * Itineraire, exprime en destinations qui ont un sens dans le metier.
+   *
+   * Le trajet entre deux destinations n est plus une ligne droite : il est
+   * calcule par l espace marchable, donc il contourne les murs et le mobilier.
+   */
+  itineraire?: readonly Etape[];
   dialogue: NpcDialogue;
 }
 
-/** Position au sol d une zone, decalee dans son repere. */
+/**
+ * Position au sol d une zone, decalee dans son repere, **puis validee**.
+ *
+ * Les coordonnees etaient jusqu ici ecrites a la main et prises telles quelles.
+ * Trois personnages se retrouvaient dans une geometrie solide : l un dans un
+ * trumeau de porte, un autre dans un comptoir, un troisieme dans un poste de
+ * travail. Chaque position passe desormais par l espace marchable, qui la
+ * ramene au point libre le plus proche si elle tombe dans un obstacle.
+ */
 function dans(zoneId: string, dx: number, dz: number): Vec3 {
   const zone = zoneById(zoneId) as CampusZone;
   const versCouloir = zone.doorSide === 'south' ? 1 : -1;
-  return [zone.center[0] + dx, 0, zone.center[2] + versCouloir * dz];
+  const voulu: Vec3 = [zone.center[0] + dx, 0, zone.center[2] + versCouloir * dz];
+  return campusNavigation().pointSur(voulu) ?? voulu;
+}
+
+/** Destination nommee d un personnage, elle aussi ramenee sur le marchable. */
+export interface Etape {
+  nom: string;
+  point: Vec3;
+  /** Temps passe sur place avant de repartir, en secondes simulees. */
+  pause: number;
+  activite: NpcActivite;
 }
 
 /*
@@ -140,6 +163,11 @@ function construire(): readonly NpcSpec[] {
     orientation: Math.PI,
     activite: 'assis',
     asset: 'personne-c',
+    itineraire: [
+      { nom: 'son poste', point: dans('offices', 2.4, -0.5), pause: 40, activite: 'assis' },
+      { nom: 'espace detente', point: dans('personal-space', 0, 2.4), pause: 16, activite: 'debout' },
+      { nom: 'son poste', point: dans('offices', 2.4, -0.5), pause: 30, activite: 'assis' },
+    ],
     dialogue: {
       ouverture:
         'Moi je n ai aucun probleme, tout fonctionne. Camille est juste a cote pourtant.',
@@ -161,11 +189,16 @@ function construire(): readonly NpcSpec[] {
     orientation: Math.PI / 2,
     activite: 'ronde',
     asset: 'personne-d',
-    ronde: [
-      dans('network-room', 1.6, 1.8),
-      dans('network-room', -2.2, 1.2),
-      [0, 0, 0],
-      dans('datacenter', 0, 2.4),
+    /*
+     * Une tournee de technicien reseau, pas une promenade : la salle reseau,
+     * le couloir, la supervision, puis la salle machine. Le point de passage
+     * qui valait l origine du monde a disparu.
+     */
+    itineraire: [
+      { nom: 'baie de brassage', point: dans('network-room', 1.9, 3.4), pause: 14, activite: 'debout' },
+      { nom: 'couloir', point: campusNavigation().pointSur([-12, 0, 0]) ?? [-12, 0, 0], pause: 3, activite: 'ronde' },
+      { nom: 'supervision', point: dans('command-center', -1.2, 3.2), pause: 10, activite: 'debout' },
+      { nom: 'salle machine', point: dans('datacenter', 0, 3.6), pause: 12, activite: 'debout' },
     ],
     dialogue: {
       ouverture:
@@ -265,8 +298,15 @@ export function buildNpcNodes(): Piece {
   const rng = alea(0x4e504331);
   const pieces: Piece[] = [];
 
+  const navigation = campusNavigation();
   for (const npc of npcs()) {
-    const placement: Placement = { position: npc.position, yaw: npc.orientation };
+    /*
+     * Ultime garde-fou : meme si une position echappait a la validation, elle
+     * est ramenee ici. Un personnage doit toujours pouvoir etre replace sur le
+     * dernier endroit sur plutot que rester dans le decor.
+     */
+    const sur = navigation.pointSur(npc.position) ?? npc.position;
+    const placement: Placement = { position: sur, yaw: npc.orientation };
     // Une legere irregularite d orientation : personne ne se tient pile droit.
     const pose = varier([placement], rng, { decalage: 0.05, rotation: 0.14 })[0] as Placement;
     const piece = objet(

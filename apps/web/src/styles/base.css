@@ -357,3 +357,36 @@ textarea {
   font-size: var(--neo-fs-md);
   padding: 8px 14px;
 }
+
+/* --------------------------------------------------- appareil non gere */
+.appareil-requis {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--neo-space-5);
+  background: var(--neo-bg-0);
+}
+.appareil-requis__carte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--neo-space-4);
+  max-width: 46ch;
+  padding: var(--neo-space-6);
+  border: 1px solid var(--neo-border-strong);
+  border-radius: var(--neo-radius-lg);
+  background: var(--neo-surface-raised);
+}
+.appareil-requis__carte h1 {
+  margin: 0;
+  font-size: var(--neo-fs-lg);
+  line-height: 1.25;
+}
+.appareil-requis__carte p {
+  margin: 0;
+  color: var(--neo-text-muted);
+  line-height: 1.6;
+}
+.appareil-requis__detail {
+  font-size: var(--neo-fs-sm);
+  color: var(--neo-text-dim);
+}
