@@ -217,3 +217,65 @@ describe('vie du campus', () => {
     expect(Math.hypot(apres.position[0] - avant[0], apres.position[2] - avant[2])).toBeLessThan(0.01);
   });
 });
+
+describe('circulation', () => {
+  it('l axe de chaque porte reste degage sur plusieurs metres', () => {
+    /*
+     * Le mobilier barrait l entree de six pieces sur neuf : on y butait des le
+     * premier pas, et l equipement qu on venait manipuler restait hors
+     * d atteinte. Une piece doit s ouvrir sur une allee.
+     */
+    for (const zone of CAMPUS_ZONES) {
+      const entree = zoneEntryPoint(zone);
+      // L allee se mesure selon l axe de la porte, pas selon le regard : on
+      // arrive desormais tourne vers l equipement de la piece.
+      const versCouloir = zone.doorSide === 'south' ? 1 : -1;
+      const direction: Vec3 = [0, 0, -versCouloir];
+      let libre = 0;
+      for (let distance = 0; distance < 9; distance += 0.1) {
+        const point: Vec3 = [
+          entree.position[0] + direction[0] * distance,
+          0,
+          entree.position[2] + direction[2] * distance,
+        ];
+        if (!navigation.estMarchable(point)) break;
+        libre = distance;
+      }
+      expect(libre, `allee de ${zone.id}`).toBeGreaterThan(2.5);
+    }
+  });
+
+  it('ce qu on vient manipuler est a portee depuis cette allee', () => {
+    for (const zone of CAMPUS_ZONES) {
+      const manipulables = scene.nodes.filter(
+        (node) =>
+          node.id.startsWith(zone.id) &&
+          (node.interactive?.kind === 'rack' || node.interactive?.kind === 'workstation'),
+      );
+      if (manipulables.length === 0) continue;
+
+      const entree = zoneEntryPoint(zone);
+      // L allee se mesure selon l axe de la porte, pas selon le regard : on
+      // arrive desormais tourne vers l equipement de la piece.
+      const versCouloir = zone.doorSide === 'south' ? 1 : -1;
+      const direction: Vec3 = [0, 0, -versCouloir];
+      let meilleure = Number.POSITIVE_INFINITY;
+      for (let distance = 0; distance < 9; distance += 0.1) {
+        const point: Vec3 = [
+          entree.position[0] + direction[0] * distance,
+          0,
+          entree.position[2] + direction[2] * distance,
+        ];
+        if (!navigation.estMarchable(point)) break;
+        for (const node of manipulables) {
+          meilleure = Math.min(
+            meilleure,
+            Math.hypot(node.position[0] - point[0], node.position[2] - point[2]),
+          );
+        }
+      }
+      // La portee d interaction vaut 2,60 m pour un objet.
+      expect(meilleure, `objet manipulable de ${zone.id}`).toBeLessThanOrEqual(2.6);
+    }
+  });
+});

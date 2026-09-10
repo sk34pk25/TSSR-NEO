@@ -243,7 +243,67 @@ for (const depart of departs) {
   }
 }
 
-// ------------------------------------------------ 5. objets sous le sol
+// ----------------------------- 5. circulation depuis chaque porte
+
+/*
+ * L axe de chaque porte doit rester degage, et ce qu on vient manipuler dans
+ * la piece doit se trouver a portee depuis cette allee. Le mobilier barrait
+ * l entree de quatre pieces : on y butait des le premier pas.
+ */
+for (const zone of CAMPUS_ZONES) {
+  const entree = zoneEntryPoint(zone);
+  // Selon l axe de la porte, pas selon le regard : on arrive tourne vers
+  // l equipement de la piece.
+  const versCouloir = zone.doorSide === 'south' ? 1 : -1;
+  const direction = [0, 0, -versCouloir];
+  let libre = 0;
+  for (let distance = 0; distance < 9; distance += 0.1) {
+    const point = [
+      entree.position[0] + direction[0] * distance,
+      0,
+      entree.position[2] + direction[2] * distance,
+    ];
+    if (!navigation.estMarchable(point)) break;
+    libre = distance;
+  }
+  if (libre < 2.5) {
+    signaler('P0', zone.id, 'l axe de la porte est barre', `allee libre de ${libre.toFixed(1)} m seulement`);
+  }
+
+  const manipulables = scene.nodes.filter(
+    (node) =>
+      node.id.startsWith(zone.id) &&
+      (node.interactive?.kind === 'rack' || node.interactive?.kind === 'workstation'),
+  );
+  if (manipulables.length === 0) continue;
+  const meilleure = Math.min(
+    ...manipulables.map((node) => {
+      let plusProche = Number.POSITIVE_INFINITY;
+      for (let distance = 0; distance <= libre; distance += 0.1) {
+        const point = [
+          entree.position[0] + direction[0] * distance,
+          0,
+          entree.position[2] + direction[2] * distance,
+        ];
+        plusProche = Math.min(
+          plusProche,
+          Math.hypot(node.position[0] - point[0], node.position[2] - point[2]),
+        );
+      }
+      return plusProche;
+    }),
+  );
+  if (meilleure > 2.6) {
+    signaler(
+      'P0',
+      zone.id,
+      'aucun objet manipulable a portee depuis l allee',
+      `le plus proche est a ${meilleure.toFixed(2)} m`,
+    );
+  }
+}
+
+// ------------------------------------------------ 6. objets sous le sol
 
 for (const node of scene.nodes) {
   const matrices = node.instances;
@@ -262,7 +322,7 @@ for (const node of scene.nodes) {
   }
 }
 
-// --------------------------------------------------- 6. assets manquants
+// --------------------------------------------------- 7. assets manquants
 
 const RACINE = resolve(process.cwd(), 'assets/3d');
 for (const asset of ASSETS) {
@@ -277,7 +337,7 @@ for (const node of scene.nodes) {
   }
 }
 
-// ---------------------------------------------------------- 7. rapport
+// ---------------------------------------------------------- 8. rapport
 
 const ordre = { P0: 0, P1: 1, P2: 2 };
 defauts.sort((a, b) => ordre[a.priorite] - ordre[b.priorite]);

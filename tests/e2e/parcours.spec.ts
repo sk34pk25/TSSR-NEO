@@ -93,29 +93,43 @@ async function attendreCampus(page: Page): Promise<void> {
 async function chercherUnObjetManipulable(
   page: Page,
   invite: ReturnType<Page['locator']>,
+  attendu: RegExp = /./,
 ): Promise<void> {
-  const trouve = async (): Promise<boolean> => (await invite.count()) > 0;
+  /*
+   * On arrive desormais face a ce que la piece sert a faire : quelques pas
+   * droit devant suffisent. Le balayage ne sert plus qu au repli, pour les
+   * personnes qui, elles, se deplacent.
+   */
+  const trouve = async (): Promise<boolean> => {
+    if ((await invite.count()) === 0) return false;
+    return attendu.test((await invite.textContent()) ?? '');
+  };
 
-  // On avance d abord droit devant : c est ce que fait quelqu un qui entre.
-  for (let pas = 0; pas < 7 && !(await trouve()); pas += 1) {
-    await page.keyboard.down('KeyW');
-    await page.waitForTimeout(320);
-    await page.keyboard.up('KeyW');
-    await page.waitForTimeout(140);
-  }
-  // Puis on regarde autour, sur place, sans s eloigner de ce qu on cherche.
-  for (let vue = 0; vue < 26 && !(await trouve()); vue += 1) {
-    await page.keyboard.down('ArrowRight');
+  const pivoter = async (touche: 'ArrowRight' | 'ArrowLeft'): Promise<void> => {
+    await page.keyboard.down(touche);
     await page.waitForTimeout(150);
-    await page.keyboard.up('ArrowRight');
+    await page.keyboard.up(touche);
+    await page.waitForTimeout(110);
+  };
+
+  for (let pas = 0; pas < 8 && !(await trouve()); pas += 1) {
+    await page.keyboard.down('KeyZ');
+    await page.waitForTimeout(260);
+    await page.keyboard.up('KeyZ');
     await page.waitForTimeout(130);
   }
-  // En dernier recours, quelques pas de plus dans la direction regardee.
-  for (let pas = 0; pas < 5 && !(await trouve()); pas += 1) {
-    await page.keyboard.down('KeyW');
-    await page.waitForTimeout(300);
-    await page.keyboard.up('KeyW');
-    await page.waitForTimeout(140);
+  // Repli : un tour d horizon, puis retour au cap de depart.
+  let tours = 0;
+  for (; tours < 26 && !(await trouve()); tours += 1) await pivoter('ArrowRight');
+  if (!(await trouve())) {
+    for (let retour = 0; retour < tours; retour += 1) await pivoter('ArrowLeft');
+    for (let pas = 0; pas < 6 && !(await trouve()); pas += 1) {
+      await page.keyboard.down('KeyZ');
+      await page.waitForTimeout(280);
+      await page.keyboard.up('KeyZ');
+      await page.waitForTimeout(130);
+      for (let vue = 0; vue < 12 && !(await trouve()); vue += 1) await pivoter('ArrowRight');
+    }
   }
 }
 
@@ -355,7 +369,7 @@ test.describe('travailler sur place', () => {
 
     // On avance en cherchant des yeux, comme dans n importe quel lieu.
     const invite = page.locator('.campus3d__invite');
-    await chercherUnObjetManipulable(page, invite);
+    await chercherUnObjetManipulable(page, invite, /Utiliser|Ouvrir/);
     await expect(invite).toContainText(/Utiliser|Ouvrir/);
 
     await page.keyboard.press('KeyE');
@@ -409,8 +423,8 @@ test.describe('presence humaine', () => {
     await page.waitForTimeout(1500);
 
     const invite = page.locator('.campus3d__invite');
-    await chercherUnObjetManipulable(page, invite);
-    await expect(invite).toContainText(/Parler a|Utiliser|Ouvrir/);
+    await chercherUnObjetManipulable(page, invite, /Parler a/);
+    await expect(invite).toContainText(/Parler a/);
     await page.keyboard.press('KeyE');
 
     const echange = page.getByRole('dialog').first();

@@ -9,25 +9,46 @@ import { expect, test, type Page } from '@playwright/test';
  * qu on peut enchainer sans jamais se perdre ni rien casser.
  */
 
-async function chercherUnObjet(page: Page, invite: ReturnType<Page['locator']>): Promise<void> {
-  const trouve = async (): Promise<boolean> => (await invite.count()) > 0;
-  for (let pas = 0; pas < 7 && !(await trouve()); pas += 1) {
-    await page.keyboard.down('KeyZ');
-    await page.waitForTimeout(320);
-    await page.keyboard.up('KeyZ');
-    await page.waitForTimeout(140);
-  }
-  for (let vue = 0; vue < 26 && !(await trouve()); vue += 1) {
-    await page.keyboard.down('ArrowRight');
+async function chercherUnObjet(
+  page: Page,
+  invite: ReturnType<Page['locator']>,
+  attendu: RegExp = /./,
+): Promise<void> {
+  /*
+   * On arrive desormais face a ce que la piece sert a faire : quelques pas
+   * droit devant suffisent. Le balayage ne sert plus qu au repli, pour les
+   * personnes qui, elles, se deplacent.
+   */
+  const trouve = async (): Promise<boolean> => {
+    if ((await invite.count()) === 0) return false;
+    return attendu.test((await invite.textContent()) ?? '');
+  };
+
+  const pivoter = async (touche: 'ArrowRight' | 'ArrowLeft'): Promise<void> => {
+    await page.keyboard.down(touche);
     await page.waitForTimeout(150);
-    await page.keyboard.up('ArrowRight');
+    await page.keyboard.up(touche);
+    await page.waitForTimeout(110);
+  };
+
+  for (let pas = 0; pas < 8 && !(await trouve()); pas += 1) {
+    await page.keyboard.down('KeyZ');
+    await page.waitForTimeout(260);
+    await page.keyboard.up('KeyZ');
     await page.waitForTimeout(130);
   }
-  for (let pas = 0; pas < 5 && !(await trouve()); pas += 1) {
-    await page.keyboard.down('KeyZ');
-    await page.waitForTimeout(300);
-    await page.keyboard.up('KeyZ');
-    await page.waitForTimeout(140);
+  // Repli : un tour d horizon, puis retour au cap de depart.
+  let tours = 0;
+  for (; tours < 26 && !(await trouve()); tours += 1) await pivoter('ArrowRight');
+  if (!(await trouve())) {
+    for (let retour = 0; retour < tours; retour += 1) await pivoter('ArrowLeft');
+    for (let pas = 0; pas < 6 && !(await trouve()); pas += 1) {
+      await page.keyboard.down('KeyZ');
+      await page.waitForTimeout(280);
+      await page.keyboard.up('KeyZ');
+      await page.waitForTimeout(130);
+      for (let vue = 0; vue < 12 && !(await trouve()); vue += 1) await pivoter('ArrowRight');
+    }
   }
 }
 
@@ -77,8 +98,8 @@ test('un nouvel arrivant traverse toute la plateforme sans une erreur', async ({
   await page.getByRole('button', { name: /S y rendre dans la zone Accueil$/ }).click();
   await page.waitForTimeout(1800);
   const invite = page.locator('.campus3d__invite');
-  await chercherUnObjet(page, invite);
-  await expect(invite).toContainText(/Parler a|Utiliser|Ouvrir/);
+  await chercherUnObjet(page, invite, /Parler a/);
+  await expect(invite).toContainText(/Parler a/);
   await page.keyboard.press('KeyE');
   const echange = page.getByRole('dialog').first();
   await expect(echange).toBeVisible();
@@ -87,7 +108,7 @@ test('un nouvel arrivant traverse toute la plateforme sans une erreur', async ({
   // 6. Aller aux bureaux et utiliser un poste : le vrai terminal du moteur.
   await page.getByRole('button', { name: /S y rendre dans la zone Bureaux$/ }).click();
   await page.waitForTimeout(1800);
-  await chercherUnObjet(page, invite);
+  await chercherUnObjet(page, invite, /Utiliser/);
   await page.keyboard.press('KeyE');
   const outil = page.getByRole('dialog').first();
   await expect(outil).toBeVisible();
@@ -103,7 +124,7 @@ test('un nouvel arrivant traverse toute la plateforme sans une erreur', async ({
   // 7. Aller en salle reseau et inspecter une baie.
   await page.getByRole('button', { name: /S y rendre dans la zone Salle reseau$/ }).click();
   await page.waitForTimeout(1800);
-  await chercherUnObjet(page, invite);
+  await chercherUnObjet(page, invite, /Ouvrir/);
   await page.keyboard.press('KeyE');
   await expect(page.getByRole('dialog').first()).toBeVisible();
   await page.keyboard.press('Escape');

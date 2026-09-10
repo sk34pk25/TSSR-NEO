@@ -774,7 +774,13 @@ function amenagement(zone: CampusZone): Piece {
       for (let rangee = 0; rangee < 2; rangee += 1) {
         for (let poste = 0; poste < 3; poste += 1) {
           postes.push({
-            position: [gauche + 1.9 + poste * 2.4, 0, fond + versCouloir * (0.6 + rangee * 3.1)],
+            position: [
+              // Trois postes a gauche de l allee, trois a droite : on entre
+              // entre les deux ilots au lieu de buter sur un bureau.
+              cx + (poste === 0 ? -3.1 : poste === 1 ? 2.1 : 3.9),
+              0,
+              fond + versCouloir * (0.6 + rangee * 3.1),
+            ],
             yaw: rangee === 0 ? 0 : Math.PI,
           });
         }
@@ -807,7 +813,7 @@ function amenagement(zone: CampusZone): Piece {
        */
       const postes: Placement[] = [0, 1, 2, 3].map((index) => ({
         position: [
-          gauche + 1.5 + index * 1.7 + (index >= 2 ? 1.6 : 0),
+          cx + (index < 2 ? -3.1 + index * 1.2 : 1.9 + (index - 2) * 1.2),
           0,
           cz + versCouloir * 1.6,
         ],
@@ -852,15 +858,15 @@ function amenagement(zone: CampusZone): Piece {
           { kind: 'box', size: [1.6, 1.1, 0.4] },
           MATERIALS.boisFonce,
         ),
-        table(`${zone.id}-lecture`, [cx, 0, cz + versCouloir * 0.4], [2.4, 0.74, 1.1]),
+        table(`${zone.id}-lecture`, [cx - 1.5, 0, cz + versCouloir * 0.4], [2.2, 0.74, 1.1]),
         objet(
           `${zone.id}-chaise`,
           'chaise',
           varier(
             [
-              { position: [cx - 0.7, 0, cz + versCouloir * 1.4], yaw: zone.doorSide === 'south' ? Math.PI : 0 },
-              { position: [cx + 0.7, 0, cz + versCouloir * 1.4], yaw: zone.doorSide === 'south' ? Math.PI : 0 },
-              { position: [cx, 0, cz - versCouloir * 0.7], yaw: zone.doorSide === 'south' ? 0 : Math.PI },
+              { position: [cx - 2.1, 0, cz + versCouloir * 1.4], yaw: zone.doorSide === 'south' ? Math.PI : 0 },
+              { position: [cx - 0.9, 0, cz + versCouloir * 1.4], yaw: zone.doorSide === 'south' ? Math.PI : 0 },
+              { position: [cx - 1.5, 0, cz - versCouloir * 0.7], yaw: zone.doorSide === 'south' ? 0 : Math.PI },
             ],
             rng,
             { decalage: 0.16, rotation: 0.45 },
@@ -869,8 +875,8 @@ function amenagement(zone: CampusZone): Piece {
           MATERIALS.tissuSiege,
         ),
         accessoires(zone.id, rng, [
-          [cx - 0.5, 0.76, cz + versCouloir * 0.4],
-          [cx + 0.6, 0.76, cz + versCouloir * 0.2],
+          [cx - 2, 0.76, cz + versCouloir * 0.4],
+          [cx - 0.9, 0.76, cz + versCouloir * 0.2],
         ]),
         plantes([[cx - 2.6, 0, cz + versCouloir * 2.6]]),
       );
@@ -928,14 +934,14 @@ function amenagement(zone: CampusZone): Piece {
 
       const baieGauche = baie({
         id: `${zone.id}-baie-a`,
-        position: [gauche + 1.5, 0, fond + versCouloir * 0.9],
+        position: [gauche + 1.1, 0, fond + versCouloir * 1.6],
         yaw: zone.doorSide === 'south' ? 0 : Math.PI,
         chassis: [onduleur, serveur, routeur, commutateur, commutateur],
         porteOuverte: true,
       });
       const baieDroite = baie({
         id: `${zone.id}-baie-b`,
-        position: [gauche + 2.4, 0, fond + versCouloir * 0.9],
+        position: [gauche + 2.0, 0, fond + versCouloir * 1.6],
         yaw: zone.doorSide === 'south' ? 0 : Math.PI,
         chassis: [{ unites: 1, ports: 24, etats: Array(24).fill('inactif') }, serveur],
       });
@@ -954,7 +960,7 @@ function amenagement(zone: CampusZone): Piece {
           cableDeBrassage(
             `${zone.id}-cable-${index}`,
             port.position,
-            [gauche + 0.3, 1.58 - index * 0.03, fond + versCouloir * (0.55 + index * 0.1)],
+            [gauche + 0.3, 1.58 - index * 0.03, fond + versCouloir * (1.25 + index * 0.1)],
             couleurs[index] as Vec3,
           ),
         );
@@ -966,16 +972,16 @@ function amenagement(zone: CampusZone): Piece {
         ...cables,
         panneauDeBrassage(
           `${zone.id}-brassage`,
-          [gauche + 0.26, 1.58, fond + versCouloir * 0.9],
+          [gauche + 0.26, 1.58, fond + versCouloir * 1.6],
           Math.PI / 2,
           24,
         ),
         priseMurale(`${zone.id}-prise`, [droite - 0.22, 0.35, cz + versCouloir * 2.2], -Math.PI / 2),
-        table(`${zone.id}-etabli`, [cx + 1.4, 0, cz + versCouloir * 1.4], [2.2, 0.9, 0.8]),
+        table(`${zone.id}-etabli`, [cx + 2.3, 0, cz + versCouloir * 1.4], [2.2, 0.9, 0.8]),
         objet(
           `${zone.id}-tabouret`,
           'tabouret',
-          varier([{ position: [cx + 1.4, 0, cz + versCouloir * 2.5] }], rng, {
+          varier([{ position: [cx + 2.3, 0, cz + versCouloir * 2.6] }], rng, {
             decalage: 0.2,
             rotation: Math.PI,
           }),
@@ -985,12 +991,12 @@ function amenagement(zone: CampusZone): Piece {
         objet(
           `${zone.id}-portable`,
           'portable',
-          [{ position: [cx + 1.1, 0.92, cz + versCouloir * 1.4], yaw: 0.3 }],
+          [{ position: [cx + 2.0, 0.92, cz + versCouloir * 1.4], yaw: 0.3 }],
           { kind: 'box', size: [0.34, 0.24, 0.26] },
           MATERIALS.plastiqueSombre,
         ),
         accessoires(zone.id, rng, [
-          [gauche + 3.6, 0, cz + versCouloir * 2.6],
+          [gauche + 1.2, 0, cz + versCouloir * 2.8],
           [droite - 1.2, 0, fond + versCouloir * 2.8],
         ]),
       );
@@ -1002,6 +1008,14 @@ function amenagement(zone: CampusZone): Piece {
       const stockage: ChassisSpec = { unites: 3, ports: 4, ventilation: true, etats: Array(4).fill('actif') };
       const pdu: ChassisSpec = { unites: 1, ports: 0, materiau: MATERIALS.metalPeintSombre };
 
+      /*
+       * Deux rangees de part et d autre d une allee centrale.
+       *
+       * Les baies etaient alignees sur toute la largeur, dont une exactement
+       * dans l axe de la porte : on entrait dans la piece et l on butait dedans.
+       * Une salle machine se parcourt par une allee, c est aussi sa realite.
+       */
+      const colonnes = [-3.5, -2.35, 2.35, 3.5];
       const baies: Piece[] = [];
       for (let allee = 0; allee < 2; allee += 1) {
         for (let index = 0; index < 4; index += 1) {
@@ -1013,7 +1027,7 @@ function amenagement(zone: CampusZone): Piece {
           baies.push(
             baie({
               id: `${zone.id}-baie-${allee}-${index}`,
-              position: [gauche + 2.2 + index * 1.25, 0, fond + versCouloir * (1.4 + allee * 4)],
+              position: [cx + (colonnes[index] ?? 0), 0, fond + versCouloir * (1.6 + allee * 3.6)],
               yaw: allee === 0 ? (zone.doorSide === 'south' ? 0 : Math.PI) : zone.doorSide === 'south' ? Math.PI : 0,
               chassis: garnissage,
               porteOuverte: (index + allee) % 4 === 1,
@@ -1056,7 +1070,7 @@ function amenagement(zone: CampusZone): Piece {
         ),
         baie({
           id: `${zone.id}-baie`,
-          position: [cx + 2.6, 0, fond + versCouloir * 0.9],
+          position: [cx + 2.1, 0, fond + versCouloir * 1.9],
           yaw: zone.doorSide === 'south' ? 0 : Math.PI,
           chassis: [
             { unites: 1, ports: 24, etats: Array(24).fill('inactif') },
@@ -1068,13 +1082,13 @@ function amenagement(zone: CampusZone): Piece {
         objet(
           `${zone.id}-bureau-formateur`,
           'bureau',
-          [{ position: [cx - 1.6, 0, fond + versCouloir * 0.9], yaw: zone.doorSide === 'south' ? Math.PI : 0 }],
+          [{ position: [cx - 2.4, 0, fond + versCouloir * 0.9], yaw: zone.doorSide === 'south' ? Math.PI : 0 }],
           { kind: 'box', size: [1.5, 0.74, 0.75] },
           MATERIALS.boisClair,
         ),
         plantes([[gauche + 0.95, 0, cz + versCouloir * 3]]),
         accessoires(zone.id, rng, [
-          [cx - 1.6, 0.76, fond + versCouloir * 0.9],
+          [cx - 2.4, 0.76, fond + versCouloir * 0.9],
           [droite - 1, 0, cz + versCouloir * 3.4],
         ]),
       );
@@ -1082,8 +1096,8 @@ function amenagement(zone: CampusZone): Piece {
 
     case 'lab-builder':
       return fusionner(
-        table(`${zone.id}-etabli-a`, [cx - 1.6, 0, cz], [3, 0.9, 1.1]),
-        table(`${zone.id}-etabli-b`, [cx + 2, 0, cz + versCouloir * 1.8], [2.2, 0.9, 0.9]),
+        table(`${zone.id}-etabli-a`, [cx - 2.6, 0, cz], [2.6, 0.9, 1.1]),
+        table(`${zone.id}-etabli-b`, [cx + 2.6, 0, cz + versCouloir * 1.4], [2.2, 0.9, 0.9]),
         objet(
           `${zone.id}-stock`,
           'etagere-large',
@@ -1100,7 +1114,7 @@ function amenagement(zone: CampusZone): Piece {
         ),
         baie({
           id: `${zone.id}-baie`,
-          position: [droite - 1.2, 0, fond + versCouloir * 1.1],
+          position: [cx + 2.1, 0, fond + versCouloir * 1.9],
           yaw: zone.doorSide === 'south' ? 0 : Math.PI,
           chassis: [
             { unites: 1, ports: 24, etats: Array(24).fill('inactif') },
@@ -1113,8 +1127,8 @@ function amenagement(zone: CampusZone): Piece {
           'tabouret',
           varier(
             [
-              { position: [cx - 1.6, 0, cz + versCouloir * 1.1] },
-              { position: [cx + 2, 0, cz + versCouloir * 2.9] },
+              { position: [cx - 2.6, 0, cz + versCouloir * 1.3] },
+              { position: [cx + 2.6, 0, cz + versCouloir * 2.5] },
             ],
             rng,
             { decalage: 0.24, rotation: Math.PI },
@@ -1124,8 +1138,8 @@ function amenagement(zone: CampusZone): Piece {
         ),
         plantes([[droite - 1, 0, cz + versCouloir * 2.6]]),
         accessoires(zone.id, rng, [
-          [cx - 2.2, 0.92, cz],
-          [cx + 1.6, 0.92, cz + versCouloir * 1.8],
+          [cx - 3.2, 0.92, cz],
+          [cx + 2.2, 0.92, cz + versCouloir * 1.4],
           [gauche + 2.4, 0, cz + versCouloir * 2.8],
           [droite - 2.2, 0, fond + versCouloir * 3.2],
         ]),
@@ -1183,7 +1197,12 @@ function pointsDInteraction(zone: CampusZone): Scene3DNode[] {
     nodes.push({
       id,
       kind: 'box',
-      position: [position[0], 1.05, position[2] + 0.52],
+      /*
+       * La face avant regarde le couloir, c est-a-dire le cote par lequel on
+       * arrive. Le point d interaction etait pose sur l arriere de la baie
+       * pour les pieces situees au nord, donc inatteignable.
+       */
+      position: [position[0], 1.05, position[2] + versCouloir * 0.52],
       size: [0.64, 1.96, 0.04],
       material: MATERIALS.vitrageInterieur,
       static: true,
@@ -1199,13 +1218,13 @@ function pointsDInteraction(zone: CampusZone): Scene3DNode[] {
 
   switch (zone.id) {
     case 'offices':
-      poste(`${zone.id}-poste-interactif`, [gauche + 1.9, 0, fond + versCouloir * 3.7], Math.PI, 'Poste utilisateur');
-      poste(`${zone.id}-poste-interactif-b`, [gauche + 4.3, 0, fond + versCouloir * 3.7], Math.PI, 'Poste utilisateur');
+      poste(`${zone.id}-poste-interactif`, [cx - 3.1, 0, fond + versCouloir * 3.7], Math.PI, 'Poste utilisateur');
+      poste(`${zone.id}-poste-interactif-b`, [cx + 2.1, 0, fond + versCouloir * 3.7], Math.PI, 'Poste utilisateur');
       break;
     case 'command-center':
       poste(
         `${zone.id}-poste-interactif`,
-        [gauche + 1.8, 0, cz + versCouloir * 1.6],
+        [cx + 1.9, 0, cz + versCouloir * 1.6],
         zone.doorSide === 'south' ? 0 : Math.PI,
         'Console de supervision',
       );
@@ -1218,18 +1237,18 @@ function pointsDInteraction(zone: CampusZone): Scene3DNode[] {
         -Math.PI / 2,
         'Poste de formation',
       );
-      baie(`${zone.id}-baie-interactive`, [cx + 2.6, 0, fond + versCouloir * 0.9], 'Baie du laboratoire');
+      baie(`${zone.id}-baie-interactive`, [cx + 2.1, 0, fond + versCouloir * 1.9], 'Baie du laboratoire');
       break;
     case 'network-room':
-      baie(`${zone.id}-baie-interactive`, [gauche + 1.4, 0, fond + versCouloir * 0.9], 'Baie de brassage');
+      baie(`${zone.id}-baie-interactive`, [gauche + 2.0, 0, fond + versCouloir * 1.6], 'Baie de brassage');
       break;
     case 'datacenter':
-      baie(`${zone.id}-baie-interactive`, [gauche + 2, 0, fond + versCouloir * 1.2], 'Baie de production');
+      baie(`${zone.id}-baie-interactive`, [cx - 2.35, 0, fond + versCouloir * 1.6], 'Baie de production');
       break;
     case 'lab-builder':
       baie(
         `${zone.id}-baie-interactive`,
-        [cx + largeur / 2 - 1.2, 0, fond + versCouloir * 1.1],
+        [cx + 2.1, 0, fond + versCouloir * 1.9],
         'Baie du laboratoire libre',
       );
       break;
@@ -1595,11 +1614,24 @@ export function zoneAt(position: Vec3): CampusZone | undefined {
 export function zoneEntryPoint(zone: CampusZone): { position: Vec3; yaw: number } {
   const versCouloir = zone.doorSide === 'south' ? 1 : -1;
   const zPorte = zone.center[2] + versCouloir * (zone.size[1] / 2);
-  return {
-    position: [zone.center[0], 1.65, zPorte - versCouloir * 1.2],
-    // Un lacet nul regarde vers les Z croissants, cote controleur de camera.
-    yaw: versCouloir > 0 ? Math.PI : 0,
-  };
+  const position: Vec3 = [zone.center[0], 1.65, zPorte - versCouloir * 1.2];
+
+  /*
+   * On arrive face a ce que la piece sert a faire.
+   *
+   * Regarder le fond du local obligeait a chercher des yeux l equipement pour
+   * lequel on etait venu, alors qu il se trouve souvent sur le cote. Entrer
+   * dans une salle reseau doit montrer les baies, pas le mur d en face.
+   */
+  const interet = pointsDInteraction(zone)[0];
+  if (interet) {
+    const dx = interet.position[0] - position[0];
+    const dz = interet.position[2] - position[2];
+    if (Math.hypot(dx, dz) > 0.5) return { position, yaw: Math.atan2(dx, dz) };
+  }
+
+  // A defaut, le fond de la piece. Un lacet nul regarde vers les Z croissants.
+  return { position, yaw: versCouloir > 0 ? Math.PI : 0 };
 }
 
 /**
