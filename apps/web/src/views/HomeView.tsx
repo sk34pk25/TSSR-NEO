@@ -1,4 +1,5 @@
 import { Meter } from '../components/Meter.tsx';
+import { PrimaryAction } from '../ui/index.tsx';
 import { navigate, useSession } from '../state/hooks.ts';
 import { nextStep } from '../state/next-step.ts';
 
@@ -17,6 +18,19 @@ export function HomeView(): JSX.Element {
   const progress = session.progress;
   const terminees = progress.missions.filter((m) => m.completed).length;
   const prenom = progress.displayName;
+
+  /*
+   * Ce qui justifie l action est deduit du cours reellement charge : la
+   * competence visee par la prochaine etape, et la duree annoncee. Rien n est
+   * invente ; quand l information n existe pas, on le dit.
+   */
+  const cours = session.courses[0];
+  const prochaineMission = session.missions.find(
+    (mission) => !progress.missions.some((m) => m.missionId === mission.id && m.completed),
+  );
+  const prochaineCompetence = prochaineMission?.competencies[0] ?? 'a determiner';
+  const tempsEstime =
+    cours === undefined ? 'non renseigne' : `environ ${Math.round(cours.estimatedHours * 60)} min`;
 
   return (
     <div className="accueil">
@@ -67,26 +81,21 @@ export function HomeView(): JSX.Element {
           Bonjour {prenom}. Vous etes technicien systemes et reseaux chez NEO Systems.
         </p>
         <h2 className="accueil__titre">{etape.titre}</h2>
-        <p className="accueil__raison">{etape.raison}</p>
-        <div className="neo-row" style={{ marginTop: 'var(--neo-space-4)' }}>
-          <button
-            type="button"
-            className="neo-btn neo-btn--primary neo-btn--lg"
-            onClick={() => {
-              const destination = etape.executer(session);
-              if (destination) navigate(destination);
-            }}
-          >
-            {etape.action}
-          </button>
-          <button
-            type="button"
-            className="neo-btn"
-            onClick={() => navigate('parcours')}
-          >
-            Voir tous les cours
-          </button>
-        </div>
+        <PrimaryAction
+          libelle={etape.action}
+          raison={etape.raison}
+          onClick={() => {
+            const destination = etape.executer(session);
+            if (destination) navigate(destination);
+          }}
+          secondaire={{ libelle: 'Voir mon parcours', onClick: () => navigate('parcours') }}
+          detail={
+            <>
+              <span>Prochaine competence : {prochaineCompetence}</span>
+              <span>Temps estime : {tempsEstime}</span>
+            </>
+          }
+        />
       </section>
 
       <section className="accueil__reperes">
@@ -122,7 +131,7 @@ export function HomeView(): JSX.Element {
       </section>
 
       <section className="accueil__etat">
-        <h2 style={{ fontSize: 'var(--neo-fs-md)' }}>Ou vous en etes</h2>
+        <h2>Ou vous en etes</h2>
         <div className="accueil__etat-grille">
           <div>
             <span className="neo-dim">Rang</span>
