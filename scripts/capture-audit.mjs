@@ -22,9 +22,19 @@ const ECRANS = [
   'diagnostics',
 ];
 
+/** La prise en main recouvre la page au premier passage : on la ferme d abord. */
+async function passerLaPriseEnMain(page) {
+  const dialogue = page.getByRole('dialog', { name: 'Prise en main de TSSR NEO' });
+  if (await dialogue.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Passer' }).click();
+    await dialogue.waitFor({ state: 'hidden' });
+  }
+}
+
 async function attendre(page, route) {
   await page.goto(`${BASE}#/${route}`, { waitUntil: 'domcontentloaded' });
   await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor({ timeout: 20000 });
+  await passerLaPriseEnMain(page);
   if (route === 'campus') {
     await page
       .locator('.campus3d__hud, .campus3d__veil')
@@ -41,7 +51,9 @@ const CIBLES = [
   { nom: 'mobile', viewport: { width: 390, height: 844 } },
 ];
 
-const navigateur = await chromium.launch();
+const navigateur = await chromium.launch({
+  args: ['--use-gl=angle', '--enable-unsafe-swiftshader'],
+});
 for (const cible of CIBLES) {
   await mkdir(`${OUT}/${cible.nom}`, { recursive: true });
   const contexte = await navigateur.newContext({

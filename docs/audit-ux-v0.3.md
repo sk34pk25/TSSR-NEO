@@ -272,12 +272,26 @@ Le detail des jalons est tenu dans `docs/roadmap.md`.
 
 ## 7. Etat de reference conserve
 
-Les captures de `docs/audit/captures/` constituent la reference « avant ». Elles
-sont regenerables :
+| Repertoire                            | Ce qu il contient                                    |
+| ------------------------------------- | ---------------------------------------------------- |
+| `captures/bureau/`, `captures/mobile/` | l etat **avant**, neuf ecrans, deux formats         |
+| `captures/campus-subjectif/`          | l ancien campus traverse a hauteur d homme           |
+| `captures/apres/`                     | l etat **apres**, pris sur la production publiee     |
+| `captures/campus-v2/`                 | le nouveau campus traverse a hauteur d homme         |
+| `captures/campus-salles/`             | chaque piece vue depuis son seuil                    |
+
+Toutes sont regenerables :
 
 ```bash
-node scripts/capture-audit.mjs          # neuf ecrans, deux formats
-node scripts/capture-campus-walk.mjs    # traversee du campus en vue subjective
+node scripts/capture-audit.mjs           # neuf ecrans, deux formats
+node scripts/capture-campus-walk.mjs     # traversee du campus en vue subjective
+node scripts/capture-campus-salles.mjs   # chaque piece depuis son seuil
+```
+
+Pour comparer a la production plutot qu au serveur local :
+
+```bash
+TSSR_TEST_URL=https://sk34pk25.github.io/TSSR-NEO/ OUT=docs/audit/captures/apres node scripts/capture-audit.mjs
 ```
 
 Toute affirmation de progres en V0.3 devra etre comparee a ces images, et non a
