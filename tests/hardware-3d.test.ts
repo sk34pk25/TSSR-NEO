@@ -19,14 +19,7 @@ function world() {
 
 describe('campus 3D', () => {
   it('chaque zone visible mene a un ecran reel de la plateforme', () => {
-    const routes = new Set([
-      'tickets',
-      'supervision',
-      'laboratoire',
-      'mission',
-      'connaissances',
-      'progression',
-    ]);
+    const routes = new Set(['tickets', 'supervision', 'laboratoire', 'mission', 'parcours']);
     expect(CAMPUS_ZONES.length).toBeGreaterThanOrEqual(9);
     for (const zone of CAMPUS_ZONES) {
       expect(routes.has(zone.route)).toBe(true);

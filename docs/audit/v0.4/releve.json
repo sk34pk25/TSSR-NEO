@@ -40,88 +40,89 @@
       "dansLaBarre": false
     },
     {
-      "titre": "Apprendre",
+      "titre": "Parcours",
       "titres": [
-        "Apprendre"
+        "Parcours",
+        "Manipuler librement"
       ],
-      "cartes": 1,
-      "onglets": 4,
-      "boutons": 6,
+      "cartes": 0,
+      "onglets": 0,
+      "boutons": 3,
       "champs": 0,
       "tableaux": 0,
-      "motsTexte": 71,
+      "motsTexte": 155,
       "paraitVide": false,
-      "stylesEnLigne": 7,
+      "stylesEnLigne": 1,
       "route": "apprendre",
-      "dansLaBarre": true
+      "dansLaBarre": false
     },
     {
-      "titre": "Apprendre",
+      "titre": "Parcours",
       "titres": [
-        "Apprendre"
+        "Parcours",
+        "Manipuler librement"
       ],
-      "cartes": 1,
-      "onglets": 4,
-      "boutons": 6,
+      "cartes": 0,
+      "onglets": 0,
+      "boutons": 3,
       "champs": 0,
       "tableaux": 0,
-      "motsTexte": 71,
+      "motsTexte": 155,
       "paraitVide": false,
-      "stylesEnLigne": 7,
+      "stylesEnLigne": 1,
       "route": "apprendre/cours",
-      "dansLaBarre": true
+      "dansLaBarre": false
     },
     {
-      "titre": "Apprendre",
+      "titre": "Parcours",
       "titres": [
-        "Apprendre",
-        "Graphe de connaissances"
+        "Parcours",
+        "Manipuler librement"
       ],
-      "cartes": 6,
-      "onglets": 4,
-      "boutons": 14,
-      "champs": 2,
-      "tableaux": 1,
-      "motsTexte": 380,
-      "paraitVide": false,
-      "stylesEnLigne": 39,
-      "route": "apprendre/fiches",
-      "dansLaBarre": true
-    },
-    {
-      "titre": "Apprendre",
-      "titres": [
-        "Apprendre"
-      ],
-      "cartes": 1,
-      "onglets": 4,
-      "boutons": 5,
-      "champs": 1,
-      "tableaux": 0,
-      "motsTexte": 65,
-      "paraitVide": true,
-      "stylesEnLigne": 6,
-      "route": "apprendre/reviser",
-      "dansLaBarre": true
-    },
-    {
-      "titre": "Apprendre",
-      "titres": [
-        "Apprendre",
-        "Technicien",
-        "Competences",
-        "Missions"
-      ],
-      "cartes": 1,
-      "onglets": 4,
-      "boutons": 5,
+      "cartes": 0,
+      "onglets": 0,
+      "boutons": 3,
       "champs": 0,
       "tableaux": 0,
-      "motsTexte": 86,
-      "paraitVide": true,
-      "stylesEnLigne": 11,
+      "motsTexte": 155,
+      "paraitVide": false,
+      "stylesEnLigne": 1,
+      "route": "apprendre/fiches",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Parcours",
+      "titres": [
+        "Parcours",
+        "Manipuler librement"
+      ],
+      "cartes": 0,
+      "onglets": 0,
+      "boutons": 3,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 155,
+      "paraitVide": false,
+      "stylesEnLigne": 1,
+      "route": "apprendre/reviser",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Parcours",
+      "titres": [
+        "Parcours",
+        "Manipuler librement"
+      ],
+      "cartes": 0,
+      "onglets": 0,
+      "boutons": 3,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 155,
+      "paraitVide": false,
+      "stylesEnLigne": 1,
       "route": "apprendre/progression",
-      "dansLaBarre": true
+      "dansLaBarre": false
     },
     {
       "titre": "Campus NEO Systems",
@@ -134,58 +135,59 @@
       "boutons": 20,
       "champs": 0,
       "tableaux": 0,
-      "motsTexte": 224,
+      "motsTexte": 225,
       "paraitVide": false,
       "stylesEnLigne": 13,
       "route": "campus",
-      "dansLaBarre": true
+      "dansLaBarre": false
     },
     {
-      "titre": "",
+      "titre": "Aucune intervention en cours",
       "titres": [
-        "Aucune mission en cours"
+        "Aucune intervention en cours"
       ],
       "cartes": 1,
       "onglets": 0,
       "boutons": 2,
       "champs": 0,
       "tableaux": 0,
-      "motsTexte": 25,
+      "motsTexte": 26,
       "paraitVide": true,
-      "stylesEnLigne": 0,
+      "stylesEnLigne": 1,
       "route": "mission",
       "dansLaBarre": false
     },
     {
       "titre": "Laboratoire libre",
       "titres": [
-        "Laboratoire libre"
+        "Laboratoire libre",
+        "Intervention en cours"
       ],
       "cartes": 5,
       "onglets": 6,
       "boutons": 14,
       "champs": 5,
       "tableaux": 0,
-      "motsTexte": 137,
+      "motsTexte": 140,
       "paraitVide": false,
-      "stylesEnLigne": 24,
+      "stylesEnLigne": 25,
       "route": "laboratoire",
-      "dansLaBarre": true
+      "dansLaBarre": false
     },
     {
-      "titre": "NEO Knowledge",
+      "titre": "Parcours",
       "titres": [
-        "NEO Knowledge",
-        "Graphe de connaissances"
+        "Parcours",
+        "Manipuler librement"
       ],
-      "cartes": 6,
+      "cartes": 0,
       "onglets": 0,
-      "boutons": 10,
-      "champs": 2,
-      "tableaux": 1,
-      "motsTexte": 368,
+      "boutons": 3,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 155,
       "paraitVide": false,
-      "stylesEnLigne": 36,
+      "stylesEnLigne": 1,
       "route": "connaissances",
       "dansLaBarre": false
     },
@@ -206,21 +208,19 @@
       "dansLaBarre": false
     },
     {
-      "titre": "Progression",
+      "titre": "Parcours",
       "titres": [
-        "Progression",
-        "Technicien",
-        "Competences",
-        "Missions"
+        "Parcours",
+        "Manipuler librement"
       ],
-      "cartes": 1,
+      "cartes": 0,
       "onglets": 0,
-      "boutons": 1,
+      "boutons": 3,
       "champs": 0,
       "tableaux": 0,
-      "motsTexte": 48,
-      "paraitVide": true,
-      "stylesEnLigne": 7,
+      "motsTexte": 155,
+      "paraitVide": false,
+      "stylesEnLigne": 1,
       "route": "progression",
       "dansLaBarre": false
     },

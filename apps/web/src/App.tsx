@@ -5,11 +5,9 @@ import { AboutView } from './views/AboutView.tsx';
 import { CampusView } from './views/CampusView.tsx';
 import { DiagnosticsView } from './views/DiagnosticsView.tsx';
 import { HomeView } from './views/HomeView.tsx';
-import { KnowledgeView } from './views/KnowledgeView.tsx';
 import { LabView } from './views/LabView.tsx';
-import { LearnView } from './views/LearnView.tsx';
+import { ParcoursView } from './views/ParcoursView.tsx';
 import { MissionView } from './views/MissionView.tsx';
-import { ProgressionView } from './views/ProgressionView.tsx';
 import { ReviewView } from './views/ReviewView.tsx';
 import { SettingsView } from './views/SettingsView.tsx';
 import { SupervisionView, TicketsView } from './views/SimpleViews.tsx';
@@ -67,20 +65,16 @@ function CurrentView(): JSX.Element {
   switch (route.name) {
     case 'a-propos':
       return <AboutView />;
-    case 'apprendre':
-      return <LearnView />;
+    case 'parcours':
+      return <ParcoursView />;
     case 'campus':
       return <CampusView />;
     case 'mission':
       return <MissionView />;
     case 'laboratoire':
       return <LabView />;
-    case 'connaissances':
-      return <KnowledgeView />;
     case 'revision':
       return <ReviewView />;
-    case 'progression':
-      return <ProgressionView />;
     case 'supervision':
       return <SupervisionView />;
     case 'tickets':

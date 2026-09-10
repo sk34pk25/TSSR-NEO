@@ -38,8 +38,7 @@ export type CampusRoute =
   | 'supervision'
   | 'laboratoire'
   | 'mission'
-  | 'connaissances'
-  | 'progression';
+  | 'parcours';
 
 /** Ce que la piece est, avant ce qu elle sert : cela decide sols et lumiere. */
 export type Ambiance = 'accueil' | 'bureau' | 'technique' | 'atelier' | 'detente' | 'etude';
@@ -110,7 +109,7 @@ export const CAMPUS_ZONES: CampusZone[] = [
     id: 'knowledge',
     name: 'NEO Knowledge',
     purpose: 'Fiches de connaissances, revisions courtes, graphe de competences.',
-    route: 'connaissances',
+    route: 'parcours',
     center: [11, 0, centerZ('south', 8)],
     size: [8, 8],
     doorSide: 'south',
@@ -121,7 +120,7 @@ export const CAMPUS_ZONES: CampusZone[] = [
     id: 'personal-space',
     name: 'Espace personnel',
     purpose: 'Progression, competences suivies, badges et parametres.',
-    route: 'progression',
+    route: 'parcours',
     center: [19, 0, centerZ('south', 7)],
     size: [7, 7],
     doorSide: 'south',

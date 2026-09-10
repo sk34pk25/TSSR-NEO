@@ -10,11 +10,9 @@ import { expect, test, type Page } from '@playwright/test';
 
 const ECRANS = [
   { route: 'accueil', titre: /Apprendre le metier/ },
-  { route: 'apprendre', titre: /^Apprendre$/ },
+  { route: 'parcours', titre: /^Parcours$/ },
   { route: 'campus', titre: /Campus NEO Systems/ },
-  { route: 'connaissances', titre: /NEO Knowledge/ },
   { route: 'revision', titre: /NEO Review/ },
-  { route: 'progression', titre: /Progression/ },
   { route: 'reglages', titre: /Reglages/ },
   { route: 'diagnostics', titre: /NEO Diagnostics/ },
 ] as const;
@@ -251,20 +249,15 @@ test.describe('visuel', () => {
 
 
 test.describe('architecture de l information', () => {
-  test('la navigation principale se limite a quatre destinations', async ({ page }) => {
+  test('la navigation principale se limite a trois destinations', async ({ page }) => {
     await ouvrir(page, 'accueil');
     const nav = page.getByRole('navigation', { name: 'Navigation principale' });
-    await expect(nav.getByRole('link')).toHaveText([
-      'Accueil',
-      'Apprendre',
-      'Laboratoire',
-      'Campus',
-    ]);
+    await expect(nav.getByRole('link')).toHaveText(['Accueil', 'Parcours', 'NEO Systems']);
   });
 
   test('aucune destination principale n est vide au premier contact', async ({ page }) => {
     // Une entree de navigation qui n annonce que son propre vide est une impasse.
-    for (const route of ['accueil', 'apprendre', 'campus']) {
+    for (const route of ['accueil', 'parcours', 'campus']) {
       await ouvrir(page, route);
       await expect(page.getByText(/Aucune mission en cours|Aucune competence suivie/)).toHaveCount(
         0,
@@ -358,5 +351,27 @@ test.describe('travailler sur place', () => {
     await page.keyboard.press('Escape');
     await expect(outil).toBeHidden();
     expect(page.url()).toContain('#/campus');
+  });
+});
+
+
+test.describe('adresses unifiees', () => {
+  test('les anciennes adresses ramenent au parcours, sans ecran duplique', async ({ page }) => {
+    /*
+     * La refonte precedente avait regroupe des ecrans sans supprimer leurs
+     * adresses : le meme contenu etait servi par deux chemins. Ces alias
+     * verifient qu il n en reste qu un seul.
+     */
+    for (const ancienne of ['apprendre', 'connaissances', 'progression']) {
+      await ouvrir(page, ancienne);
+      await expect(page.getByRole('heading', { name: /^Parcours$/, level: 1 })).toBeVisible();
+    }
+  });
+
+  test('chaque ecran atteignable porte un titre de premier niveau', async ({ page }) => {
+    for (const route of ['accueil', 'parcours', 'campus', 'mission', 'laboratoire', 'reglages']) {
+      await ouvrir(page, route);
+      await expect(page.locator('h1').first(), `titre sur ${route}`).toHaveCount(1);
+    }
   });
 });

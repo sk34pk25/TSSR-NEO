@@ -74,7 +74,7 @@ export function CourseCatalog(): JSX.Element {
               <button
                 type="button"
                 className="neo-btn neo-btn--ghost neo-btn--sm"
-                onClick={() => navigate('apprendre', 'fiches')}
+                onClick={() => navigate('parcours')}
               >
                 Preparer
               </button>

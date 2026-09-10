@@ -88,9 +88,13 @@ for (const route of ROUTES) {
     .getByRole('navigation', { name: 'Navigation principale' })
     .getByRole('link')
     .allTextContents();
+  // La barre nomme des lieux, pas des routes : on compare via la destination reelle.
+  const ETIQUETTES = { accueil: 'accueil', parcours: 'parcours', campus: 'neo systems' };
   const racine = route.split('/')[0];
+  const attendu = ETIQUETTES[racine];
   mesure.route = route;
-  mesure.dansLaBarre = liensNav.some((l) => l.toLowerCase().includes(racine.slice(0, 6)));
+  mesure.dansLaBarre =
+    attendu !== undefined && liensNav.some((l) => l.toLowerCase().includes(attendu));
   releve.push(mesure);
 
   await page.screenshot({

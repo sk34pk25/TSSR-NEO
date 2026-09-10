@@ -1,0 +1,287 @@
+/*
+ * Styles du systeme de composants.
+ *
+ * Une regle nommee ici remplace des dizaines de reglages poses dans le
+ * balisage : c est ce qui rend l interface coherente d un ecran a l autre.
+ */
+
+/* ------------------------------------------------------------- en-tete */
+.ui-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--neo-space-5);
+}
+.ui-page-header__ligne {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--neo-space-4);
+  flex-wrap: wrap;
+}
+.ui-page-header h1 {
+  margin: 0;
+}
+.ui-page-header__chapeau {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--neo-text-muted);
+}
+.ui-page-header__aside {
+  display: flex;
+  align-items: center;
+  gap: var(--neo-space-3);
+}
+
+/* -------------------------------------------------------------- action */
+.ui-primary {
+  padding: var(--neo-space-6);
+  border: 1px solid var(--neo-border-strong);
+  border-radius: var(--neo-radius-lg);
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--neo-accent-dim), transparent 62%),
+    var(--neo-surface-raised);
+}
+.ui-primary__raison {
+  margin: 0 0 var(--neo-space-3);
+  max-width: 64ch;
+  color: var(--neo-text-muted);
+}
+.ui-primary__ligne {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--neo-space-3);
+}
+.ui-primary__detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--neo-space-4);
+  margin-top: var(--neo-space-4);
+  font-size: var(--neo-fs-sm);
+  color: var(--neo-text-muted);
+}
+
+/* ---------------------------------------------------------- puce d etat */
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--neo-border);
+  font-size: var(--neo-fs-xs);
+  font-weight: 550;
+  white-space: nowrap;
+}
+.ui-chip--encours {
+  border-color: var(--neo-border-accent);
+  color: var(--neo-accent);
+  background: var(--neo-accent-dim);
+}
+.ui-chip--acquis {
+  border-color: rgba(74, 222, 128, 0.45);
+  color: var(--neo-success);
+}
+.ui-chip--attention {
+  border-color: rgba(255, 180, 84, 0.45);
+  color: var(--neo-warning);
+}
+.ui-chip--bloque {
+  color: var(--neo-text-dim);
+}
+
+/* ---------------------------------------------------------- etat vide */
+.ui-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: var(--neo-space-5);
+  border: 1px dashed var(--neo-border-strong);
+  border-radius: var(--neo-radius-lg);
+  background: var(--neo-bg-1);
+}
+.ui-empty__titre {
+  font-size: var(--neo-fs-md);
+}
+.ui-empty__texte {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--neo-text-muted);
+}
+
+/* ------------------------------------------------------------ section */
+.ui-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--neo-space-3);
+}
+.ui-section__tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--neo-space-4);
+}
+.ui-section__tete h2 {
+  margin: 0;
+  font-size: var(--neo-fs-md);
+}
+
+/* ------------------------------------------------------------- tiroir */
+.ui-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  width: min(460px, 100vw);
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--neo-border-strong);
+  background: var(--neo-surface-raised);
+  box-shadow: -18px 0 44px rgba(0, 0, 0, 0.35);
+}
+.ui-drawer__tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--neo-space-4);
+  padding: var(--neo-space-4);
+  border-bottom: 1px solid var(--neo-border);
+}
+.ui-drawer__corps {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--neo-space-4);
+}
+@media (max-width: 700px) {
+  .ui-drawer {
+    width: 100vw;
+    top: auto;
+    height: 82vh;
+    border-left: 0;
+    border-top: 1px solid var(--neo-border-strong);
+    border-radius: var(--neo-radius-lg) var(--neo-radius-lg) 0 0;
+  }
+}
+
+/* ------------------------------------------------------------ parcours */
+/*
+ * Le parcours se lit comme une progression, pas comme une grille de cartes :
+ * une colonne, un fil, et des etapes qui se suivent.
+ */
+.parcours {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 860px;
+}
+.parcours__etape {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: var(--neo-space-4);
+  padding: 0 0 var(--neo-space-5);
+}
+/* Le fil qui relie les etapes, interrompu apres la derniere. */
+.parcours__etape::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 26px;
+  bottom: 0;
+  width: 2px;
+  background: var(--neo-border);
+}
+.parcours__etape:last-child::before {
+  display: none;
+}
+.parcours__pastille {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--neo-border);
+  background: var(--neo-bg-1);
+  color: var(--neo-text-muted);
+  font-size: var(--neo-fs-xs);
+  font-weight: 650;
+}
+.parcours__etape[data-etat='encours'] .parcours__pastille {
+  border-color: var(--neo-accent);
+  color: var(--neo-accent);
+  background: var(--neo-accent-dim);
+}
+.parcours__etape[data-etat='acquis'] .parcours__pastille {
+  border-color: var(--neo-success);
+  color: var(--neo-success);
+}
+.parcours__corps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+  min-width: 0;
+}
+.parcours__ligne {
+  display: flex;
+  align-items: center;
+  gap: var(--neo-space-3);
+  flex-wrap: wrap;
+}
+.parcours__titre {
+  margin: 0;
+  font-size: var(--neo-fs-md);
+}
+.parcours__nature {
+  font-size: var(--neo-fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--neo-text-dim);
+}
+.parcours__texte {
+  margin: 0;
+  max-width: 66ch;
+  font-size: var(--neo-fs-sm);
+  color: var(--neo-text-muted);
+}
+.parcours__actions {
+  display: flex;
+  gap: var(--neo-space-3);
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.parcours__competences {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.ui-drawer__texte {
+  margin-top: var(--neo-space-4);
+  white-space: pre-wrap;
+  line-height: 1.65;
+  color: var(--neo-text-muted);
+}
+.ui-drawer__commande {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: var(--neo-space-4);
+  padding: var(--neo-space-3);
+  border: 1px solid var(--neo-border);
+  border-radius: var(--neo-radius);
+  background: var(--neo-bg-1);
+}
+.ui-drawer__commande code {
+  font-size: var(--neo-fs-sm);
+  color: var(--neo-accent);
+}

@@ -5,6 +5,7 @@ import { registerServiceWorker } from './state/pwa.ts';
 import './styles/tokens.css';
 import './styles/base.css';
 import './components/components.css';
+import './ui/ui.css';
 
 const container = document.getElementById('root');
 if (container === null) throw new Error('Element racine introuvable');

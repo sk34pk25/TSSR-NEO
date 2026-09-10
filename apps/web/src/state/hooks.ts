@@ -43,15 +43,13 @@ export function useSimValue<T>(revision: number, compute: () => T): T {
 export type RouteName =
   | 'accueil'
   | 'a-propos'
-  | 'apprendre'
+  | 'parcours'
   | 'campus'
   | 'mission'
-  | 'connaissances'
   | 'laboratoire'
   | 'supervision'
   | 'tickets'
   | 'revision'
-  | 'progression'
   | 'formateur'
   | 'reglages'
   | 'diagnostics';
@@ -64,23 +62,39 @@ export interface Route {
 const KNOWN_ROUTES: RouteName[] = [
   'accueil',
   'a-propos',
-  'apprendre',
+  'parcours',
   'campus',
   'mission',
-  'connaissances',
   'laboratoire',
   'supervision',
   'tickets',
   'revision',
-  'progression',
   'formateur',
   'reglages',
   'diagnostics',
 ];
 
+/**
+ * Adresses conservees par compatibilite.
+ *
+ * La refonte precedente avait regroupe des ecrans sous « Apprendre » sans
+ * supprimer leurs anciennes adresses : le meme contenu etait servi par deux
+ * chemins, et le produit exposait simultanement deux modeles. Ces alias
+ * ramenent vers la destination unique plutot que de dupliquer un ecran.
+ */
+const ALIAS: Record<string, { name: RouteName; param?: string }> = {
+  apprendre: { name: 'parcours' },
+  connaissances: { name: 'parcours' },
+  progression: { name: 'parcours' },
+  cours: { name: 'parcours' },
+  fiches: { name: 'parcours' },
+};
+
 function parseHash(hash: string): Route {
   const clean = hash.replace(/^#\/?/, '');
   const [name, param] = clean.split('/');
+  const alias = name === undefined ? undefined : ALIAS[name];
+  if (alias) return { name: alias.name, param: alias.param };
   const resolved = KNOWN_ROUTES.includes(name as RouteName) ? (name as RouteName) : 'accueil';
   return { name: resolved, param: param === '' ? undefined : param };
 }

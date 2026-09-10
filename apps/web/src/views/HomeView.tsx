@@ -82,7 +82,7 @@ export function HomeView(): JSX.Element {
           <button
             type="button"
             className="neo-btn"
-            onClick={() => navigate('apprendre', 'cours')}
+            onClick={() => navigate('parcours')}
           >
             Voir tous les cours
           </button>
@@ -112,7 +112,7 @@ export function HomeView(): JSX.Element {
         <button
           type="button"
           className="repere"
-          onClick={() => navigate('apprendre', 'fiches')}
+          onClick={() => navigate('parcours')}
         >
           <strong>Consulter les fiches</strong>
           <span className="neo-muted">
