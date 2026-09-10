@@ -199,6 +199,22 @@ export function SettingsView(): JSX.Element {
           information.
         </p>
         <div className="neo-row">
+          <label className="neo-row" style={{ gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={prefs.audioActive}
+              onChange={(event) => {
+                update({ audioActive: event.target.checked });
+                if (event.target.checked) {
+                  void session.enableAudio().then((status) => setMessage(`Audio : ${status}`));
+                } else {
+                  session.audio.setMuted(true);
+                  setMessage('Son desactive.');
+                }
+              }}
+            />
+            Son actif
+          </label>
           <button
             type="button"
             className="neo-btn neo-btn--sm"
@@ -206,7 +222,7 @@ export function SettingsView(): JSX.Element {
               void session.enableAudio().then((status) => setMessage(`Audio : ${status}`));
             }}
           >
-            Activer le son
+            Relancer le son
           </button>
           <button
             type="button"

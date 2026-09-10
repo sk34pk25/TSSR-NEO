@@ -469,3 +469,131 @@ describe('cockpit formateur', () => {
     expect(store.assignmentProgress(assignment)).toEqual({ done: 1, total: 2 });
   });
 });
+
+describe('musique de fond', () => {
+  /** Contexte minimal : on verifie la structure, pas ce qui est entendu. */
+  function contexteFactice() {
+    const programmes: { cible: string; valeur: number }[] = [];
+    const parametre = (nom: string) => ({
+      value: 0,
+      setValueAtTime(v: number) {
+        programmes.push({ cible: `${nom}.set`, valeur: v });
+      },
+      linearRampToValueAtTime(v: number) {
+        programmes.push({ cible: `${nom}.ramp`, valeur: v });
+      },
+      setTargetAtTime(v: number) {
+        programmes.push({ cible: `${nom}.target`, valeur: v });
+      },
+      cancelScheduledValues() {},
+    });
+    let oscillateurs = 0;
+    const context = {
+      state: 'running',
+      currentTime: 0,
+      sampleRate: 8000,
+      destination: {},
+      createGain: () => ({ gain: parametre('gain'), connect: () => undefined }),
+      createOscillator: () => {
+        oscillateurs += 1;
+        return {
+          type: 'sine',
+          frequency: parametre('freq'),
+          connect: () => undefined,
+          start: () => undefined,
+          stop: () => undefined,
+        };
+      },
+      createBiquadFilter: () => ({
+        type: 'lowpass',
+        frequency: parametre('coupure'),
+        Q: { value: 1 },
+        connect: () => undefined,
+      }),
+      createBuffer: (_c: number, longueur: number) => ({
+        getChannelData: () => new Float32Array(longueur),
+      }),
+      createBufferSource: () => ({
+        buffer: undefined,
+        loop: false,
+        connect: () => undefined,
+        start: () => undefined,
+        stop: () => undefined,
+      }),
+      resume: async () => undefined,
+      close: async () => undefined,
+    };
+    return { context, programmes, oscillateurs: () => oscillateurs };
+  }
+
+  it('ne demarre rien tant que le contexte n est pas autorise', () => {
+    const engine = new AudioEngine({ createContext: () => undefined });
+    // Un navigateur refuse tout son avant un geste : on le signale, on ne
+    // fabrique pas d erreur et on ne fait pas semblant de jouer.
+    expect(engine.startMusic()).toBe(false);
+    expect(engine.isMusicPlaying()).toBe(false);
+  });
+
+  it('joue une nappe et la coupe proprement', async () => {
+    const { context, oscillateurs } = contexteFactice();
+    const engine = new AudioEngine({ createContext: () => context as unknown as AudioContext });
+    expect(await engine.resume()).toBe('actif');
+
+    expect(engine.startMusic()).toBe(true);
+    expect(engine.isMusicPlaying()).toBe(true);
+    // Un accord de quatre notes, deux oscillateurs par note pour l epaisseur.
+    expect(oscillateurs()).toBe(8);
+    // Demander deux fois ne relance pas la musique.
+    expect(engine.startMusic()).toBe(false);
+
+    engine.stopMusic();
+    expect(engine.isMusicPlaying()).toBe(false);
+    await engine.dispose();
+  });
+
+  it('s efface pendant une parole, puis revient', async () => {
+    const { context, programmes } = contexteFactice();
+    const engine = new AudioEngine({ createContext: () => context as unknown as AudioContext });
+    await engine.resume();
+    engine.startMusic();
+
+    programmes.length = 0;
+    engine.setSpeaking(true);
+    const attenuations = programmes.filter((p) => p.cible === 'gain.target');
+    expect(attenuations.length).toBeGreaterThan(0);
+    // Environ six decibels : on laisse passer la voix sans couper la musique.
+    expect(attenuations[attenuations.length - 1]?.valeur).toBeCloseTo(0.5, 2);
+
+    programmes.length = 0;
+    engine.setSpeaking(false);
+    const retours = programmes.filter((p) => p.cible === 'gain.target');
+    expect(retours[retours.length - 1]?.valeur).toBeCloseTo(1, 2);
+    await engine.dispose();
+  });
+
+  it('la musique reste sous l ambiance et sous la voix', () => {
+    // Une musique de fond qui se remarque a echoue.
+    expect(DEFAULT_LEVELS.music).toBeLessThan(DEFAULT_LEVELS.ambience);
+    expect(DEFAULT_LEVELS.music).toBeLessThan(DEFAULT_LEVELS.sfx);
+    expect(DEFAULT_LEVELS.voice).toBeGreaterThan(DEFAULT_LEVELS.music);
+  });
+
+  it('le niveau d ambiance suit la distance a la source', async () => {
+    const { context, programmes } = contexteFactice();
+    const engine = new AudioEngine({ createContext: () => context as unknown as AudioContext });
+    await engine.resume();
+    engine.startAmbience('technique');
+
+    programmes.length = 0;
+    engine.setAmbienceProximity(1);
+    const pres = programmes.filter((p) => p.cible === 'gain.target').pop()?.valeur ?? 0;
+    programmes.length = 0;
+    engine.setAmbienceProximity(0);
+    const loin = programmes.filter((p) => p.cible === 'gain.target').pop()?.valeur ?? 0;
+
+    // A quinze metres, on ne doit pas entendre ce qu on entend a un metre.
+    expect(loin).toBeLessThan(pres);
+    expect(loin).toBeGreaterThan(0);
+    await engine.dispose();
+  });
+});

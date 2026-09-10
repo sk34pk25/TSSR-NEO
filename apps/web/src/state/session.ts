@@ -104,6 +104,7 @@ export class AppSession {
 
   readonly audio = new AudioEngine();
   audioStatus: AudioStatus = 'inactif';
+  private audioArme = false;
 
   /**
    * Synchronisation : la file fonctionne toujours, le fournisseur non.
@@ -209,10 +210,52 @@ export class AppSession {
     this.audio.setAmbience(ambience);
   }
 
+  /**
+   * Active le son au premier geste autorise.
+   *
+   * La preference est active par defaut, mais un navigateur refuse tout son
+   * avant une interaction. On attend donc le premier clic ou la premiere
+   * frappe, on demarre alors la chaine, et l on n affiche aucune erreur : le
+   * navigateur fait son travail, ce n est pas une panne.
+   */
+  armerAudioAuPremierGeste(): void {
+    if (this.audioArme) return;
+    this.audioArme = true;
+    if (typeof window === 'undefined') return;
+    const demarrer = (): void => {
+      window.removeEventListener('pointerdown', demarrer);
+      window.removeEventListener('keydown', demarrer);
+      if (this.progress.preferences.audioActive === false) return;
+      void this.enableAudio();
+    };
+    window.addEventListener('pointerdown', demarrer, { once: false });
+    window.addEventListener('keydown', demarrer, { once: false });
+  }
+
+  /** Abaisse la musique le temps d une parole. */
+  setParole(parole: boolean): void {
+    this.audio.setSpeaking(parole);
+  }
+
+  /** Proximite de la source d ambiance, entre 0 et 1. */
+  setCampusProximite(proximite: number): void {
+    if (this.audioStatus !== 'actif') return;
+    this.audio.setAmbienceProximity(proximite);
+  }
+
+  /** Joue un retour sonore court, sans jamais lever si l audio est indisponible. */
+  jouer(cue: Parameters<AudioEngine['play']>[0]): void {
+    if (this.audioStatus !== 'actif') return;
+    this.audio.play(cue);
+  }
+
   async enableAudio(): Promise<AudioStatus> {
     const status = await this.audio.resume();
     this.audio.setLevels(this.progress.preferences.audio);
-    if (status === 'actif') this.audio.startAmbience();
+    if (status === 'actif') {
+      this.audio.startAmbience();
+      this.audio.startMusic();
+    }
     return status;
   }
 

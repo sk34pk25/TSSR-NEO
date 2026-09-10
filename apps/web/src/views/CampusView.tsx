@@ -37,6 +37,9 @@ export function CampusView(): JSX.Element {
           montrerAide={!session.progress.preferences.campusAideVue}
           onAideVue={() => void session.updatePreferences({ campusAideVue: true })}
           onAmbiance={(ambience) => session.setCampusAmbience(ambience)}
+          onProximite={(proximite) => session.setCampusProximite(proximite)}
+          onSon={(cue) => session.jouer(cue)}
+          onParole={(parole) => session.setParole(parole)}
           highlightZoneIds={session.runner === undefined ? [] : ['training-lab']}
           onEnterZone={(zoneId) => {
             const zone = zoneById(zoneId);

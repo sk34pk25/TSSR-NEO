@@ -110,6 +110,7 @@ export function App(): JSX.Element {
 
   useEffect(() => {
     void session.boot();
+    session.armerAudioAuPremierGeste();
     const onLeave = (): void => {
       void session.shutdown();
     };

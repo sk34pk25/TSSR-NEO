@@ -37,6 +37,12 @@ interface Campus3DProps {
   onAideVue?: () => void;
   /** Appele quand le visiteur change de piece, pour adapter le lit sonore. */
   onAmbiance?: (ambience: AmbienceName) => void;
+  /** Distance relative a la source d ambiance, entre 0 et 1. */
+  onProximite?: (proximite: number) => void;
+  /** Retour sonore ponctuel : un pas, une porte, un panneau. */
+  onSon?: (cue: 'pas-moquette' | 'pas-dur' | 'porte-ouverte' | 'panneau-ouvert' | 'panneau-ferme') => void;
+  /** Une parole est en cours : la musique doit s effacer. */
+  onParole?: (parole: boolean) => void;
   highlightZoneIds?: readonly string[];
   onEnterZone: (zoneId: string) => void;
 }
@@ -171,6 +177,9 @@ export function Campus3D({
   montrerAide = false,
   onAideVue = () => undefined,
   onAmbiance = () => undefined,
+  onProximite = () => undefined,
+  onSon = () => undefined,
+  onParole = () => undefined,
   highlightZoneIds,
   onEnterZone,
 }: Campus3DProps): JSX.Element {
@@ -205,6 +214,14 @@ export function Campus3D({
    */
   const onAmbianceRef = useRef(onAmbiance);
   onAmbianceRef.current = onAmbiance;
+  const onProximiteRef = useRef(onProximite);
+  onProximiteRef.current = onProximite;
+  const onSonRef = useRef(onSon);
+  onSonRef.current = onSon;
+  const onParoleRef = useRef(onParole);
+  onParoleRef.current = onParole;
+  /** Distance parcourue depuis le dernier pas entendu. */
+  const marcheRef = useRef({ distance: 0, position: CAMPUS_SPAWN as readonly number[] });
   /* La vie du campus est simulee ici : positions, etats et animations. */
   const vieRef = useRef<NpcRuntime | undefined>(undefined);
   const commandesRef = useRef(commandes);
@@ -332,6 +349,50 @@ export function Campus3D({
           }
         }
 
+        /*
+         * Les pas suivent le deplacement reel, pas une cadence fixe : on
+         * declenche un son tous les soixante-dix centimetres parcourus, ce qui
+         * accelere naturellement quand on court.
+         */
+        const marche = marcheRef.current;
+        const pas = Math.hypot(
+          camera.position[0] - (marche.position[0] ?? 0),
+          camera.position[2] - (marche.position[2] ?? 0),
+        );
+        marche.position = camera.position;
+        if (pas < 0.5) marche.distance += pas;
+        if (marche.distance > 0.7) {
+          marche.distance = 0;
+          const zonePas = zoneAt(camera.position);
+          const dur =
+            zonePas?.ambiance === 'technique' ||
+            zonePas?.ambiance === 'atelier' ||
+            zonePas?.ambiance === 'accueil';
+          onSonRef.current(dur ? 'pas-dur' : 'pas-moquette');
+        }
+
+        /*
+         * Proximite de la source d ambiance. Le bruit des ventilateurs ne
+         * s entendait pas differemment a un metre d une baie et a quinze
+         * metres de la salle machine.
+         */
+        const technique = CAMPUS_ZONES.filter(
+          (zone) => zone.ambiance === 'technique',
+        );
+        const distanceMin = Math.min(
+          ...technique.map((zone) =>
+            Math.hypot(
+              camera.position[0] - zone.center[0],
+              camera.position[2] - zone.center[2],
+            ),
+          ),
+        );
+        onProximiteRef.current(
+          zoneAt(camera.position)?.ambiance === 'technique'
+            ? 1
+            : Math.max(0, 1 - distanceMin / 18),
+        );
+
         // Le lieu ou l on se trouve decide de ce qu on entend.
         const zoneCourante = zoneAt(camera.position);
         if (zoneCourante?.id !== zoneOccupeeRef.current) {
@@ -364,6 +425,8 @@ export function Campus3D({
         if (event.key === 'Escape') {
           ouvertRef.current = false;
           setOuvert(undefined);
+          onSonRef.current('panneau-ferme');
+          onParoleRef.current(false);
         }
         return;
       }
@@ -376,6 +439,8 @@ export function Campus3D({
         event.preventDefault();
         ouvertRef.current = true;
         setOuvert(aPorteeRef.current);
+        onSonRef.current('panneau-ouvert');
+        if (aPorteeRef.current.kind === 'npc') onParoleRef.current(true);
         pressedRef.current.clear();
         return;
       }
@@ -497,6 +562,7 @@ export function Campus3D({
             if (!hit?.interactive) return;
             const { kind, targetId } = hit.interactive;
             if (kind === 'door') {
+              onSonRef.current('porte-ouverte');
               enterZone(targetId);
               return;
             }
@@ -557,6 +623,8 @@ export function Campus3D({
                 onFermer={() => {
                   ouvertRef.current = false;
                   setOuvert(undefined);
+                  onSonRef.current('panneau-ferme');
+                  onParoleRef.current(false);
                 }}
               />
             ) : null}

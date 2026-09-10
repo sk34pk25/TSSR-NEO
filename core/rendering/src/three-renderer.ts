@@ -96,6 +96,46 @@ function normaliser(racine: THREE.Object3D, asset: AssetSpec): void {
   else racine.position.y -= centre.y;
 }
 
+/**
+ * Cube unitaire aux aretes adoucies.
+ *
+ * Une part importante de l aspect « dessine a la regle » vient des aretes
+ * parfaitement vives : dans la realite, aucune arete n est infiniment fine, et
+ * c est le mince liseré de lumiere qui les longe qui donne son relief a un
+ * objet. Cette geometrie remplace la boite standard partout ou le decor est
+ * regroupe, donc sur la quasi-totalite du gros oeuvre et du mobilier.
+ *
+ * Le chanfrein est volontairement petit : on cherche a casser un reflet, pas a
+ * arrondir des meubles.
+ */
+function cubeAdouci(chanfrein = 0.02, segments = 2): THREE.BufferGeometry {
+  const forme = new THREE.Shape();
+  const demi = 0.5 - chanfrein;
+  forme.moveTo(-demi, -0.5);
+  forme.lineTo(demi, -0.5);
+  forme.quadraticCurveTo(0.5, -0.5, 0.5, -demi);
+  forme.lineTo(0.5, demi);
+  forme.quadraticCurveTo(0.5, 0.5, demi, 0.5);
+  forme.lineTo(-demi, 0.5);
+  forme.quadraticCurveTo(-0.5, 0.5, -0.5, demi);
+  forme.lineTo(-0.5, -demi);
+  forme.quadraticCurveTo(-0.5, -0.5, -demi, -0.5);
+
+  const geometrie = new THREE.ExtrudeGeometry(forme, {
+    depth: 1 - chanfrein * 2,
+    bevelEnabled: true,
+    bevelThickness: chanfrein,
+    bevelSize: chanfrein,
+    bevelSegments: segments,
+    curveSegments: segments,
+    steps: 1,
+  });
+  // L extrusion part de zero en profondeur : on recentre sur l origine.
+  geometrie.translate(0, 0, -(0.5 - chanfrein));
+  geometrie.computeVertexNormals();
+  return geometrie;
+}
+
 /** Deux etats de camera decrivent-ils le meme cadrage ? */
 function memeCadrage(a: CameraState, b: CameraState): boolean {
   const proche = (u: readonly number[], v: readonly number[]): boolean =>
@@ -136,6 +176,7 @@ export class ThreeRenderer implements Renderer3D {
     }
   >();
   private readonly horloge = new THREE.Clock();
+  private cubeAdouciCache: THREE.BufferGeometry | undefined;
   /** Numero de scene : une reponse tardive ne doit pas polluer la suivante. */
   private generation = 0;
 
@@ -216,6 +257,16 @@ export class ThreeRenderer implements Renderer3D {
       }
       default: {
         const [w = 1, h = 1, d = 1] = node.size ?? [1, 1, 1];
+        /*
+         * Les boites unitaires sont celles que la passe de compaction produit :
+         * elles portent tout le gros oeuvre et le mobilier, et leur echelle
+         * reelle vit dans la matrice d instance. Une seule geometrie adoucie
+         * suffit donc a chanfreiner l ensemble du batiment.
+         */
+        if (w === 1 && h === 1 && d === 1 && node.instances) {
+          this.cubeAdouciCache ??= cubeAdouci(this.profile.quality === 'performance' ? 0.015 : 0.025);
+          return this.cubeAdouciCache;
+        }
         return new THREE.BoxGeometry(w, h, d);
       }
     }

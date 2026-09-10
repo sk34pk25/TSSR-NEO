@@ -50,6 +50,12 @@ export const zPreferences = z.object({
   onboardingSeen: z.boolean().default(false),
   /** L aide aux commandes du campus a ete lue : elle ne revient pas. */
   campusAideVue: z.boolean().default(false),
+  /*
+   * Le son est actif par defaut : c est ce qu attend quelqu un qui ouvre un
+   * simulateur. Le navigateur imposera de toute facon un geste avant de le
+   * produire, ce qui suffit a ne surprendre personne.
+   */
+  audioActive: z.boolean().default(true),
   keybindings: z.record(z.string(), z.string()).default({}),
 });
 
