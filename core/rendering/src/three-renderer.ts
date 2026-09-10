@@ -124,6 +124,17 @@ export class ThreeRenderer implements Renderer3D {
   private readonly chargeur: ChargeurDeModeles;
   /** Mixeurs d animation actifs, avances a chaque image. */
   private readonly mixeurs: THREE.AnimationMixer[] = [];
+  /** Modeles pilotables apres coup : personnages, portes, elements mobiles. */
+  private readonly pilotes = new Map<
+    string,
+    {
+      conteneur: THREE.Object3D;
+      mixeur: THREE.AnimationMixer | undefined;
+      clips: THREE.AnimationClip[];
+      actionCourante: THREE.AnimationAction | undefined;
+      animation: string | undefined;
+    }
+  >();
   private readonly horloge = new THREE.Clock();
   /** Numero de scene : une reponse tardive ne doit pas polluer la suivante. */
   private generation = 0;
@@ -368,6 +379,21 @@ export class ThreeRenderer implements Renderer3D {
     primitive.visible = false;
     this.scene.add(groupe);
     this.objects.set(`${node.id}__modele`, groupe);
+
+    /*
+     * Un modele unique et anime peut etre pilote ensuite : c est ainsi qu un
+     * personnage marche. Les decors instancies restent figes.
+     */
+    const conteneur = groupe.children[0];
+    if (conteneur && groupe.children.length === 1) {
+      this.pilotes.set(node.id, {
+        conteneur,
+        mixeur: this.mixeurs[this.mixeurs.length - 1],
+        clips,
+        actionCourante: undefined,
+        animation: ref.animation,
+      });
+    }
   }
 
   private createObject(node: Scene3DNode, budget: number): THREE.Object3D | undefined {
@@ -629,6 +655,39 @@ export class ThreeRenderer implements Renderer3D {
       hauteur: Number(taille.y.toFixed(3)),
       profondeur: Number(taille.z.toFixed(3)),
     };
+  }
+
+  /**
+   * Deplace un modele pilote et ajuste son animation.
+   *
+   * Le changement d animation se fait en fondu : un passage instantane de la
+   * marche a l arret se voit immediatement comme un defaut. La duree reste
+   * courte, de l ordre d un quart de seconde.
+   */
+  deplacerModele(
+    nodeId: string,
+    position: Vec3,
+    orientation: number,
+    animation?: string,
+  ): void {
+    const pilote = this.pilotes.get(nodeId);
+    if (!pilote) return;
+    pilote.conteneur.position.set(position[0], pilote.conteneur.position.y, position[2]);
+    pilote.conteneur.rotation.y = orientation;
+    pilote.conteneur.updateMatrix();
+
+    if (animation === undefined || animation === pilote.animation) return;
+    const mixeur = pilote.mixeur;
+    if (!mixeur || pilote.clips.length === 0) return;
+    const clip = THREE.AnimationClip.findByName(pilote.clips, animation);
+    if (!clip) return;
+    const suivante = mixeur.clipAction(clip);
+    suivante.reset().play();
+    if (pilote.actionCourante) {
+      pilote.actionCourante.crossFadeTo(suivante, 0.28, false);
+    }
+    pilote.actionCourante = suivante;
+    pilote.animation = animation;
   }
 
   stats(): RenderStats {

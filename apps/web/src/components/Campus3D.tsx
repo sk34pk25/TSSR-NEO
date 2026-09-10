@@ -9,6 +9,7 @@ import {
   buildCampusScene,
   inputFromKeys,
   interactionLaPlusProche,
+  NpcRuntime,
   zoneAt,
   zoneById,
   zoneEntryPoint,
@@ -194,6 +195,8 @@ export function Campus3D({
    */
   const onAmbianceRef = useRef(onAmbiance);
   onAmbianceRef.current = onAmbiance;
+  /* La vie du campus est simulee ici : positions, etats et animations. */
+  const vieRef = useRef<NpcRuntime | undefined>(undefined);
   const [zoneOccupee, setZoneOccupee] = useState<string | undefined>(undefined);
   const ouvertRef = useRef(false);
   const [stats, setStats] = useState<RenderStats>({
@@ -226,6 +229,7 @@ export function Campus3D({
         await renderer.mount(canvas);
         renderer.setScene(scene);
         controllerRef.current.setColliders(scene.colliders);
+        vieRef.current = new NpcRuntime();
         renderer.setCamera(controllerRef.current.current());
         renderer.start();
         rendererRef.current = renderer;
@@ -294,6 +298,24 @@ export function Campus3D({
             cible?.interactive?.kind !== aPorteeRef.current?.kind) {
           aPorteeRef.current = cible?.interactive;
           setAPortee(cible?.interactive);
+        }
+
+        /*
+         * Les personnages avancent sur leur trajet. Leur position est calculee
+         * ici puis transmise au moteur : la scene decrit ou ils sont, elle ne
+         * decide pas de leurs pas.
+         */
+        const vie = vieRef.current;
+        if (vie) {
+          vie.avancer((now - last) / 1000);
+          for (const presence of vie.presences()) {
+            renderer.deplacerModele?.(
+              presence.id,
+              presence.position,
+              presence.orientation,
+              presence.animation,
+            );
+          }
         }
 
         // Le lieu ou l on se trouve decide de ce qu on entend.
