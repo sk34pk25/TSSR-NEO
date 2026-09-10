@@ -139,6 +139,34 @@ presence humaine. L audit complet est dans `docs/audit-product-v0.4.md`.
 
 ---
 
+## Phase 6 quater — Reconstruction du campus _(en cours, V0.5)_
+
+Declenchee par un troisieme retour : personnages dans les murs, collisions
+imparfaites, aspect encore trop rectangulaire, audio inadapte, commandes ni
+expliquees ni configurables. L audit est dans `docs/audit-campus-v0.5.md`, la
+direction artistique dans `docs/art-direction.md`.
+
+| Jalon                                       | Etat                                                        |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| Detecteur de defauts du campus              | fait : neuf familles de controles, rejouable                 |
+| Personnages dans les murs                   | corrige : espace marchable partage, trois cas trouves        |
+| Navigation des personnages                  | corrige : chemins en A*, itineraires metier                  |
+| Deplacement, rotation, animations en fondu  | fait : vitesse humaine, aucune teleportation                 |
+| Trous de cloison                            | verifie : aucun, sur les onze enveloppes                     |
+| Aretes adoucies                             | fait : chanfrein de 2,5 cm sur tout le decor regroupe        |
+| Musique de fond                             | fait : generative, originale, bouclee sans jointure          |
+| Sons d interface, portes, pas               | fait : treize sons courts                                    |
+| Ambiance a distance                         | fait : le niveau suit la distance a la source                |
+| Son actif par defaut                        | fait : arme au premier geste autorise                        |
+| Commandes AZERTY, remappage, tutoriel       | fait, avec panneau accessible depuis le campus               |
+| Reservation a l ordinateur                  | fait : message clair, aucun telechargement lourd             |
+| Materiaux avec relief et environnement image | **non fait**                                                |
+| Personnages plus detailles                  | **non fait** : aucune source compatible, voir art-direction  |
+| Baie reellement manipulable                 | **non fait**                                                 |
+| Evitement entre personnages                 | **non fait**                                                 |
+
+---
+
 ## Phase 7 — Contenu et outillage pedagogique
 
 Modules de cours supplementaires, editeur de laboratoire complet, journee de travail simulee,

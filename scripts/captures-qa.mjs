@@ -57,6 +57,12 @@ await page.goto(`${BASE}#/campus`, { waitUntil: 'domcontentloaded' });
 await priseEnMain();
 await page.locator('.campus3d__hud').waitFor({ timeout: 40000 });
 await page.waitForTimeout(5000);
+// L aide du premier passage recouvrirait chaque capture de lieu.
+await page
+  .locator('.campus3d__tutoriel button')
+  .click({ timeout: 5000 })
+  .catch(() => undefined);
+await page.waitForTimeout(400);
 await page.locator('canvas').first().screenshot({ path: `${OUT}/lieu-couloir.png` });
 process.stdout.write('lieu-couloir ok\n');
 
@@ -111,5 +117,22 @@ if (await chercher()) {
   process.stdout.write('interaction-poste ok\n');
   await page.keyboard.press('Escape');
 }
+
+// Panneau des commandes.
+await page.getByRole('button', { name: '? Commandes' }).click().catch(() => undefined);
+await page.waitForTimeout(700);
+await page.screenshot({ path: `${OUT}/menu-commandes.png` });
+process.stdout.write('menu-commandes ok\n');
+await page.getByRole('button', { name: 'Fermer' }).click().catch(() => undefined);
+
+// Exterieur, vu depuis le bout du couloir.
+await page.getByRole('button', { name: /S y rendre dans la zone Accueil$/ }).click();
+await page.waitForTimeout(2200);
+await page.keyboard.down('ArrowRight');
+await page.waitForTimeout(900);
+await page.keyboard.up('ArrowRight');
+await page.waitForTimeout(700);
+await page.locator('canvas').first().screenshot({ path: `${OUT}/lieu-exterieur.png` });
+process.stdout.write('lieu-exterieur ok\n');
 
 await navigateur.close();

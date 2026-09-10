@@ -3,8 +3,8 @@
 > Ce document est la memoire du projet. Il ne contient **aucun secret**.
 > Il doit toujours etre verifie contre le depot reel avant d etre cru sur parole.
 
-**Derniere mise a jour :** 2026-09-10 (unification produit, V0.4)
-**Version du Core :** 0.4.0
+**Derniere mise a jour :** 2026-09-10 (reconstruction du campus, V0.5)
+**Version du Core :** 0.5.0
 **Version des contrats :** 1
 **Version de l API Core exposee aux modules :** 1.0.0
 
@@ -65,6 +65,8 @@ DSL d assertions : 28 types de verifications executables, composables par `all` 
 | `rendering`      | abstraction Scene3D, implementation Three.js chargee paresseusement, campus, materiel, controleur de camera        |
 | `rendering` (V2) | bibliotheque de materiaux, kit modulaire instancie, compaction des boites de meme materiau                        |
 | `rendering` (V4) | registre d assets glTF, chargeur avec repli, variation deterministe, materiel actif, personnages et dialogues     |
+| `rendering` (V5) | espace marchable partage, chemins en A*, vie des personnages, aretes adoucies                                    |
+| `audio` (V5)     | musique generative originale, treize sons courts, ambiance a distance, attenuation pendant la parole             |
 
 ### Savoir
 
@@ -97,7 +99,7 @@ mission a solutions multiples, deux variantes parametriques, quatre competences,
 
 ## Tests
 
-**230 tests unitaires et d interface**, plus les verifications de bout en bout
+**252 tests unitaires et d interface**, plus les verifications de bout en bout
 sur cinq configurations, tous au vert.
 
 | Fichier                              | Portee                                                                          |
@@ -112,6 +114,10 @@ sur cinq configurations, tous au vert.
 | `tests/camera-campus.test.ts`        | inertie, rotation au clavier, modes, releve et restitution de position          |
 | `tests/assets-3d.test.ts`            | presence, poids, licences et echelle des modeles importes                       |
 | `tests/e2e/agent-joueur.spec.ts`     | parcours simules : debutant et intervention complete                            |
+| `tests/navigation-campus.test.ts`    | espace marchable, trajets entre zones, placement et vie des personnages         |
+| `tests/camera-campus.test.ts`        | inertie, rotation au clavier, modes, releve et restitution de position          |
+| `tests/e2e/appareil.spec.ts`         | blocage tactile et absence de telechargement lourd                              |
+| `tests/e2e/parcours-complet.spec.ts` | premiere visite entiere, du premier clic au retour dans le campus               |
 | `tests/subsystems.test.ts`           | permissions, synchronisation, audio, cockpit formateur                          |
 | `tests/ui/components.test.tsx`       | panneaux React et accessibilite en environnement DOM                            |
 | `tests/e2e/parcours.spec.ts`         | fumee, parcours complet, accessibilite, captures visuelles                      |
@@ -214,17 +220,26 @@ construction injecte desormais la liste reelle des fichiers livres dans le servi
    multilingues, l interface est uniquement en francais.
 10. **Aucun vrai cours pedagogique.** Le NEO Training Lab reste le seul module
     visible ; il valide le Core, il ne l enseigne pas.
-11. **Les tickets et la supervision restent des destinations autonomes.** Elles
+11. **La plateforme est reservee a l ordinateur.** Sur un ecran tactile, elle
+    affiche une explication et ne telecharge rien : le campus se parcourt au
+    clavier et le materiel s inspecte au pointeur. L architecture permet de
+    retablir ces plateformes plus tard.
+12. **Les personnages restent stylises et anguleux.** Aucune source librement
+    telechargeable ne fournit a la fois un humain aux proportions credibles et
+    le jeu complet d animations necessaire, sous licence non ambigue.
+13. **Les materiaux restent des couleurs unies**, sans texture ni carte de
+    rugosite, et l eclairage n utilise pas d environnement image.
+14. **Les personnages ne s evitent pas entre eux** : deux itineraires qui se
+    croisent peuvent se traverser.
+15. **Les tickets et la supervision restent des destinations autonomes.** Elles
     ne sont pas encore rattachees a un ecran, a une piece ou a un moment.
-12. **Une intervention commence toujours par un ecran de travail**, jamais par
+16. **Une intervention commence toujours par un ecran de travail**, jamais par
     un ticket recu dans les locaux.
-13. **NOVA n existe que dans l ecran d intervention.** Elle n est pas le fil
+17. **NOVA n existe que dans l ecran d intervention.** Elle n est pas le fil
     rouge de l experience.
-14. **Une baie se consulte mais ne se manipule pas** : ouvrir, zoomer, brancher
+18. **Une baie se consulte mais ne se manipule pas** : ouvrir, zoomer, brancher
     et debrancher restent a faire.
-15. **Les personnages ne se deplacent pas encore** : leurs animations tournent,
-    mais aucun ne suit de trajet.
-16. **Le systeme de composants n est pas generalise** : une partie de
+19. **Le systeme de composants n est pas generalise** : une partie de
     l application pose encore ses reglages de style dans le balisage.
 
 ## Etat des documents prives
@@ -237,13 +252,13 @@ Aucun document source prive n a ete fourni, utilise ou publie.
 
 Poursuivre la phase 6 bis, dans cet ordre :
 
-1. **rattacher tickets et supervision a des objets** : un ecran de supervision
-   au centre de commandement, une file de tickets a l accueil ;
-2. **faire commencer l intervention dans le monde** : un ticket recu, une
-   personne a rencontrer, puis seulement les outils ;
+1. **textures et eclairage** : materiaux avec relief, environnement image,
+   ce qui reste le principal ecart avec un simulateur moderne ;
+2. **personnages** : reprendre la question des modeles des qu une source
+   librement telechargeable offre proportions credibles et animations completes ;
 3. **rendre une baie manipulable** : ouvrir la porte, brancher et debrancher un
    cordon, avec effet reel sur l etat simule ;
-4. **faire circuler les personnages** entre quelques points de passage.
+4. **rattacher tickets et supervision a des objets** du monde.
 
 Le premier vrai cours pedagogique reste attendu via le
 `TSSR NEO Course Builder Master Prompt`. Le Core est pret a le recevoir.

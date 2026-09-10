@@ -418,9 +418,15 @@ export function Campus3D({
   useEffect(() => {
     const onDown = (event: KeyboardEvent): void => {
       const target = event.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+      const dansUnChamp =
+        target !== null && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
 
-      // Un outil ouvert capte Echap ; le reste du clavier lui appartient.
+      /*
+       * Echap ferme toujours l outil ouvert, meme si le curseur se trouve dans
+       * le terminal. Sans cette exception, quiconque avait tape une commande
+       * restait enferme dans le panneau : la touche etait avalee par le champ,
+       * et plus aucune commande du campus ne repondait.
+       */
       if (ouvertRef.current) {
         if (event.key === 'Escape') {
           ouvertRef.current = false;
@@ -430,6 +436,7 @@ export function Campus3D({
         }
         return;
       }
+      if (dansUnChamp) return;
       if (event.code === commandesRef.current.commandes) {
         event.preventDefault();
         setPanneauOuvert((ouvert) => !ouvert);
@@ -661,14 +668,18 @@ export function Campus3D({
             </div>
 
             {/* Le rappel des commandes s efface des qu un outil occupe la place. */}
-            <button
-              type="button"
-              className="campus3d__commandes"
-              onClick={() => setPanneauOuvert(true)}
-              title="Voir et modifier les commandes"
-            >
-              ? Commandes
-            </button>
+            {/* Le bouton s efface des qu un outil occupe la place : il flottait
+                par-dessus et interceptait les clics destines au terminal. */}
+            {ouvert ? null : (
+              <button
+                type="button"
+                className="campus3d__commandes"
+                onClick={() => setPanneauOuvert(true)}
+                title="Voir et modifier les commandes"
+              >
+                ? Commandes
+              </button>
+            )}
 
             {aideVisible ? (
               <div className="campus3d__tutoriel" role="status">
