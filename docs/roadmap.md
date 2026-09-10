@@ -111,6 +111,34 @@ L audit est tenu dans `docs/audit-ux-v0.3.md`, captures a l appui.
 
 ---
 
+## Phase 6 ter — Unification produit et qualite du monde _(en cours, V0.4)_
+
+Declenchee par un second retour sur la production : fonctionnalites dispersees,
+trop d ecrans, campus encore artificiel, mobilier dessine a la regle, absence de
+presence humaine. L audit complet est dans `docs/audit-product-v0.4.md`.
+
+| Jalon                                    | Etat                                                          |
+| ---------------------------------------- | -------------------------------------------------------------- |
+| Audit des dix-huit destinations          | fait : sonde automatisee, releve, captures                     |
+| Chasse aux defauts 3D                    | fait : dix scenarios, six defauts corriges                     |
+| Navigation ramenee a trois lieux         | fait, doublons d adresses supprimes                            |
+| Parcours unifie                          | fait : notions, interventions, revisions dans une progression  |
+| Systeme de composants                    | pose : en-tete, action, puce, etat vide, section, tiroir       |
+| Chaine d assets glTF                     | fait : registre, chargeur, repli, licences, validation         |
+| Silhouettes reelles                      | fait : trente-cinq modeles CC0, vingt-deux poses               |
+| Imperfection controlee et deterministe   | fait : plus de 40 % du mobilier pose hors des angles droits    |
+| Materiel actif credible                  | fait : baies, ports, temoins, brassage, cordons                |
+| Personnages et dialogues                 | fait : six personnes nommees, animees, interrogeables          |
+| Captures QA deterministes                | fait : quinze points de vue fixes                              |
+| Parcours simules d un joueur             | fait : debutant et intervention complete                       |
+| Tickets et supervision contextuels       | **non fait**                                                   |
+| Mission commencant dans le monde         | **non fait**                                                   |
+| NOVA comme fil rouge persistant          | **non fait**                                                   |
+| Baie reellement manipulable              | **non fait** : consultation seulement                          |
+| Fin des styles poses dans le balisage    | **partiel**                                                    |
+
+---
+
 ## Phase 7 — Contenu et outillage pedagogique
 
 Modules de cours supplementaires, editeur de laboratoire complet, journee de travail simulee,

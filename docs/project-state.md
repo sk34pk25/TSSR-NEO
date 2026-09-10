@@ -3,8 +3,8 @@
 > Ce document est la memoire du projet. Il ne contient **aucun secret**.
 > Il doit toujours etre verifie contre le depot reel avant d etre cru sur parole.
 
-**Derniere mise a jour :** 2026-09-09 (refonte de l experience, V0.3)
-**Version du Core :** 0.3.0
+**Derniere mise a jour :** 2026-09-10 (unification produit, V0.4)
+**Version du Core :** 0.4.0
 **Version des contrats :** 1
 **Version de l API Core exposee aux modules :** 1.0.0
 
@@ -64,6 +64,7 @@ DSL d assertions : 28 types de verifications executables, composables par `all` 
 | `classroom`      | cohorte locale, analyses de competences et de missions, points faibles classes                                     |
 | `rendering`      | abstraction Scene3D, implementation Three.js chargee paresseusement, campus, materiel, controleur de camera        |
 | `rendering` (V2) | bibliotheque de materiaux, kit modulaire instancie, compaction des boites de meme materiau                        |
+| `rendering` (V4) | registre d assets glTF, chargeur avec repli, variation deterministe, materiel actif, personnages et dialogues     |
 
 ### Savoir
 
@@ -75,9 +76,11 @@ fiches du module, presence decroissante avec l experience, observations proactiv
 
 ### Application
 
-Navigation ramenee a **quatre lieux** : Accueil, Apprendre, Laboratoire, Campus. Une cinquieme
-entree apparait le temps d une mission, parce qu elle a alors un contenu reel. « Apprendre »
-regroupe le catalogue, les fiches, les revisions et le releve de progression.
+Navigation ramenee a **trois lieux** : Accueil, Parcours, NEO Systems. Une quatrieme entree
+apparait le temps d une intervention, parce qu elle a alors un contenu reel. Le Parcours
+presente notions, interventions et revisions dans une progression ordonnee ; les fiches
+s ouvrent dans un tiroir, sans changer d ecran. Les anciennes adresses dupliquees ramenent
+vers la destination unique.
 
 Prise en main en quatre etapes au premier passage, rejouable depuis les reglages. Accueil qui
 propose une seule suite, deduite de l etat reel du profil et du deroulement en cours. Ecrans de
@@ -94,7 +97,7 @@ mission a solutions multiples, deux variantes parametriques, quatre competences,
 
 ## Tests
 
-**164 tests unitaires et d interface**, plus les verifications de bout en bout
+**230 tests unitaires et d interface**, plus les verifications de bout en bout
 sur cinq configurations, tous au vert.
 
 | Fichier                              | Portee                                                                          |
@@ -105,7 +108,10 @@ sur cinq configurations, tous au vert.
 | `tests/mission-training-lab.test.ts` | contrats, variantes, deroulement, solutions alternatives, echec, score          |
 | `tests/core-services.test.ts`        | sauvegarde, reprise, progression, connaissances, NOVA                           |
 | `tests/hardware-3d.test.ts`          | campus, collisions, materiel derive de la simulation, brassage                  |
-| `tests/campus-direction-artistique.test.ts` | criteres visuels minimaux du campus et cout de rendu                    |
+| `tests/campus-direction-artistique.test.ts` | criteres visuels, silhouettes, presence humaine, materiel actif        |
+| `tests/camera-campus.test.ts`        | inertie, rotation au clavier, modes, releve et restitution de position          |
+| `tests/assets-3d.test.ts`            | presence, poids, licences et echelle des modeles importes                       |
+| `tests/e2e/agent-joueur.spec.ts`     | parcours simules : debutant et intervention complete                            |
 | `tests/subsystems.test.ts`           | permissions, synchronisation, audio, cockpit formateur                          |
 | `tests/ui/components.test.tsx`       | panneaux React et accessibilite en environnement DOM                            |
 | `tests/e2e/parcours.spec.ts`         | fumee, parcours complet, accessibilite, captures visuelles                      |
@@ -208,13 +214,18 @@ construction injecte desormais la liste reelle des fichiers livres dans le servi
    multilingues, l interface est uniquement en francais.
 10. **Aucun vrai cours pedagogique.** Le NEO Training Lab reste le seul module
     visible ; il valide le Core, il ne l enseigne pas.
-11. **Le campus n a ni personnages ni animations.** Le son, lui, suit desormais
-    la piece ou se trouve le visiteur ; il reste inactif tant que l utilisateur
-    ne l a pas explicitement autorise, comme l exige tout navigateur.
-12. **L interaction sur place couvre deux gestes seulement** : utiliser un poste
-    et consulter une baie. Examiner un cable et parler a quelqu un n existent pas.
-13. **Le mobilier est entierement procedural**, construit a partir de
-    primitives. Aucune chaine d assets externes sous licence n est en place.
+11. **Les tickets et la supervision restent des destinations autonomes.** Elles
+    ne sont pas encore rattachees a un ecran, a une piece ou a un moment.
+12. **Une intervention commence toujours par un ecran de travail**, jamais par
+    un ticket recu dans les locaux.
+13. **NOVA n existe que dans l ecran d intervention.** Elle n est pas le fil
+    rouge de l experience.
+14. **Une baie se consulte mais ne se manipule pas** : ouvrir, zoomer, brancher
+    et debrancher restent a faire.
+15. **Les personnages ne se deplacent pas encore** : leurs animations tournent,
+    mais aucun ne suit de trajet.
+16. **Le systeme de composants n est pas generalise** : une partie de
+    l application pose encore ses reglages de style dans le balisage.
 
 ## Etat des documents prives
 
@@ -226,11 +237,13 @@ Aucun document source prive n a ete fourni, utilise ou publie.
 
 Poursuivre la phase 6 bis, dans cet ordre :
 
-1. **couche de vie** : presence humaine et mouvement, le son etant deja branche ;
-2. **elargir l interaction sur place** : examiner un cable, manipuler le
-   brassage, dialoguer avec un personnage ;
-3. **conduire une intervention entiere depuis le campus**, la piece courante
-   servant de contexte a la mission.
+1. **rattacher tickets et supervision a des objets** : un ecran de supervision
+   au centre de commandement, une file de tickets a l accueil ;
+2. **faire commencer l intervention dans le monde** : un ticket recu, une
+   personne a rencontrer, puis seulement les outils ;
+3. **rendre une baie manipulable** : ouvrir la porte, brancher et debrancher un
+   cordon, avec effet reel sur l etat simule ;
+4. **faire circuler les personnages** entre quelques points de passage.
 
 Le premier vrai cours pedagogique reste attendu via le
 `TSSR NEO Course Builder Master Prompt`. Le Core est pret a le recevoir.

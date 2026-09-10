@@ -1,0 +1,322 @@
+{
+  "releve": [
+    {
+      "titre": "Apprendre le metier, pas seulement les commandes",
+      "titres": [
+        "Apprendre le metier, pas seulement les commandes",
+        "Commencer : Le poste de Camille n a plus de reseau",
+        "Ou vous en etes"
+      ],
+      "cartes": 0,
+      "onglets": 0,
+      "boutons": 5,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 124,
+      "paraitVide": false,
+      "stylesEnLigne": 4,
+      "route": "accueil",
+      "dansLaBarre": true
+    },
+    {
+      "titre": "Comment fonctionne TSSR NEO",
+      "titres": [
+        "Comment fonctionne TSSR NEO",
+        "Un reseau qui se comporte comme un reseau",
+        "Un terminal reellement interprete",
+        "Une evaluation sur les faits",
+        "Hors ligne et sans traqueur",
+        "Ce que TSSR NEO ne fait pas"
+      ],
+      "cartes": 5,
+      "onglets": 0,
+      "boutons": 0,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 279,
+      "paraitVide": false,
+      "stylesEnLigne": 13,
+      "route": "a-propos",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Parcours",
+      "titres": [
+        "Parcours",
+        "Manipuler librement"
+      ],
+      "cartes": 0,
+      "onglets": 0,
+      "boutons": 3,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 155,
+      "paraitVide": false,
+      "stylesEnLigne": 1,
+      "route": "apprendre",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Parcours",
+      "titres": [
+        "Parcours",
+        "Manipuler librement"
+      ],
+      "cartes": 0,
+      "onglets": 0,
+      "boutons": 3,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 155,
+      "paraitVide": false,
+      "stylesEnLigne": 1,
+      "route": "apprendre/cours",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Parcours",
+      "titres": [
+        "Parcours",
+        "Manipuler librement"
+      ],
+      "cartes": 0,
+      "onglets": 0,
+      "boutons": 3,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 155,
+      "paraitVide": false,
+      "stylesEnLigne": 1,
+      "route": "apprendre/fiches",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Parcours",
+      "titres": [
+        "Parcours",
+        "Manipuler librement"
+      ],
+      "cartes": 0,
+      "onglets": 0,
+      "boutons": 3,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 155,
+      "paraitVide": false,
+      "stylesEnLigne": 1,
+      "route": "apprendre/reviser",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Parcours",
+      "titres": [
+        "Parcours",
+        "Manipuler librement"
+      ],
+      "cartes": 0,
+      "onglets": 0,
+      "boutons": 3,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 155,
+      "paraitVide": false,
+      "stylesEnLigne": 1,
+      "route": "apprendre/progression",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Campus NEO Systems",
+      "titres": [
+        "Campus NEO Systems",
+        "Ou aller"
+      ],
+      "cartes": 0,
+      "onglets": 2,
+      "boutons": 20,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 225,
+      "paraitVide": false,
+      "stylesEnLigne": 13,
+      "route": "campus",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Aucune intervention en cours",
+      "titres": [
+        "Aucune intervention en cours"
+      ],
+      "cartes": 1,
+      "onglets": 0,
+      "boutons": 2,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 26,
+      "paraitVide": true,
+      "stylesEnLigne": 1,
+      "route": "mission",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Laboratoire libre",
+      "titres": [
+        "Laboratoire libre",
+        "Intervention en cours"
+      ],
+      "cartes": 5,
+      "onglets": 6,
+      "boutons": 14,
+      "champs": 5,
+      "tableaux": 0,
+      "motsTexte": 140,
+      "paraitVide": false,
+      "stylesEnLigne": 25,
+      "route": "laboratoire",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Parcours",
+      "titres": [
+        "Parcours",
+        "Manipuler librement"
+      ],
+      "cartes": 0,
+      "onglets": 0,
+      "boutons": 3,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 155,
+      "paraitVide": false,
+      "stylesEnLigne": 1,
+      "route": "connaissances",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "NEO Review",
+      "titres": [
+        "NEO Review"
+      ],
+      "cartes": 1,
+      "onglets": 0,
+      "boutons": 1,
+      "champs": 1,
+      "tableaux": 0,
+      "motsTexte": 50,
+      "paraitVide": true,
+      "stylesEnLigne": 3,
+      "route": "revision",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Parcours",
+      "titres": [
+        "Parcours",
+        "Manipuler librement"
+      ],
+      "cartes": 0,
+      "onglets": 0,
+      "boutons": 3,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 155,
+      "paraitVide": false,
+      "stylesEnLigne": 1,
+      "route": "progression",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "NEO Monitoring",
+      "titres": [
+        "NEO Monitoring"
+      ],
+      "cartes": 1,
+      "onglets": 0,
+      "boutons": 1,
+      "champs": 0,
+      "tableaux": 1,
+      "motsTexte": 29,
+      "paraitVide": true,
+      "stylesEnLigne": 3,
+      "route": "supervision",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Gestion des services",
+      "titres": [
+        "Gestion des services"
+      ],
+      "cartes": 3,
+      "onglets": 0,
+      "boutons": 3,
+      "champs": 3,
+      "tableaux": 0,
+      "motsTexte": 106,
+      "paraitVide": true,
+      "stylesEnLigne": 12,
+      "route": "tickets",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "NEO Studio",
+      "titres": [
+        "NEO Studio"
+      ],
+      "cartes": 1,
+      "onglets": 0,
+      "boutons": 1,
+      "champs": 0,
+      "tableaux": 0,
+      "motsTexte": 26,
+      "paraitVide": true,
+      "stylesEnLigne": 1,
+      "route": "formateur",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "Reglages",
+      "titres": [
+        "Reglages",
+        "Rendu et performance",
+        "Accessibilite",
+        "Accompagnement",
+        "Son",
+        "Mode developpeur",
+        "Prise en main",
+        "Confidentialite et donnees"
+      ],
+      "cartes": 7,
+      "onglets": 0,
+      "boutons": 4,
+      "champs": 18,
+      "tableaux": 0,
+      "motsTexte": 264,
+      "paraitVide": false,
+      "stylesEnLigne": 28,
+      "route": "reglages",
+      "dansLaBarre": false
+    },
+    {
+      "titre": "NEO Diagnostics",
+      "titres": [
+        "NEO Diagnostics",
+        "Version et environnement",
+        "Capacites de rendu",
+        "Stockage et session",
+        "Roles et autorisations",
+        "Synchronisation et audio",
+        "Sante de la simulation"
+      ],
+      "cartes": 6,
+      "onglets": 0,
+      "boutons": 2,
+      "champs": 1,
+      "tableaux": 1,
+      "motsTexte": 247,
+      "paraitVide": false,
+      "stylesEnLigne": 13,
+      "route": "diagnostics",
+      "dansLaBarre": false
+    }
+  ],
+  "erreurs": []
+}

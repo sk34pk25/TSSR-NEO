@@ -416,5 +416,93 @@ export function compacter(
   return conserves;
 }
 
+// ----------------------------------------------- imperfection controlee
+
+/**
+ * Generateur deterministe.
+ *
+ * Un lieu reel n est jamais parfaitement aligne, mais une variation tiree au
+ * hasard a chaque chargement rendrait toute comparaison de captures
+ * impossible. La graine fixe donc la variation une fois pour toutes : le
+ * campus est irregulier, et il est irregulier de la meme facon a chaque fois.
+ */
+export function alea(graine: number): () => number {
+  let etat = graine >>> 0;
+  return () => {
+    etat = (etat + 0x6d2b79f5) >>> 0;
+    let t = etat;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export interface Variation {
+  /** Ecart lateral maximal, en metres. */
+  decalage?: number;
+  /** Ecart d orientation maximal, en radians. */
+  rotation?: number;
+  /** Ecart d echelle maximal, en fraction. */
+  echelle?: number;
+}
+
+/**
+ * Applique une irregularite mesuree a une serie d emplacements.
+ *
+ * Sans elle, chaque chaise est exactement a sa place et exactement parallele a
+ * sa voisine : c est ce qui donne l impression d un decor trace a la regle.
+ */
+export function varier(
+  placements: readonly Placement[],
+  rng: () => number,
+  variation: Variation = {},
+): Placement[] {
+  const dec = variation.decalage ?? 0.12;
+  const rot = variation.rotation ?? 0.18;
+  const ech = variation.echelle ?? 0;
+  return placements.map((placement) => ({
+    position: [
+      placement.position[0] + (rng() - 0.5) * 2 * dec,
+      placement.position[1],
+      placement.position[2] + (rng() - 0.5) * 2 * dec,
+    ] as Vec3,
+    yaw: (placement.yaw ?? 0) + (rng() - 0.5) * 2 * rot,
+    ...(ech === 0 ? {} : { echelle: 1 + (rng() - 0.5) * 2 * ech }),
+  }));
+}
+
+/**
+ * Objet du decor pose a plusieurs endroits, avec sa silhouette reelle.
+ *
+ * La primitive transmise reste dans la description : elle sert de repli si le
+ * modele n arrive pas, de volume de collision, et de version economique.
+ */
+export function objet(
+  id: string,
+  assetId: string,
+  placements: readonly Placement[],
+  primitive: { kind: 'box' | 'cylinder'; size?: Vec3; radius?: number; height?: number },
+  material: MaterialSpec,
+  options: { hauteurPrimitive?: number; interactive?: Scene3DNode['interactive'] } = {},
+): Piece {
+  if (placements.length === 0) return vide();
+  const hauteur = options.hauteurPrimitive ?? primitive.size?.[1] ?? primitive.height ?? 0.8;
+  return {
+    nodes: [
+      {
+        ...primitive,
+        id,
+        position: [0, 0, 0],
+        material,
+        instances: poser(placements, [0, hauteur / 2, 0]),
+        model: { assetId, offsetY: -hauteur / 2 },
+        static: true,
+        ...(options.interactive === undefined ? {} : { interactive: options.interactive }),
+      },
+    ],
+    colliders: [],
+  };
+}
+
 export { fusionner, vide, boite, cylindre, bloc };
 export type { Piece as PieceDeKit };

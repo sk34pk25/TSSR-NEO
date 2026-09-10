@@ -20,11 +20,19 @@ import {
  * destinations sur six etaient donc des impasses au premier clic. Ne restent
  * ici que des endroits ou l on peut toujours aller.
  */
+/*
+ * Trois entrees, et seulement trois.
+ *
+ * La version precedente en comptait quatre et laissait quatorze autres
+ * destinations hors de la barre, dont sept atteignables uniquement par le
+ * centre de commande. L utilisateur devait connaitre onze etiquettes de
+ * produit pour se reperer. Il n a besoin que de trois questions : que dois-je
+ * faire maintenant, qu est-ce que j apprends, et ou est-ce que je travaille.
+ */
 const NAV: { name: RouteName; label: string; hint: string }[] = [
-  { name: 'accueil', label: 'Accueil', hint: 'ou vous en etes, et la suite' },
-  { name: 'apprendre', label: 'Apprendre', hint: 'cours, fiches, revisions' },
-  { name: 'laboratoire', label: 'Laboratoire', hint: 'manipuler sans objectif impose' },
-  { name: 'campus', label: 'Campus', hint: 'les locaux de NEO Systems' },
+  { name: 'accueil', label: 'Accueil', hint: 'ce qu il y a a faire maintenant' },
+  { name: 'parcours', label: 'Parcours', hint: 'ce que vous apprenez, et ou vous en etes' },
+  { name: 'campus', label: 'NEO Systems', hint: 'les locaux, les equipements, les gens' },
 ];
 
 export interface CommandEntry {
@@ -176,28 +184,22 @@ export function AppShell({ children, variant = 'page' }: AppShellProps): JSX.Ele
      */
     items.push(
       {
-        id: 'nav-cours',
-        label: 'Catalogue des cours',
+        id: 'nav-parcours',
+        label: 'Mon parcours',
         hint: 'apprendre',
-        run: () => navigate('apprendre', 'cours'),
-      },
-      {
-        id: 'nav-fiches',
-        label: 'Fiches de connaissances',
-        hint: 'apprendre',
-        run: () => navigate('apprendre', 'fiches'),
+        run: () => navigate('parcours'),
       },
       {
         id: 'nav-reviser',
         label: 'Session de revision',
         hint: 'apprendre',
-        run: () => navigate('apprendre', 'reviser'),
+        run: () => navigate('revision'),
       },
       {
-        id: 'nav-progression',
-        label: 'Ma progression',
-        hint: 'apprendre',
-        run: () => navigate('apprendre', 'progression'),
+        id: 'nav-labo',
+        label: 'Laboratoire libre',
+        hint: 'pratiquer',
+        run: () => navigate('laboratoire'),
       },
       {
         id: 'nav-reglages',

@@ -10,11 +10,9 @@ import { expect, test, type Page } from '@playwright/test';
 
 const ECRANS = [
   { route: 'accueil', titre: /Apprendre le metier/ },
-  { route: 'apprendre', titre: /^Apprendre$/ },
+  { route: 'parcours', titre: /^Parcours$/ },
   { route: 'campus', titre: /Campus NEO Systems/ },
-  { route: 'connaissances', titre: /NEO Knowledge/ },
   { route: 'revision', titre: /NEO Review/ },
-  { route: 'progression', titre: /Progression/ },
   { route: 'reglages', titre: /Reglages/ },
   { route: 'diagnostics', titre: /NEO Diagnostics/ },
 ] as const;
@@ -84,6 +82,40 @@ async function attendreCampus(page: Page): Promise<void> {
     stable = compte === precedent ? stable + 1 : 0;
     precedent = compte;
     await page.waitForTimeout(150);
+  }
+}
+
+/**
+ * Cherche des yeux un objet manipulable, comme quelqu un qui entre dans une
+ * piece : quelques pas, puis un tour d horizon, jusqu a ce que quelque chose
+ * devienne utilisable.
+ */
+async function chercherUnObjetManipulable(
+  page: Page,
+  invite: ReturnType<Page['locator']>,
+): Promise<void> {
+  const trouve = async (): Promise<boolean> => (await invite.count()) > 0;
+
+  // On avance d abord droit devant : c est ce que fait quelqu un qui entre.
+  for (let pas = 0; pas < 7 && !(await trouve()); pas += 1) {
+    await page.keyboard.down('KeyW');
+    await page.waitForTimeout(320);
+    await page.keyboard.up('KeyW');
+    await page.waitForTimeout(140);
+  }
+  // Puis on regarde autour, sur place, sans s eloigner de ce qu on cherche.
+  for (let vue = 0; vue < 26 && !(await trouve()); vue += 1) {
+    await page.keyboard.down('ArrowRight');
+    await page.waitForTimeout(150);
+    await page.keyboard.up('ArrowRight');
+    await page.waitForTimeout(130);
+  }
+  // En dernier recours, quelques pas de plus dans la direction regardee.
+  for (let pas = 0; pas < 5 && !(await trouve()); pas += 1) {
+    await page.keyboard.down('KeyW');
+    await page.waitForTimeout(300);
+    await page.keyboard.up('KeyW');
+    await page.waitForTimeout(140);
   }
 }
 
@@ -251,20 +283,15 @@ test.describe('visuel', () => {
 
 
 test.describe('architecture de l information', () => {
-  test('la navigation principale se limite a quatre destinations', async ({ page }) => {
+  test('la navigation principale se limite a trois destinations', async ({ page }) => {
     await ouvrir(page, 'accueil');
     const nav = page.getByRole('navigation', { name: 'Navigation principale' });
-    await expect(nav.getByRole('link')).toHaveText([
-      'Accueil',
-      'Apprendre',
-      'Laboratoire',
-      'Campus',
-    ]);
+    await expect(nav.getByRole('link')).toHaveText(['Accueil', 'Parcours', 'NEO Systems']);
   });
 
   test('aucune destination principale n est vide au premier contact', async ({ page }) => {
     // Une entree de navigation qui n annonce que son propre vide est une impasse.
-    for (const route of ['accueil', 'apprendre', 'campus']) {
+    for (const route of ['accueil', 'parcours', 'campus']) {
       await ouvrir(page, route);
       await expect(page.getByText(/Aucune mission en cours|Aucune competence suivie/)).toHaveCount(
         0,
@@ -328,17 +355,7 @@ test.describe('travailler sur place', () => {
 
     // On avance en cherchant des yeux, comme dans n importe quel lieu.
     const invite = page.locator('.campus3d__invite');
-    for (let pas = 0; pas < 8 && (await invite.count()) === 0; pas += 1) {
-      await page.keyboard.down('KeyW');
-      await page.waitForTimeout(260);
-      await page.keyboard.up('KeyW');
-      for (let vue = 0; vue < 8 && (await invite.count()) === 0; vue += 1) {
-        await page.keyboard.down('ArrowRight');
-        await page.waitForTimeout(120);
-        await page.keyboard.up('ArrowRight');
-        await page.waitForTimeout(120);
-      }
-    }
+    await chercherUnObjetManipulable(page, invite);
     await expect(invite).toContainText(/Utiliser|Ouvrir/);
 
     await page.keyboard.press('KeyE');
@@ -357,6 +374,55 @@ test.describe('travailler sur place', () => {
     // Et l on referme sans avoir change d ecran.
     await page.keyboard.press('Escape');
     await expect(outil).toBeHidden();
+    expect(page.url()).toContain('#/campus');
+  });
+});
+
+
+test.describe('adresses unifiees', () => {
+  test('les anciennes adresses ramenent au parcours, sans ecran duplique', async ({ page }) => {
+    /*
+     * La refonte precedente avait regroupe des ecrans sans supprimer leurs
+     * adresses : le meme contenu etait servi par deux chemins. Ces alias
+     * verifient qu il n en reste qu un seul.
+     */
+    for (const ancienne of ['apprendre', 'connaissances', 'progression']) {
+      await ouvrir(page, ancienne);
+      await expect(page.getByRole('heading', { name: /^Parcours$/, level: 1 })).toBeVisible();
+    }
+  });
+
+  test('chaque ecran atteignable porte un titre de premier niveau', async ({ page }) => {
+    for (const route of ['accueil', 'parcours', 'campus', 'mission', 'laboratoire', 'reglages']) {
+      await ouvrir(page, route);
+      await expect(page.locator('h1').first(), `titre sur ${route}`).toHaveCount(1);
+    }
+  });
+});
+
+
+test.describe('presence humaine', () => {
+  test('aborder quelqu un et lui poser une question', async ({ page }) => {
+    test.slow();
+    await ouvrir(page, 'campus');
+    await page.getByRole('button', { name: /S y rendre dans la zone Accueil$/ }).click();
+    await page.waitForTimeout(1500);
+
+    const invite = page.locator('.campus3d__invite');
+    await chercherUnObjetManipulable(page, invite);
+    await expect(invite).toContainText(/Parler a|Utiliser|Ouvrir/);
+    await page.keyboard.press('KeyE');
+
+    const echange = page.getByRole('dialog').first();
+    await expect(echange).toBeVisible();
+    // Un dialogue propose des questions ; y repondre revele des symptomes.
+    const question = echange.getByRole('button').filter({ hasText: /\?$/ }).first();
+    if ((await question.count()) > 0) {
+      const texte = (await question.textContent()) ?? '';
+      await question.click();
+      await expect(echange.getByText(texte.trim())).toBeVisible();
+    }
+    await page.keyboard.press('Escape');
     expect(page.url()).toContain('#/campus');
   });
 });

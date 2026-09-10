@@ -80,18 +80,18 @@ export function MissionView(): JSX.Element {
   if (!world) {
     return (
       <div className="neo-card">
-        <h2>Aucune mission en cours</h2>
+        <h1 style={{ fontSize: 'var(--neo-fs-lg)' }}>Aucune intervention en cours</h1>
         <p className="neo-muted">
-          Choisissez un cours depuis le campus, ou ouvrez le laboratoire libre pour manipuler sans
-          objectif impose.
+          Une intervention se lance depuis votre parcours, ou depuis un ticket dans les locaux de
+          NEO Systems.
         </p>
         <div className="neo-row">
           <button
             type="button"
             className="neo-btn neo-btn--primary"
-            onClick={() => navigate('campus')}
+            onClick={() => navigate('parcours')}
           >
-            Aller au campus
+            Voir mon parcours
           </button>
           <button
             type="button"
@@ -112,6 +112,10 @@ export function MissionView(): JSX.Element {
 
   return (
     <div className="mission-layout">
+      {/* Le titre situe l intervention : il manquait entierement. */}
+      <h1 className="neo-visually-hidden">
+        {typeof summary?.title === 'string' ? summary.title : 'Intervention en cours'}
+      </h1>
       <aside className="neo-stack" style={{ minHeight: 0, overflow: 'auto' }}>
         {runner ? (
           <>
@@ -210,9 +214,9 @@ export function MissionView(): JSX.Element {
               <button
                 type="button"
                 className="neo-btn neo-btn--sm"
-                onClick={() => navigate('campus')}
+                onClick={() => navigate('parcours')}
               >
-                Retour au campus
+                Retour au parcours
               </button>
             </div>
           </div>

@@ -59,7 +59,7 @@ export function nextStep(session: AppSession, now = Date.now()): NextStep {
           ? 'Ces notions arrivent a echeance de revision : les revoir maintenant coute quelques minutes.'
           : 'Cette notion arrive a echeance de revision : la revoir maintenant coute quelques minutes.',
       action: 'Ouvrir la revision',
-      executer: () => 'apprendre',
+      executer: () => 'revision',
       ton: 'revision',
     };
   }

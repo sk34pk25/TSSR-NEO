@@ -62,6 +62,18 @@ const AMBIANCE_SONORE: Record<string, AmbienceName> = {
   atelier: 'atelier',
 };
 
+/**
+ * Ou l on se trouvait la derniere fois.
+ *
+ * Quitter la 3D pour un ecran puis y revenir renvoyait au hall, quel que soit
+ * l endroit ou l on travaillait. Cette memoire vit hors du composant parce
+ * qu elle doit survivre a son demontage, et hors de la sauvegarde parce
+ * qu elle ne concerne que la session courante.
+ */
+let dernierePresence:
+  | { position: readonly [number, number, number]; yaw: number; pitch: number; mode: CameraMode }
+  | undefined;
+
 interface Etiquette {
   id: string;
   label: string;
@@ -154,7 +166,11 @@ export function Campus3D({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<Renderer3D | undefined>(undefined);
   const controllerRef = useRef<CampusCameraController>(
-    new CampusCameraController(CAMPUS_SPAWN, CAMPUS_SPAWN_YAW),
+    (() => {
+      const controleur = new CampusCameraController(CAMPUS_SPAWN, CAMPUS_SPAWN_YAW);
+      if (dernierePresence) controleur.restore(dernierePresence);
+      return controleur;
+    })(),
   );
   const pressedRef = useRef<Set<string>>(new Set());
   const rafRef = useRef<number | undefined>(undefined);
@@ -162,9 +178,11 @@ export function Campus3D({
 
   const [status, setStatus] = useState<'chargement' | 'pret' | 'indisponible'>('chargement');
   // Le premier contact doit etre un lieu, pas un plan.
-  const [mode, setMode] = useState<CameraMode>('first-person');
+  const [mode, setMode] = useState<CameraMode>(
+    () => dernierePresence?.mode ?? 'first-person',
+  );
   const [focused, setFocused] = useState<PickHit | undefined>(undefined);
-  const modeRef = useRef<CameraMode>('first-person');
+  const modeRef = useRef<CameraMode>(dernierePresence?.mode ?? 'first-person');
   /** Objet a portee et dans l axe du regard : c est lui que « E » declenche. */
   const [aPortee, setAPortee] = useState<InteractiveSpec | undefined>(undefined);
   const aPorteeRef = useRef<InteractiveSpec | undefined>(undefined);
@@ -196,18 +214,24 @@ export function Campus3D({
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
 
+    // Capture locale : la reference peut pointer ailleurs au nettoyage.
+    const controleur = controllerRef.current;
+
     void (async () => {
       try {
         // Import dynamique : le moteur reste hors du paquet initial.
         const { ThreeRenderer } = await import('@tssr/rendering/three');
         if (cancelled) return;
-        const renderer = new ThreeRenderer(profile);
+        const renderer = new ThreeRenderer(profile, __TSSR_BASE_PATH__);
         await renderer.mount(canvas);
         renderer.setScene(scene);
         controllerRef.current.setColliders(scene.colliders);
         renderer.setCamera(controllerRef.current.current());
         renderer.start();
         rendererRef.current = renderer;
+        // Sonde de mesure, utilisee par les verifications d echelle.
+        (window as unknown as Record<string, unknown>).__tssrMesurer = (id: string) =>
+          renderer.mesurer?.(id);
         setStatus('pret');
       } catch (error) {
         console.warn('Rendu 3D indisponible :', error);
@@ -217,6 +241,7 @@ export function Campus3D({
 
     return () => {
       cancelled = true;
+      dernierePresence = controleur.snapshot();
       rendererRef.current?.dispose();
       rendererRef.current = undefined;
     };
@@ -413,6 +438,8 @@ export function Campus3D({
                 {
                   forward: 0,
                   strafe: 0,
+                  turn: 0,
+                  look: 0,
                   yaw: -event.movementX * 0.0035,
                   pitch: -event.movementY * 0.0025,
                   run: false,
@@ -527,8 +554,8 @@ export function Campus3D({
             {/* Le rappel des commandes s efface des qu un outil occupe la place. */}
             {ouvert ? null : (
               <p className="campus3d__help neo-dim">
-                Deplacement : Z Q S D ou les fleches. Maintenir le bouton pour regarder autour.
-                E pour utiliser ce qu on a devant soi. Cliquer une porte pour entrer.
+                Z Q S D pour se deplacer, fleches pour tourner la tete, Maj pour courir.
+                E pour utiliser ce qu on a devant soi. Cliquer une porte pour y entrer.
               </p>
             )}
           </>
