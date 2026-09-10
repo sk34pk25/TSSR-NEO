@@ -157,7 +157,7 @@ function construire(): readonly NpcSpec[] {
     nom: 'Yanis Delorme',
     role: 'technicien',
     zoneId: 'network-room',
-    position: dans('network-room', 1.6, 1.8),
+    position: dans('network-room', 1.9, 3.4),
     orientation: Math.PI / 2,
     activite: 'ronde',
     asset: 'personne-d',

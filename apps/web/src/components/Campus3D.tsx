@@ -229,6 +229,9 @@ export function Campus3D({
         renderer.setCamera(controllerRef.current.current());
         renderer.start();
         rendererRef.current = renderer;
+        // Sonde de mesure, utilisee par les verifications d echelle.
+        (window as unknown as Record<string, unknown>).__tssrMesurer = (id: string) =>
+          renderer.mesurer?.(id);
         setStatus('pret');
       } catch (error) {
         console.warn('Rendu 3D indisponible :', error);

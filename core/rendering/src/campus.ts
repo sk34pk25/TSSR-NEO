@@ -1,6 +1,5 @@
 import {
   alea,
-  baieInformatique,
   bloc,
   compacter,
   boite,
@@ -17,6 +16,13 @@ import {
 } from './kit.ts';
 import { MATERIALS, teinte } from './materials.ts';
 import { buildNpcNodes } from './npc.ts';
+import {
+  baie,
+  cableDeBrassage,
+  panneauDeBrassage,
+  priseMurale,
+  type ChassisSpec,
+} from './network-hardware.ts';
 import type { Collider, MaterialSpec, Scene3D, Scene3DNode, Vec3 } from './scene3d.ts';
 
 /**
@@ -898,19 +904,64 @@ function amenagement(zone: CampusZone): Piece {
         accessoires(zone.id, rng, [[cx + 0.3, 0.44, fond + versCouloir * 2.3]]),
       );
 
-    case 'network-room':
-      return fusionner(
-        baieInformatique(`${zone.id}-baie`, [
-          { position: [gauche + 1.4, 0, fond + versCouloir * 0.9], yaw: 0, unitesOccupees: 8 },
-          { position: [gauche + 2.6, 0, fond + versCouloir * 0.9], yaw: 0, unitesOccupees: 5 },
-        ]),
-        panneauMural(
-          `${zone.id}-brassage`,
-          [droite - 0.2, 1.7, cz],
-          [0.05, 1.3, 2.6],
-          0,
-          MATERIALS.panneauBrassage,
+    case 'network-room': {
+      const commutateur: ChassisSpec = {
+        unites: 1,
+        ports: 24,
+        // Un port en defaut : c est ce qu on vient chercher ici.
+        etats: Array.from({ length: 24 }, (_, index) =>
+          index === 1 ? 'defaut' : index < 14 ? 'actif' : 'inactif',
         ),
+      };
+      const routeur: ChassisSpec = { unites: 1, ports: 8, etats: Array(8).fill('actif') };
+      const serveur: ChassisSpec = { unites: 2, ports: 2, ventilation: true, etats: ['actif', 'inactif'] };
+      const onduleur: ChassisSpec = { unites: 2, ports: 0, materiau: MATERIALS.metalPeintSombre };
+
+      const baieGauche = baie({
+        id: `${zone.id}-baie-a`,
+        position: [gauche + 1.5, 0, fond + versCouloir * 0.9],
+        yaw: zone.doorSide === 'south' ? 0 : Math.PI,
+        chassis: [onduleur, serveur, routeur, commutateur, commutateur],
+        porteOuverte: true,
+      });
+      const baieDroite = baie({
+        id: `${zone.id}-baie-b`,
+        position: [gauche + 2.4, 0, fond + versCouloir * 0.9],
+        yaw: zone.doorSide === 'south' ? 0 : Math.PI,
+        chassis: [{ unites: 1, ports: 24, etats: Array(24).fill('inactif') }, serveur],
+      });
+
+      // Quelques liaisons visibles entre le brassage et le commutateur.
+      const cables: Piece[] = [];
+      const couleurs: Vec3[] = [
+        [0.3, 0.7, 1],
+        [0.35, 0.85, 0.45],
+        [1, 0.8, 0.3],
+        [0.95, 0.45, 0.55],
+      ];
+      const depart = baieGauche.ports.filter((port) => port.chassis === 3).slice(0, 4);
+      depart.forEach((port, index) => {
+        cables.push(
+          cableDeBrassage(
+            `${zone.id}-cable-${index}`,
+            port.position,
+            [gauche + 0.3, 1.58 - index * 0.03, fond + versCouloir * (0.55 + index * 0.1)],
+            couleurs[index] as Vec3,
+          ),
+        );
+      });
+
+      return fusionner(
+        baieGauche,
+        baieDroite,
+        ...cables,
+        panneauDeBrassage(
+          `${zone.id}-brassage`,
+          [gauche + 0.26, 1.58, fond + versCouloir * 0.9],
+          Math.PI / 2,
+          24,
+        ),
+        priseMurale(`${zone.id}-prise`, [droite - 0.22, 0.35, cz + versCouloir * 2.2], -Math.PI / 2),
         table(`${zone.id}-etabli`, [cx + 1.4, 0, cz + versCouloir * 1.4], [2.2, 0.9, 0.8]),
         objet(
           `${zone.id}-tabouret`,
@@ -922,26 +973,48 @@ function amenagement(zone: CampusZone): Piece {
           { kind: 'cylinder', radius: 0.2, height: 0.75 },
           MATERIALS.metalBrosse,
         ),
+        objet(
+          `${zone.id}-portable`,
+          'portable',
+          [{ position: [cx + 1.1, 0.92, cz + versCouloir * 1.4], yaw: 0.3 }],
+          { kind: 'box', size: [0.34, 0.24, 0.26] },
+          MATERIALS.plastiqueSombre,
+        ),
         accessoires(zone.id, rng, [
-          [cx + 0.9, 0.92, cz + versCouloir * 1.4],
           [gauche + 3.6, 0, cz + versCouloir * 2.6],
           [droite - 1.2, 0, fond + versCouloir * 2.8],
         ]),
       );
+    }
 
     case 'datacenter': {
-      const baies = [];
+      const serveur1U: ChassisSpec = { unites: 1, ports: 2, ventilation: true, etats: ['actif', 'actif'] };
+      const serveur2U: ChassisSpec = { unites: 2, ports: 2, ventilation: true, etats: ['actif', 'inactif'] };
+      const stockage: ChassisSpec = { unites: 3, ports: 4, ventilation: true, etats: Array(4).fill('actif') };
+      const pdu: ChassisSpec = { unites: 1, ports: 0, materiau: MATERIALS.metalPeintSombre };
+
+      const baies: Piece[] = [];
       for (let allee = 0; allee < 2; allee += 1) {
         for (let index = 0; index < 4; index += 1) {
-          baies.push({
-            position: [gauche + 2 + index * 1.15, 0, fond + versCouloir * (1.2 + allee * 4.2)] as Vec3,
-            yaw: allee === 0 ? 0 : Math.PI,
-            unitesOccupees: 6 + ((index + allee) % 5),
-          });
+          // Chaque baie est remplie differemment : une salle machine n est
+          // jamais uniforme, et une baie a moitie vide est un fait courant.
+          const garnissage: ChassisSpec[] = [pdu, serveur1U, serveur1U, serveur2U];
+          if ((index + allee) % 2 === 0) garnissage.push(stockage);
+          if ((index + allee) % 3 === 0) garnissage.push(serveur1U);
+          baies.push(
+            baie({
+              id: `${zone.id}-baie-${allee}-${index}`,
+              position: [gauche + 2.2 + index * 1.25, 0, fond + versCouloir * (1.4 + allee * 4)],
+              yaw: allee === 0 ? (zone.doorSide === 'south' ? 0 : Math.PI) : zone.doorSide === 'south' ? Math.PI : 0,
+              chassis: garnissage,
+              porteOuverte: (index + allee) % 4 === 1,
+            }),
+          );
         }
       }
+
       return fusionner(
-        baieInformatique(`${zone.id}-baie`, baies),
+        ...baies,
         panneauMural(
           `${zone.id}-tableau`,
           [droite - 0.2, 1.7, cz],
@@ -972,9 +1045,17 @@ function amenagement(zone: CampusZone): Piece {
           0,
           MATERIALS.stratifieBlanc,
         ),
-        baieInformatique(`${zone.id}-baie`, [
-          { position: [cx + 2.6, 0, fond + versCouloir * 0.9], yaw: 0, unitesOccupees: 4 },
-        ]),
+        baie({
+          id: `${zone.id}-baie`,
+          position: [cx + 2.6, 0, fond + versCouloir * 0.9],
+          yaw: zone.doorSide === 'south' ? 0 : Math.PI,
+          chassis: [
+            { unites: 1, ports: 24, etats: Array(24).fill('inactif') },
+            { unites: 1, ports: 8, etats: Array(8).fill('actif') },
+            { unites: 2, ports: 2, ventilation: true, etats: ['actif', 'inactif'] },
+          ],
+          porteOuverte: true,
+        }),
         objet(
           `${zone.id}-bureau-formateur`,
           'bureau',
@@ -1008,9 +1089,16 @@ function amenagement(zone: CampusZone): Piece {
           { kind: 'box', size: [1.6, 1.1, 0.4] },
           MATERIALS.boisFonce,
         ),
-        baieInformatique(`${zone.id}-baie`, [
-          { position: [droite - 1.2, 0, fond + versCouloir * 1.1], yaw: 0, unitesOccupees: 3 },
-        ]),
+        baie({
+          id: `${zone.id}-baie`,
+          position: [droite - 1.2, 0, fond + versCouloir * 1.1],
+          yaw: zone.doorSide === 'south' ? 0 : Math.PI,
+          chassis: [
+            { unites: 1, ports: 24, etats: Array(24).fill('inactif') },
+            { unites: 2, ports: 2, ventilation: true, etats: ['inactif', 'inactif'] },
+          ],
+          porteOuverte: true,
+        }),
         objet(
           `${zone.id}-tabouret`,
           'tabouret',

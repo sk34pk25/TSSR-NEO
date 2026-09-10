@@ -6,6 +6,7 @@ export * from './materials.ts';
 export * from './kit.ts';
 export * from './campus.ts';
 export * from './npc.ts';
+export * from './network-hardware.ts';
 export * from './asset-registry.ts';
 export * from './hardware-scene.ts';
 export * from './camera-controller.ts';

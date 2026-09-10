@@ -330,7 +330,38 @@ export class ThreeRenderer implements Renderer3D {
         if (!clip) continue;
         const mixeur = new THREE.AnimationMixer(enfant);
         mixeur.clipAction(clip).play();
+        // Poser la premiere image avant toute mesure : c est elle qui compte.
+        mixeur.update(0);
         this.mixeurs.push(mixeur);
+      }
+
+      /*
+       * Correction d echelle apres animation.
+       *
+       * Un modele anime ne fait pas la taille de sa pose de repos : les pistes
+       * d animation reecrivent les transformations des membres, et la mesure
+       * faite au chargement se revele fausse. Les personnages arrivaient ainsi
+       * a deux metres quatre-vingt. On mesure donc ce qui est reellement pose,
+       * puis on ramene a la hauteur declaree.
+       */
+      const asset = assetById(ref.assetId);
+      const premier = groupe.children[0];
+      if (asset && premier) {
+        const boite = new THREE.Box3().setFromObject(premier);
+        const taille = new THREE.Vector3();
+        boite.getSize(taille);
+        if (taille.y > 0.01) {
+          const correction = asset.hauteur / taille.y;
+          if (Math.abs(correction - 1) > 0.02) {
+            for (const enfant of groupe.children) {
+              enfant.scale.multiplyScalar(correction);
+              // Reposer la base au sol apres correction de l echelle.
+              if (ref.offsetY !== undefined) {
+                enfant.position.y -= ref.offsetY * (correction - 1);
+              }
+            }
+          }
+        }
       }
     }
 
@@ -580,6 +611,23 @@ export class ThreeRenderer implements Renderer3D {
       x: (vector.x * 0.5 + 0.5) * rect.width,
       y: (-vector.y * 0.5 + 0.5) * rect.height,
       visible: vector.z > -1 && vector.z < 1,
+    };
+  }
+
+  /**
+   * Dimensions reelles d un objet de la scene, apres chargement.
+   * Sert aux verifications d echelle : une mesure vaut mieux qu une hypothese.
+   */
+  mesurer(nodeId: string): { largeur: number; hauteur: number; profondeur: number } | undefined {
+    const objet = this.objects.get(`${nodeId}__modele`) ?? this.objects.get(nodeId);
+    if (!objet) return undefined;
+    const boite = new THREE.Box3().setFromObject(objet);
+    const taille = new THREE.Vector3();
+    boite.getSize(taille);
+    return {
+      largeur: Number(taille.x.toFixed(3)),
+      hauteur: Number(taille.y.toFixed(3)),
+      profondeur: Number(taille.z.toFixed(3)),
     };
   }
 

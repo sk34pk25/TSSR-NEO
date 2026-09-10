@@ -238,6 +238,8 @@ export interface Renderer3D {
   /** Projette un point de la scene en coordonnees d ecran, pour l habillage DOM. */
   project(position: Vec3): { x: number; y: number; visible: boolean };
   stats(): RenderStats;
+  /** Dimensions reelles d un objet, apres chargement des modeles. */
+  mesurer?(nodeId: string): { largeur: number; hauteur: number; profondeur: number } | undefined;
   dispose(): void;
 }
 
