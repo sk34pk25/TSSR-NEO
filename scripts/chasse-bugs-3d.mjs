@@ -127,13 +127,13 @@ function noter(nom, ok, detail) {
   const invite = page.locator('.campus3d__invite');
   for (let pas = 0; pas < 8 && (await invite.count()) === 0; pas += 1) {
     await page.keyboard.down('KeyW');
-    await page.waitForTimeout(260);
+    await page.waitForTimeout(300);
     await page.keyboard.up('KeyW');
-    for (let vue = 0; vue < 8 && (await invite.count()) === 0; vue += 1) {
+    for (let vue = 0; vue < 10 && (await invite.count()) === 0; vue += 1) {
       await page.keyboard.down('ArrowRight');
-      await page.waitForTimeout(120);
+      await page.waitForTimeout(160);
       await page.keyboard.up('ArrowRight');
-      await page.waitForTimeout(120);
+      await page.waitForTimeout(140);
     }
   }
   const trouve = (await invite.count()) > 0;
@@ -223,6 +223,23 @@ function noter(nom, ok, detail) {
     /n est pas disponible/.test(repli ?? '') && zones >= 9,
     `voile="${(repli ?? '').slice(0, 40)}" zones=${zones}`,
   );
+  await contexte.close();
+}
+
+{
+  // 9. Tourner au clavier, sans souris : indispensable a un usage accessible.
+  const { contexte, page } = await nouvelOnglet();
+  await ouvrirCampus(page);
+  const etiquettes = () => page.evaluate(() =>
+    [...document.querySelectorAll('.campus3d__label')].map((n) => n.textContent).join('|'),
+  );
+  const avant = await etiquettes();
+  await page.keyboard.down('ArrowRight');
+  await page.waitForTimeout(1400);
+  await page.keyboard.up('ArrowRight');
+  await page.waitForTimeout(500);
+  const apres = await etiquettes();
+  noter('clavier : les fleches font tourner la vue', avant !== apres, `"${avant}" -> "${apres}"`);
   await contexte.close();
 }
 
