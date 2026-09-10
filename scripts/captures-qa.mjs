@@ -125,14 +125,27 @@ await page.screenshot({ path: `${OUT}/menu-commandes.png` });
 process.stdout.write('menu-commandes ok\n');
 await page.getByRole('button', { name: 'Fermer' }).click().catch(() => undefined);
 
-// Exterieur, vu depuis le bout du couloir.
+/*
+ * Le technicien en tournee, et l exterieur vu par les baies.
+ * Le batiment ne se visite pas depuis dehors : ce qu on veut montrer, c est
+ * qu il donne sur quelque chose et qu il est habite.
+ */
 await page.getByRole('button', { name: /S y rendre dans la zone Accueil$/ }).click();
 await page.waitForTimeout(2200);
-await page.keyboard.down('ArrowRight');
+// Sortir de la piece, puis longer le couloir jusqu au pignon vitre.
+for (let pas = 0; pas < 6; pas += 1) {
+  await page.keyboard.down('KeyS');
+  await page.waitForTimeout(300);
+  await page.keyboard.up('KeyS');
+}
+// Se tourner vers l ouest, ou se trouve la baie vitree du pignon.
+for (let vue = 0; vue < 8; vue += 1) {
+  await page.keyboard.down('ArrowLeft');
+  await page.waitForTimeout(150);
+  await page.keyboard.up('ArrowLeft');
+}
 await page.waitForTimeout(900);
-await page.keyboard.up('ArrowRight');
-await page.waitForTimeout(700);
-await page.locator('canvas').first().screenshot({ path: `${OUT}/lieu-exterieur.png` });
-process.stdout.write('lieu-exterieur ok\n');
+await page.locator('canvas').first().screenshot({ path: `${OUT}/vie-et-fenetres.png` });
+process.stdout.write('vie-et-fenetres ok\n');
 
 await navigateur.close();

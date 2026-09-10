@@ -135,3 +135,26 @@ du campus qui echoue si quiconque quitte le sol marchable.
    personne assise a son poste chevauche donc celui de son bureau, ce qui est
    voulu : ce qu on interdit est de traverser la structure du batiment, pas de
    s asseoir sur une chaise.
+
+
+---
+
+## 6. Artefacts
+
+| Repertoire                        | Contenu                                          |
+| --------------------------------- | ------------------------------------------------ |
+| `docs/audit/v0.5/qa/`             | dix-sept captures, serveur local                 |
+| `docs/audit/v0.5/qa-production/`  | les memes, prises sur l URL publiee              |
+
+Rejouables :
+
+```bash
+npx tsx scripts/crawler-campus.mjs          # detecteur de defauts
+node scripts/captures-qa.mjs                # captures depuis des points fixes
+```
+
+Pour comparer a la production plutot qu au serveur local :
+
+```bash
+TSSR_TEST_URL=https://sk34pk25.github.io/TSSR-NEO/ OUT=docs/audit/v0.5/qa-production node scripts/captures-qa.mjs
+```
