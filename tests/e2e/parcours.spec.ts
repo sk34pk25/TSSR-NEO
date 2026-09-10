@@ -426,3 +426,58 @@ test.describe('presence humaine', () => {
     expect(page.url()).toContain('#/campus');
   });
 });
+
+
+test.describe('commandes du campus', () => {
+  test('une aide accueille au premier passage, puis ne revient plus', async ({ page }) => {
+    test.slow();
+    await ouvrir(page, 'campus');
+    const aide = page.locator('.campus3d__tutoriel');
+    await expect(aide).toBeVisible();
+    // Elle nomme les touches reellement configurees, pas des touches inventees.
+    await expect(aide).toContainText('Z');
+    await expect(aide).toContainText('se deplacer');
+    await aide.getByRole('button', { name: 'J ai compris' }).click();
+    await expect(aide).toBeHidden();
+
+    await ouvrir(page, 'accueil');
+    await ouvrir(page, 'campus');
+    await expect(page.locator('.campus3d__tutoriel')).toHaveCount(0);
+  });
+
+  test('le panneau des commandes s ouvre depuis le campus', async ({ page }) => {
+    test.slow();
+    await ouvrir(page, 'campus');
+    await page.locator('.campus3d__tutoriel button').click().catch(() => undefined);
+    await page.getByRole('button', { name: '? Commandes' }).click();
+    const panneau = page.getByRole('dialog', { name: 'Commandes' });
+    await expect(panneau).toBeVisible();
+    await expect(panneau.getByText('Avancer')).toBeVisible();
+    await expect(panneau.getByText('Tourner a gauche')).toBeVisible();
+  });
+
+  test('une touche se remappe, et un conflit est annonce', async ({ page }) => {
+    test.slow();
+    await ouvrir(page, 'campus');
+    await page.locator('.campus3d__tutoriel button').click().catch(() => undefined);
+    await page.getByRole('button', { name: '? Commandes' }).click();
+    const panneau = page.getByRole('dialog', { name: 'Commandes' });
+
+    // Reaffecter « Avancer » sur une touche deja prise doit etre refuse.
+    await panneau.getByRole('button', { name: 'Changer la touche de Avancer' }).click();
+    await page.keyboard.press('KeyD');
+    await expect(panneau.getByRole('alert')).toContainText(/deja utilisee/);
+
+    // Une touche libre est acceptee et affichee.
+    await page.keyboard.press('KeyT');
+    await expect(
+      panneau.getByRole('button', { name: 'Changer la touche de Avancer' }),
+    ).toHaveText('T');
+
+    // Et la reinitialisation ramene la disposition francaise.
+    await panneau.getByRole('button', { name: 'Reinitialiser les commandes' }).click();
+    await expect(
+      panneau.getByRole('button', { name: 'Changer la touche de Avancer' }),
+    ).toHaveText('Z');
+  });
+});

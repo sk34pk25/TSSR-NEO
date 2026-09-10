@@ -262,15 +262,46 @@ export class CampusCameraController {
  * tourner** : sans souris, il etait impossible de regarder autour de soi, donc
  * impossible de visiter le campus au clavier seul.
  */
-export function inputFromKeys(pressed: ReadonlySet<string>): ControllerInput {
+/** Correspondance entre une intention et le code de touche qui la declenche. */
+export interface CommandesClavier {
+  avancer: string;
+  reculer: string;
+  gauche: string;
+  droite: string;
+  tournerGauche: string;
+  tournerDroite: string;
+  regarderHaut: string;
+  regarderBas: string;
+  courir: string;
+}
+
+/** Disposition francaise par defaut : Z Q S D, et les fleches pour le regard. */
+export const COMMANDES_PAR_DEFAUT: CommandesClavier = {
+  avancer: 'KeyZ',
+  reculer: 'KeyS',
+  gauche: 'KeyQ',
+  droite: 'KeyD',
+  tournerGauche: 'ArrowLeft',
+  tournerDroite: 'ArrowRight',
+  regarderHaut: 'ArrowUp',
+  regarderBas: 'ArrowDown',
+  courir: 'ShiftLeft',
+};
+
+export function inputFromKeys(
+  pressed: ReadonlySet<string>,
+  commandes: CommandesClavier = COMMANDES_PAR_DEFAUT,
+): ControllerInput {
   const has = (...keys: string[]): boolean => keys.some((key) => pressed.has(key));
   return {
-    forward: (has('KeyW', 'KeyZ') ? 1 : 0) - (has('KeyS') ? 1 : 0),
-    strafe: (has('KeyD') ? 1 : 0) - (has('KeyA', 'KeyQ') ? 1 : 0),
-    turn: (has('ArrowRight') ? 1 : 0) - (has('ArrowLeft') ? 1 : 0),
-    look: (has('ArrowUp') ? 1 : 0) - (has('ArrowDown') ? 1 : 0),
+    // La touche configuree, et son equivalent sur l autre disposition : un
+    // utilisateur qui change de clavier ne doit pas se retrouver bloque.
+    forward: (has(commandes.avancer, 'KeyW', 'KeyZ') ? 1 : 0) - (has(commandes.reculer) ? 1 : 0),
+    strafe: (has(commandes.droite) ? 1 : 0) - (has(commandes.gauche, 'KeyA', 'KeyQ') ? 1 : 0),
+    turn: (has(commandes.tournerDroite) ? 1 : 0) - (has(commandes.tournerGauche) ? 1 : 0),
+    look: (has(commandes.regarderHaut) ? 1 : 0) - (has(commandes.regarderBas) ? 1 : 0),
     yaw: 0,
     pitch: 0,
-    run: has('ShiftLeft', 'ShiftRight'),
+    run: has(commandes.courir, 'ShiftLeft', 'ShiftRight'),
   };
 }

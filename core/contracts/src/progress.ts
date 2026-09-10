@@ -48,6 +48,8 @@ export const zPreferences = z.object({
    * doit pas rejouer un accueil deja lu.
    */
   onboardingSeen: z.boolean().default(false),
+  /** L aide aux commandes du campus a ete lue : elle ne revient pas. */
+  campusAideVue: z.boolean().default(false),
   keybindings: z.record(z.string(), z.string()).default({}),
 });
 

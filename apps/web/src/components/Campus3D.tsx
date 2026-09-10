@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AmbienceName } from '@tssr/audio';
 import { CampusInteraction } from './CampusInteraction.tsx';
+import { PanneauCommandes } from './PanneauCommandes.tsx';
+import { nomDeTouche, type Bindings } from '../state/controls.ts';
 import {
   CAMPUS_SPAWN,
   CAMPUS_SPAWN_YAW,
@@ -28,6 +30,11 @@ interface Campus3DProps {
   reduceMotion: boolean;
   /** Les mesures de rendu ne s affichent qu en mode developpeur. */
   developerMode?: boolean;
+  /** Touches configurees par l utilisateur. */
+  commandes: Bindings;
+  /** L aide n est montree qu au premier passage dans les locaux. */
+  montrerAide?: boolean;
+  onAideVue?: () => void;
   /** Appele quand le visiteur change de piece, pour adapter le lit sonore. */
   onAmbiance?: (ambience: AmbienceName) => void;
   highlightZoneIds?: readonly string[];
@@ -160,6 +167,9 @@ export function Campus3D({
   profile,
   reduceMotion,
   developerMode = false,
+  commandes,
+  montrerAide = false,
+  onAideVue = () => undefined,
   onAmbiance = () => undefined,
   highlightZoneIds,
   onEnterZone,
@@ -197,6 +207,10 @@ export function Campus3D({
   onAmbianceRef.current = onAmbiance;
   /* La vie du campus est simulee ici : positions, etats et animations. */
   const vieRef = useRef<NpcRuntime | undefined>(undefined);
+  const commandesRef = useRef(commandes);
+  commandesRef.current = commandes;
+  const [panneauOuvert, setPanneauOuvert] = useState(false);
+  const [aideVisible, setAideVisible] = useState(montrerAide);
   const [zoneOccupee, setZoneOccupee] = useState<string | undefined>(undefined);
   const ouvertRef = useRef(false);
   const [stats, setStats] = useState<RenderStats>({
@@ -271,7 +285,7 @@ export function Campus3D({
     const loop = (now: number): void => {
       const renderer = rendererRef.current;
       if (renderer) {
-        const input = inputFromKeys(pressedRef.current);
+        const input = inputFromKeys(pressedRef.current, commandesRef.current);
         const camera = controllerRef.current.update(input, now - last);
         renderer.setCamera(reduceMotion ? { ...camera, transitionMs: 0 } : camera);
 
@@ -353,7 +367,12 @@ export function Campus3D({
         }
         return;
       }
-      if (event.code === 'KeyE' && aPorteeRef.current) {
+      if (event.code === commandesRef.current.commandes) {
+        event.preventDefault();
+        setPanneauOuvert((ouvert) => !ouvert);
+        return;
+      }
+      if (event.code === commandesRef.current.interagir && aPorteeRef.current) {
         event.preventDefault();
         ouvertRef.current = true;
         setOuvert(aPorteeRef.current);
@@ -518,7 +537,7 @@ export function Campus3D({
 
             {aPortee ? (
               <div className="campus3d__invite" role="status">
-                <kbd>E</kbd>
+                <kbd>{nomDeTouche(commandes.interagir)}</kbd>
                 <span>
                   {aPortee.verbe ?? 'Utiliser'} — {aPortee.label}
                 </span>
@@ -574,7 +593,57 @@ export function Campus3D({
             </div>
 
             {/* Le rappel des commandes s efface des qu un outil occupe la place. */}
-            {ouvert ? null : (
+            <button
+              type="button"
+              className="campus3d__commandes"
+              onClick={() => setPanneauOuvert(true)}
+              title="Voir et modifier les commandes"
+            >
+              ? Commandes
+            </button>
+
+            {aideVisible ? (
+              <div className="campus3d__tutoriel" role="status">
+                <strong>Vous etes dans les locaux</strong>
+                <dl>
+                  <div>
+                    <dt>
+                      {nomDeTouche(commandes.avancer)} {nomDeTouche(commandes.gauche)}{' '}
+                      {nomDeTouche(commandes.reculer)} {nomDeTouche(commandes.droite)}
+                    </dt>
+                    <dd>se deplacer</dd>
+                  </div>
+                  <div>
+                    <dt>Fleches ou souris</dt>
+                    <dd>regarder autour</dd>
+                  </div>
+                  <div>
+                    <dt>{nomDeTouche(commandes.interagir)}</dt>
+                    <dd>utiliser ce qu on a devant soi</dd>
+                  </div>
+                  <div>
+                    <dt>{nomDeTouche(commandes.courir)}</dt>
+                    <dd>marcher plus vite</dd>
+                  </div>
+                  <div>
+                    <dt>Echap</dt>
+                    <dd>fermer</dd>
+                  </div>
+                </dl>
+                <button
+                  type="button"
+                  className="neo-btn neo-btn--sm"
+                  onClick={() => {
+                    setAideVisible(false);
+                    onAideVue();
+                  }}
+                >
+                  J ai compris
+                </button>
+              </div>
+            ) : null}
+
+            {ouvert || aideVisible ? null : (
               <p className="campus3d__help neo-dim">
                 Z Q S D pour se deplacer, fleches pour tourner la tete, Maj pour courir.
                 E pour utiliser ce qu on a devant soi. Cliquer une porte pour y entrer.
@@ -631,6 +700,8 @@ export function Campus3D({
           ))}
         </ul>
       </nav>
+
+      {panneauOuvert ? <PanneauCommandes onFermer={() => setPanneauOuvert(false)} /> : null}
     </div>
   );
 }

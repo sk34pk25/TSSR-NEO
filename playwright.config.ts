@@ -54,15 +54,35 @@ export default defineConfig({
   projects: [
     {
       name: 'bureau',
+      testIgnore: /appareil\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
     },
     {
-      name: 'tablette',
+      // Fenetre etroite sur un ordinateur : elle reste un ordinateur.
+      name: 'fenetre-etroite',
+      testIgnore: /appareil\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 834, height: 1112 } },
     },
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    /*
+     * La plateforme est desormais reservee a l ordinateur : le projet mobile ne
+     * verifie plus les ecrans, il verifie que le blocage est propre et qu aucun
+     * asset lourd n est telecharge.
+     */
+    {
+      name: 'mobile',
+      testMatch: /appareil\.spec\.ts/,
+      use: { ...devices['Pixel 7'] },
+    },
+    {
+      // Tablette large et tactile : le cas ou la seule largeur ne suffit pas
+      // a decider, et ou c est bien l absence de pointeur fin qui tranche.
+      name: 'tablette-tactile',
+      testMatch: /appareil\.spec\.ts/,
+      use: { ...devices['Galaxy Tab S4 landscape'] },
+    },
     {
       name: 'mouvement-reduit',
+      testIgnore: /appareil\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1440, height: 900 },
@@ -71,6 +91,7 @@ export default defineConfig({
     },
     {
       name: 'texte-agrandi',
+      testIgnore: /appareil\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
     },
   ],

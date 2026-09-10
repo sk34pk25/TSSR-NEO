@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { zoneById } from '@tssr/rendering';
+import { bindingsDe } from '../state/controls.ts';
 import { navigate, useSession } from '../state/hooks.ts';
 
 // Le campus tridimensionnel embarque le moteur graphique : il est charge a la demande.
@@ -32,6 +33,9 @@ export function CampusView(): JSX.Element {
           profile={session.profile}
           reduceMotion={session.progress.preferences.accessibility.reduceMotion}
           developerMode={session.progress.preferences.developerMode}
+          commandes={bindingsDe(session.progress.preferences)}
+          montrerAide={!session.progress.preferences.campusAideVue}
+          onAideVue={() => void session.updatePreferences({ campusAideVue: true })}
           onAmbiance={(ambience) => session.setCampusAmbience(ambience)}
           highlightZoneIds={session.runner === undefined ? [] : ['training-lab']}
           onEnterZone={(zoneId) => {
